@@ -8,6 +8,7 @@ var church_special_forms = ["quote", "if", "set!", "define", "lambda", "begin"]
 function church_astify(expr) {
 	// Read tokens after a left parens has been opened in the normal context
 	// Returns [node, number of tokens read]
+	// TODO: Refactor / remove redundant code
 	function call_helper(expr) {
 		var node = {}
 		var i = 0;
@@ -19,7 +20,19 @@ function church_astify(expr) {
 			node["head"] = expr[i];
 			i++;
 		}
-		if (node["head"] == "lambda") {
+		if (node["head"] == "define") {
+			var result = helper(expr.slice(i));
+			node["children"] = result[0];
+			i += result[1];
+			// De-sugar special form
+			// TODO: Should this be here or in a separate desugar stage?
+			if (typeof(node["children"][0]) == "object") {
+				lambda_node = {"head": "lambda",
+							   "args": node["children"][0]["children"],
+							   "children": node["children"].slice(1)};
+				node["children"] = [node["children"][0]["head"], lambda_node];
+			}
+		} else if (node["head"] == "lambda" || node["head"] == "lambda-query") {
 			var result = lambda_helper(expr.slice(i));
 			node["args"] = result[0]["args"];
 			node["children"] = result[0]["children"]
@@ -73,6 +86,7 @@ function church_astify(expr) {
 		}
 		return [nodes, i];
 	}
+
 	return helper(expr)[0];
 }
 

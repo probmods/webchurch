@@ -21,6 +21,7 @@ var church_builtins_map = {
 	"not": "not",
 	"flip": "flip",
 	"list": "list",
+	"null?": "is_null"
 }
 
 var program_node = {
@@ -133,6 +134,17 @@ function church_tree_to_esprima_ast(church_tree) {
 		return func_expression;
 	}
 
+	function make_lambda_query_expression(church_tree) {
+		var lambda = make_function_expression(church_tree);
+		var marginalize = deep_copy(call_expression_node);
+		marginalize["callee"] = {"type": "Identifier", "name": "marginalize"};
+		marginalize["arguments"] = [
+			lambda,
+            {"type": "Identifier", "name": "traceMH"},
+            {"type": "Literal", "value": 100}]
+		return marginalize;
+	}
+
 	function make_call_expression(church_tree) {
 		var call_expression = deep_copy(call_expression_node);
 		call_expression["callee"] = make_expression(church_tree["head"]);
@@ -165,19 +177,55 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_expression(church_tree) {
+		// TODO: Turn this into a shorter map-style thing.
 		if (typeof(church_tree) == "object") {
 			if (church_tree["head"] == "lambda") {
 				return make_function_expression(church_tree);
+			} else if (church_tree["head"] == "lambda-query") {
+				return make_lambda_query_expression(church_tree);
+		 	} else if (church_tree["head"] == "if") {
+				return make_lambda_query_expression(church_tree);
 			} else if (church_tree["head"] == "if") {
 				return make_if_expression(church_tree);
 			} else if (church_tree["head"] == "define") {
-				console.log("HI");
+				console.log("TODO TODO TODO");
+			} else if (church_tree["head"] == "mh-query") {
+				return make_mh_query_expression(church_tree);
 			} else {
 				return make_call_expression(church_tree);
 			}
 		} else {
 			return make_simple_expression(church_tree);
 		}
+	}
+
+	function make_mh_query_expression(church_tree) {
+		var church_args = church_tree["children"];
+		// TODO: better error-checking
+		if (church_args.length < 5) {
+			throw new Error("Wrong number of arguments");
+		}
+
+		var expression = deep_copy(call_expression_node);
+		expression["callee"] = {"type": "Identifier", "name": "distrib"};
+
+		var condition = deep_copy(expression_statement_node);
+		condition["expression"] = deep_copy(call_expression_node);
+		condition["expression"]["callee"] = {"type": "Identifier", "name": "condition"};
+		condition["expression"]["arguments"] = [make_expression(church_args[church_args.length - 1])];
+
+		var computation = deep_copy(function_expression_node);
+		computation["body"]["body"] = make_expression_statement_list(church_args.slice(2, -2))
+			.concat(condition)
+			.concat(make_return_statement(church_args[church_args.length - 2]));
+
+		expression["arguments"] = [
+			computation,
+			{"type": "Identifier", "name": "traceMH"},
+			make_expression(church_args[0]),
+			make_expression(church_args[1])];
+
+		return expression;
 	}
 
 	function make_simple_expression(church_leaf) {

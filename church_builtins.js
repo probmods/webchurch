@@ -65,6 +65,15 @@ function eq() {
 	}
 }
 
+function is_null() {
+	var args = args_to_array(arguments);
+	if (args.length != 1) {
+		throw new Error("Wrong number of arguments");
+	} else {
+		return Array.isArray(args[0]) && args[0].length == 0;
+	}
+}
+
 module.exports = {
 	plus: plus,
 	minus: minus,
