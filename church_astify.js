@@ -14,7 +14,7 @@ function church_astify(expr) {
 		var i = 0;
 		if (expr[i] == "(") {
 			var result = call_helper(expr.slice(i+1));
-			node["head"] = make_generic_node(result[0][0], result[0].slice(1));
+			node["head"] = result[0];
 			i += result[1] + 2;
 		} else {
 			node["head"] = expr[i];

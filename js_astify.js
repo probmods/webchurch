@@ -183,12 +183,10 @@ function church_tree_to_esprima_ast(church_tree) {
 				return make_function_expression(church_tree);
 			} else if (church_tree["head"] == "lambda-query") {
 				return make_lambda_query_expression(church_tree);
-		 	} else if (church_tree["head"] == "if") {
-				return make_lambda_query_expression(church_tree);
 			} else if (church_tree["head"] == "if") {
 				return make_if_expression(church_tree);
 			} else if (church_tree["head"] == "define") {
-				console.log("TODO TODO TODO");
+				// TODO: figure out whether to catch defines here or in make_expression_statement
 			} else if (church_tree["head"] == "mh-query") {
 				return make_mh_query_expression(church_tree);
 			} else {
