@@ -5,4 +5,4 @@ browserify \
   -r ./probabilistic-js/probabilistic/util \
   -r ./probabilistic-js/probabilistic/transform \
   -r ./probabilistic-js/probabilistic/marginalize \
-  > online/web_church.js
+  > online/webchurch.js
