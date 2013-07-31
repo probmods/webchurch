@@ -2,7 +2,25 @@ function make_generic_node(head, children) {
 	return {"head": head, "children": children};
 }
 
-var church_special_forms = ["quote", "if", "set!", "define", "lambda", "begin"]
+function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
+
+function convert_symbols(expr) {
+	// First-pass attempt at recognizing the empty list.
+	// result = []
+	// for (var i = 0; i < expr.length; i++) {
+	// 	if (expr[i] == "(" && expr[i+1] == ")") {
+	// 		result = result.concat("()");
+	// 		i++;
+	// 	} else if (expr[i] == "'" && expr[i+1] == "(" && expr[i+2] == ")") {
+	// 		result = result.concat("()");
+	// 		i = i + 2;
+	// 	} else {
+	// 		result = result.concat(expr[i]);
+	// 	}
+	// }
+	// return result;
+	return expr;
+}
 
 // TODO: add all kinds of error-checking.
 function church_astify(expr) {
@@ -87,7 +105,7 @@ function church_astify(expr) {
 		return [nodes, i];
 	}
 
-	return helper(expr)[0];
+	return helper(convert_symbols(expr))[0];
 }
 
 exports.church_astify = church_astify;

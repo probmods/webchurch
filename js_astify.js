@@ -1,8 +1,7 @@
 // var esprima = require('esprima');
 var escodegen = require('escodegen');
 
-// "ud" stands for "User Defined"
-var identifier_prefix = "ud_"
+var identifier_prefix = "_"
 
 var church_special_forms = ["quote", "if", "set!", "define", "lambda", "begin"]
 
@@ -21,7 +20,11 @@ var church_builtins_map = {
 	"not": "not",
 	"flip": "flip",
 	"list": "list",
-	"null?": "is_null"
+	"null?": "is_null",
+	"#t": "true",
+	"#T": "true",
+	"#f": "false",
+	"#F": "false",
 }
 
 var program_node = {
@@ -115,13 +118,13 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_function_expression(church_tree) {
-		var church_args = church_tree["args"];
+		var lambda_args = church_tree["args"];
 		var church_actions = church_tree["children"];
 		var func_expression;
-		if (typeof(church_args) == "object") {
+		if (typeof(lambda_args) == "object") {
 			func_expression = deep_copy(function_expression_node);
-			for (var i = 0; i < church_args.length; i++) {
-				func_expression["params"].push(make_simple_expression(church_args[i]));
+			for (var i = 0; i < lambda_args.length; i++) {
+				func_expression["params"].push(make_simple_expression(lambda_args[i]));
 			}
 			var procedure_statements = make_expression_statement_list(church_actions.slice(0, -1));
 			var return_statement = deep_copy(return_statement_node);
@@ -135,7 +138,27 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_lambda_query_expression(church_tree) {
-		var lambda = make_function_expression(church_tree);
+		var lambda_args = church_tree["args"];
+		var params = church_tree["children"];
+		console.log(params);
+		if (params.length < 2) {
+			throw new Error("Wrong number of arguments");
+		}
+		var lambda;
+		if (typeof(lambda_args) == "object") {
+			lambda = deep_copy(function_expression_node);
+			for (var i = 0; i < lambda_args.length; i++) {
+				lambda["params"].push(make_simple_expression(lambda_args[i]));
+			}
+			var defines = make_expression_statement_list(params.slice(0, -2));
+			var condition_stmt = make_condition_stmt(params[params.length-1]);
+			var return_stmt = deep_copy(return_statement_node);
+			return_stmt["argument"] = make_expression(params[params.length-2]);
+			lambda["body"]["body"] = defines.concat(condition_stmt).concat(return_stmt)
+		} else {
+			// Handle arbitrary number of args
+		}
+
 		var marginalize = deep_copy(call_expression_node);
 		marginalize["callee"] = {"type": "Identifier", "name": "marginalize"};
 		marginalize["arguments"] = [
@@ -143,6 +166,40 @@ function church_tree_to_esprima_ast(church_tree) {
             {"type": "Identifier", "name": "traceMH"},
             {"type": "Literal", "value": 100}]
 		return marginalize;
+	}
+
+	function make_mh_query_expression(church_tree) {
+		var params = church_tree["children"];
+		// TODO: better error-checking
+		if (params.length < 5) {
+			throw new Error("Wrong number of arguments");
+		}
+
+		var expression = deep_copy(call_expression_node);
+		expression["callee"] = {"type": "Identifier", "name": "distrib"};
+
+		var condition_stmt = make_condition_stmt(make_expression(params[params.length - 1]))
+
+		var computation = deep_copy(function_expression_node);
+		computation["body"]["body"] = make_expression_statement_list(params.slice(2, -2))
+			.concat(condition_stmt)
+			.concat(make_return_statement(params[params.length - 2]));
+
+		expression["arguments"] = [
+			computation,
+			{"type": "Identifier", "name": "traceMH"},
+			make_expression(params[0]),
+			make_expression(params[1])];
+
+		return expression;
+	}
+
+	function make_condition_stmt(cond_tree) {
+		var condition_stmt = deep_copy(expression_statement_node);
+		condition_stmt["expression"] = deep_copy(call_expression_node);
+		condition_stmt["expression"]["callee"] = {"type": "Identifier", "name": "condition"};
+		condition_stmt["expression"]["arguments"] = [make_expression(cond_tree)];
+		return condition_stmt;
 	}
 
 	function make_call_expression(church_tree) {
@@ -195,35 +252,6 @@ function church_tree_to_esprima_ast(church_tree) {
 		} else {
 			return make_simple_expression(church_tree);
 		}
-	}
-
-	function make_mh_query_expression(church_tree) {
-		var church_args = church_tree["children"];
-		// TODO: better error-checking
-		if (church_args.length < 5) {
-			throw new Error("Wrong number of arguments");
-		}
-
-		var expression = deep_copy(call_expression_node);
-		expression["callee"] = {"type": "Identifier", "name": "distrib"};
-
-		var condition = deep_copy(expression_statement_node);
-		condition["expression"] = deep_copy(call_expression_node);
-		condition["expression"]["callee"] = {"type": "Identifier", "name": "condition"};
-		condition["expression"]["arguments"] = [make_expression(church_args[church_args.length - 1])];
-
-		var computation = deep_copy(function_expression_node);
-		computation["body"]["body"] = make_expression_statement_list(church_args.slice(2, -2))
-			.concat(condition)
-			.concat(make_return_statement(church_args[church_args.length - 2]));
-
-		expression["arguments"] = [
-			computation,
-			{"type": "Identifier", "name": "traceMH"},
-			make_expression(church_args[0]),
-			make_expression(church_args[1])];
-
-		return expression;
 	}
 
 	function make_simple_expression(church_leaf) {

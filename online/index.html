@@ -15,9 +15,11 @@
     <h1>Church to JavaScript demo!</h1>
 
 <div><textarea id="code" name="code">
-(define lq (lambda-query
-  (x y)
-  (and (flip x) (flip y))))
+(define lq
+  (lambda-query
+   (x y)
+   (and (flip x) (flip y))
+   #t))
 
 (lq 0.5 0.5)
 
