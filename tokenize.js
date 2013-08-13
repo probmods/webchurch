@@ -8,6 +8,8 @@ function tokenize(s) {
 	while (begin < s.length) {
 		if (s[begin].match(whitespace_re)) {
 			begin++;
+		} else if (s[begin] == ";") {
+			for (; begin < s.length && s[begin] != "\n"; begin++) {}
 		} else {
 			if (s[begin] == "\"") {
 				for (end = begin + 1; ; end++) {

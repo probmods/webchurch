@@ -6,6 +6,13 @@ var identifier_prefix = "_"
 var church_special_forms = ["quote", "if", "set!", "define", "lambda", "begin"]
 
 var church_builtins_map = {
+	"#t": "true",
+	"#T": "true",
+	"true": "true",
+	"false": "false",
+	"#f": "false",
+	"#F": "false",
+
 	"+": "plus",
 	"-": "minus",
 	"*": "mult",
@@ -18,14 +25,22 @@ var church_builtins_map = {
 	"and": "and",
 	"or": "or",
 	"not": "not",
-	"flip": "flip",
+
 	"list": "list",
-	"null?": "is_null",
-	"#t": "true",
-	"#T": "true",
-	"#f": "false",
-	"#F": "false",
+	"pair": "pair",
+	"pair?": "is_pair",
+	"first": "first",
+	"rest": "rest",
+	"length": "length",
+	"repeat": "repeat",
+
+	"flip": "flip",
+	"multinomial": "multinomial"
 }
+
+var true_aliases = ["#t", "#T", "true"];
+
+var false_aliases = ["#f", "#F", "false"];
 
 var program_node = {
 	"type": "Program",
@@ -104,7 +119,28 @@ function get_value_of_string_or_number(s) {
 	}
 }
 
-function rename(s) { return identifier_prefix + s;}
+function convert_char(char) { return ("_" + char.charCodeAt(0)); }
+
+// Any identifier that doesn't match the form [a-zA-Z_$][0-9a-zA-Z_$]* isn't
+// okay in JS, so we need to rename them.
+function format_identifier(id) {
+	var new_id;
+	if (id[0].match("[a-zA-Z_$]")) {
+		new_id = id[0];
+	} else {
+		new_id = convert_char(id[0]);
+	}
+	for (var j = 1; j < id.length; j++) {
+		if (id[j].match("[0-9a-zA-Z_$]")) {
+			new_id = new_id + id[j];
+		} else {
+			new_id = new_id + convert_char(id[j]);
+		}
+	}
+	return new_id;
+}
+
+function rename(s) { return identifier_prefix + format_identifier(s);}
 
 function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
 
@@ -118,8 +154,8 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_function_expression(church_tree) {
-		var lambda_args = church_tree["args"];
-		var church_actions = church_tree["children"];
+		var lambda_args = church_tree["children"][0];
+		var church_actions = church_tree["children"].slice(1);
 		var func_expression;
 		if (typeof(lambda_args) == "object") {
 			func_expression = deep_copy(function_expression_node);
@@ -138,9 +174,8 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_lambda_query_expression(church_tree) {
-		var lambda_args = church_tree["args"];
-		var params = church_tree["children"];
-		console.log(params);
+		var lambda_args = church_tree["children"][0];
+		var params = church_tree["children"].slice(1);
 		if (params.length < 2) {
 			throw new Error("Wrong number of arguments");
 		}
@@ -219,17 +254,16 @@ function church_tree_to_esprima_ast(church_tree) {
 		var if_expression = deep_copy(call_expression_node);
 		var callee = deep_copy(function_expression_node);
 		var if_statement = deep_copy(if_statement_node);
-		if_statement["test"] = make_expression(church_tree["cond"]);
+		if_statement["test"] = make_expression(church_tree["children"][0]);
 		if_statement["consequent"] = deep_copy(block_statement_node);
-		if_statement["consequent"]["body"].push(make_return_statement(church_tree["consq"]));
+		if_statement["consequent"]["body"].push(make_return_statement(church_tree["children"][1]));
 
-		if (church_tree["alt"]) {
+		if (church_tree["children"].length == 3) {
 			if_statement["alternate"] = deep_copy(block_statement_node);
-			if_statement["alternate"]["body"].push(make_return_statement(church_tree["alt"]));
+			if_statement["alternate"]["body"].push(make_return_statement(church_tree["children"][2]));
 		}
 		callee["body"]["body"] = [if_statement];
 		if_expression["callee"] = callee;
-		console.log(JSON.stringify(if_expression));
 		return if_expression;
 	}
 
@@ -256,7 +290,16 @@ function church_tree_to_esprima_ast(church_tree) {
 
 	function make_simple_expression(church_leaf) {
 		var expression = deep_copy(expression_node);
-		if (is_identifier(church_leaf)) {
+		if (church_leaf == "()") {
+			expression["type"] = "ArrayExpression";
+			expression["elements"] = [];
+		} else if (true_aliases.indexOf(church_leaf) != -1) {
+			expression["type"] = "Literal";
+			expression["value"] = true;
+		} else if (false_aliases.indexOf(church_leaf) != -1) {
+			expression["type"] = "Literal";
+			expression["value"] = false;
+		} else if (is_identifier(church_leaf)) {
 			expression["type"] = "Identifier";
 			expression["name"] = church_leaf;
 			if (church_leaf in church_builtins_map){
