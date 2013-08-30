@@ -36,6 +36,7 @@
 
       var church_to_js = require("./church_to_js").church_to_js
       var church_builtins = require("./church_builtins")
+      var format_result = require("./format_result").format_result
 
       var pr = require("./probabilistic/index")
       var util = require("./probabilistic/util")
@@ -84,7 +85,7 @@
         try
         {
           js_code = transform.probTransform(js_code)
-          __updateExecOutput(JSON.stringify(eval(js_code)))
+          __updateExecOutput(format_result(eval(js_code)))
         }
         catch (e)
         {

@@ -34,6 +34,10 @@ var church_builtins_map = {
 	"length": "length",
 	"repeat": "repeat",
 
+	"apply": "apply",
+	"map": "map",
+
+	"mem": "mem",
 	"flip": "flip",
 	"multinomial": "multinomial"
 }
@@ -108,7 +112,7 @@ var block_statement_node = {
 
 function is_string(s) { return s[0] == "\""; }
 function is_number(s) { return !isNaN(parseFloat(s)); }
-function is_identifier(s) { return !(is_string(s) || is_number(s)); }
+function is_identifier(s) { return !(is_string(s) || is_number(s) || Array.isArray(s)); }
 
 function strip_quotes(s) { return s.slice(1, -1); }
 function get_value_of_string_or_number(s) { 
@@ -148,14 +152,14 @@ function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
 function church_tree_to_esprima_ast(church_tree) {
 	function make_declaration(church_tree) {
 		var node = deep_copy(declaration_node);
-		node["declarations"][0]["id"]["name"] = rename(church_tree["children"][0]);
-		node["declarations"][0]["init"] = make_expression(church_tree["children"][1]);
+		node["declarations"][0]["id"]["name"] = rename(church_tree[1]);
+		node["declarations"][0]["init"] = make_expression(church_tree[2]);
 		return node;
 	}
 
 	function make_function_expression(church_tree) {
-		var lambda_args = church_tree["children"][0];
-		var church_actions = church_tree["children"].slice(1);
+		var lambda_args = church_tree[1];
+		var church_actions = church_tree.slice(2);
 		var func_expression;
 		if (typeof(lambda_args) == "object") {
 			func_expression = deep_copy(function_expression_node);
@@ -174,8 +178,8 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_lambda_query_expression(church_tree) {
-		var lambda_args = church_tree["children"][0];
-		var params = church_tree["children"].slice(1);
+		var lambda_args = church_tree[1];
+		var params = church_tree.slice(2);
 		if (params.length < 2) {
 			throw new Error("Wrong number of arguments");
 		}
@@ -204,7 +208,7 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_mh_query_expression(church_tree) {
-		var params = church_tree["children"];
+		var params = church_tree.slice(1);
 		// TODO: better error-checking
 		if (params.length < 5) {
 			throw new Error("Wrong number of arguments");
@@ -239,8 +243,8 @@ function church_tree_to_esprima_ast(church_tree) {
 
 	function make_call_expression(church_tree) {
 		var call_expression = deep_copy(call_expression_node);
-		call_expression["callee"] = make_expression(church_tree["head"]);
-		call_expression["arguments"] = make_expression_list(church_tree["children"]);
+		call_expression["callee"] = make_expression(church_tree[0]);
+		call_expression["arguments"] = make_expression_list(church_tree.slice(1));
 		return call_expression;
 	}
 
@@ -254,31 +258,52 @@ function church_tree_to_esprima_ast(church_tree) {
 		var if_expression = deep_copy(call_expression_node);
 		var callee = deep_copy(function_expression_node);
 		var if_statement = deep_copy(if_statement_node);
-		if_statement["test"] = make_expression(church_tree["children"][0]);
+		if_statement["test"] = make_expression(church_tree[1]);
 		if_statement["consequent"] = deep_copy(block_statement_node);
-		if_statement["consequent"]["body"].push(make_return_statement(church_tree["children"][1]));
+		if_statement["consequent"]["body"].push(make_return_statement(church_tree[2]));
 
-		if (church_tree["children"].length == 3) {
+		if (church_tree.length == 4) {
 			if_statement["alternate"] = deep_copy(block_statement_node);
-			if_statement["alternate"]["body"].push(make_return_statement(church_tree["children"][2]));
+			if_statement["alternate"]["body"].push(make_return_statement(church_tree[3]));
 		}
 		callee["body"]["body"] = [if_statement];
 		if_expression["callee"] = callee;
 		return if_expression;
 	}
 
+	function make_quoted_expression(church_tree) {
+		function quote_helper(quoted) {
+			if (Array.isArray(quoted)) {
+				var array = deep_copy(array_node);
+				if (quoted.length > 0) {
+					array["elements"] = [quote_helper(quoted[0]), quote_helper(quoted.slice(1))];
+				}
+				return array;
+			} else {
+				if (is_identifier(quoted)) {
+					return make_simple_expression('"' + quoted + '"');
+				} else {
+					return make_simple_expression(quoted);
+				}
+			}
+		}
+		return quote_helper(church_tree[1]);
+	}
+
 	function make_expression(church_tree) {
 		// TODO: Turn this into a shorter map-style thing.
-		if (typeof(church_tree) == "object") {
-			if (church_tree["head"] == "lambda") {
+		if (Array.isArray(church_tree) && church_tree.length > 0) {
+			if (church_tree[0] == "lambda") {
 				return make_function_expression(church_tree);
-			} else if (church_tree["head"] == "lambda-query") {
+			} else if (church_tree[0] == "lambda-query") {
 				return make_lambda_query_expression(church_tree);
-			} else if (church_tree["head"] == "if") {
+			} else if (church_tree[0] == "if") {
 				return make_if_expression(church_tree);
-			} else if (church_tree["head"] == "define") {
+			} else if (church_tree[0] == "define") {
 				// TODO: figure out whether to catch defines here or in make_expression_statement
-			} else if (church_tree["head"] == "mh-query") {
+			} else if (church_tree[0] == "quote") {
+				return make_quoted_expression(church_tree);
+			} else if (church_tree[0] == "mh-query") {
 				return make_mh_query_expression(church_tree);
 			} else {
 				return make_call_expression(church_tree);
@@ -290,7 +315,7 @@ function church_tree_to_esprima_ast(church_tree) {
 
 	function make_simple_expression(church_leaf) {
 		var expression = deep_copy(expression_node);
-		if (church_leaf == "()") {
+		if (Array.isArray(church_leaf) && church_leaf.length == 0) {
 			expression["type"] = "ArrayExpression";
 			expression["elements"] = [];
 		} else if (true_aliases.indexOf(church_leaf) != -1) {
@@ -323,7 +348,7 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_expression_statement(church_tree) {
-		if (church_tree["head"] == "define") {
+		if (church_tree[0] == "define") {
 			return make_declaration(church_tree);
 		} else {
 			var expr_statement = deep_copy(expression_statement_node);

@@ -63,14 +63,34 @@ function or() {
 	return false;
 }
 
-function eq() {
-	var args = args_to_array(arguments);
+function cmp_nums(cmp_fn, args) {
 	assertAtLeastNumArgs(args, 2)
-	for (var i = 0; i < args.length; i++) {
+	for (var i = 0; i < args.length - 1; i++) {
 		assertType(args[i], "number");
-		if (args[i] != args[0]) return false; 
+		if (!cmp_fn(args[i], args[i+1])) return false; 
 	}
 	return true;
+}
+
+
+function greater() {
+	return cmp_nums(function(x, y) {return x > y;}, args_to_array(arguments));
+}
+
+function less() {
+	return cmp_nums(function(x, y) {return x < y;}, args_to_array(arguments));
+}
+
+function geq() {
+	return cmp_nums(function(x, y) {return x >= y;}, args_to_array(arguments));
+}
+
+function leq() {
+	return cmp_nums(function(x, y) {return x <= y;}, args_to_array(arguments));
+}
+
+function eq() {
+	return cmp_nums(function(x, y) {return x == y;}, args_to_array(arguments));
 }
 
 function list() {
@@ -135,6 +155,44 @@ function repeat(n, fn) {
 	return list.apply(null, results);
 }
 
+function apply(fn, list) {
+	assertType(fn, "function");
+	assertList(list);
+	return fn.apply(null, listToArray(list));
+}
+
+function map() {
+	function helper(lists) {
+		var fn_args = []
+		var remaining_lists = []
+		for (var i = 0; i < lists.length; i++) {
+			if (lists[i].length == 0) {
+				return [];
+			} else {
+				fn_args.push(lists[i][0]);
+				remaining_lists.push(lists[i][1]);
+			}
+		}
+		return [fn.apply(null, fn_args), helper(remaining_lists)];
+	}
+
+	var args = args_to_array(arguments);
+	assertAtLeastNumArgs(args, 2);
+	fn = args[0];
+	lists = args.slice(1);
+	return helper(lists);
+}
+
+function listToArray(list) {
+	var array = [];
+	while (list.length != 0) {
+		var left = list[0];
+		array.push(Array.isArray(left) ? listToArray(left) : left);
+		list = list[1];
+	}
+	return array;
+}
+
 function assertType(n, type) {
 	if (typeof(n) != type) {
 		throw new Error('"' + n + '" is not a ' + type); 
@@ -144,6 +202,17 @@ function assertType(n, type) {
 function assertInteger(n) {
 	if (typeof(n) != "number" && parseInt(n) != n) {
 		throw new Error('"' + n + '" is not an integer'); 
+	}
+}
+
+function assertList(list) {
+	if (Array.isArray(list)) {
+		if (list.length == 0) {
+			return;
+		} else if (list.length != 2) {
+			throw new Error("Expected list");
+		}
+		assertList(list[1]);
 	}
 }
 
@@ -164,6 +233,10 @@ module.exports = {
 	minus: minus,
 	mult: mult,
 	div: div,
+	greater: greater,
+	less: less,
+	geq: geq,
+	leq: leq,
 	eq: eq,
 
 	and: and,
@@ -175,5 +248,8 @@ module.exports = {
 	first: first,
 	rest: rest,
 	length: length,
-	repeat: repeat
+	repeat: repeat,
+
+	apply: apply,
+	map: map
 }
