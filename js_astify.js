@@ -30,12 +30,15 @@ var church_builtins_map = {
 	"apply": "apply",
 	"map": "map",
 
-	"mem": "mem",
-	"flip": "flip",
-	"multinomial": "multinomial",
 	"uniform-draw": "uniform_draw",
 
 	"hist": "hist"
+}
+
+var probjs_builtins_map = {
+	"mem": "mem",
+	"flip": "flip",
+	"multinomial": "multinomial",
 }
 
 var church_query_map = {
@@ -91,6 +94,19 @@ var expression_node = {
 	"name": null,
 	"value": null
 }
+var member_expression_node = {
+	"type": "MemberExpression",
+	"computed": false,
+	"object": {
+		"type": "Identifier",
+		"name": null
+	},
+	"property": {
+		"type": "Identifier",
+		"name": null
+	}
+}
+
 var return_statement_node = {
 	"type": "ReturnStatement",
 	"argument": null
@@ -337,6 +353,24 @@ function church_tree_to_esprima_ast(church_tree) {
 		}
 	}
 
+	function make_identifier_expression(church_leaf) {
+		var expression;
+		if (church_leaf in church_builtins_map) {
+			expression = deep_copy(member_expression_node);
+			expression["object"]["name"] = "church_builtins"
+			expression["property"]["name"] = church_builtins_map[church_leaf];
+		} else if (church_leaf in probjs_builtins_map) {
+			expression = deep_copy(expression_node);
+			expression["type"] = "Identifier";
+			expression["name"] = probjs_builtins_map[church_leaf];
+		} else {
+			expression = deep_copy(expression_node);
+			expression["type"] = "Identifier";
+			expression["name"] = rename(church_leaf);
+		}
+		return expression;
+	}
+
 	function make_simple_expression(church_leaf) {
 		var expression = deep_copy(expression_node);
 		if (Array.isArray(church_leaf) && church_leaf.length == 0) {
@@ -349,13 +383,7 @@ function church_tree_to_esprima_ast(church_tree) {
 			expression["type"] = "Literal";
 			expression["value"] = false;
 		} else if (is_identifier(church_leaf)) {
-			expression["type"] = "Identifier";
-			expression["name"] = church_leaf;
-			if (church_leaf in church_builtins_map){
-				expression["name"] = church_builtins_map[church_leaf];
-			} else {
-				expression["name"] = rename(church_leaf);
-			}
+			expression = make_identifier_expression(church_leaf);
 		} else {
 			expression["type"] = "Literal";
 			expression["value"] = get_value_of_string_or_number(church_leaf);
