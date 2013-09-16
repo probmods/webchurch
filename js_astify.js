@@ -3,17 +3,9 @@ var escodegen = require('escodegen');
 
 var identifier_prefix = "_"
 
-var church_special_forms = ["quote", "if", "set!", "define", "lambda", "begin"]
-
 var church_builtins_map = {
-	"#t": "true",
-	"#T": "true",
-	"true": "true",
-	"false": "false",
-	"#f": "false",
-	"#F": "false",
-
 	"+": "plus",
+	"sum": "sum",
 	"-": "minus",
 	"*": "mult",
 	"/": "div",
@@ -33,13 +25,22 @@ var church_builtins_map = {
 	"rest": "rest",
 	"length": "length",
 	"repeat": "repeat",
+	"equal?": "is_equal",
 
 	"apply": "apply",
 	"map": "map",
 
 	"mem": "mem",
 	"flip": "flip",
-	"multinomial": "multinomial"
+	"multinomial": "multinomial",
+	"uniform-draw": "uniform_draw",
+
+	"hist": "hist"
+}
+
+var church_query_map = {
+	"mh-query": "traceMH",
+	"rejection-query": "rejectionQuery"
 }
 
 var true_aliases = ["#t", "#T", "true"];
@@ -233,6 +234,27 @@ function church_tree_to_esprima_ast(church_tree) {
 		return expression;
 	}
 
+	function make_rejection_query_expression(church_tree) {
+		var params = church_tree.slice(1);
+		if (params.length < 2) {
+			throw new Error("Wrong number of arguments");
+		}
+		var expression = deep_copy(call_expression_node);
+		expression["callee"] = {"type": "Identifier", "name": "rejectionSample"};
+
+		var condition_stmt = make_condition_stmt(params[params.length - 1])
+
+		var computation = deep_copy(function_expression_node);
+		computation["body"]["body"] = make_expression_statement_list(params.slice(0, -2))
+			.concat(condition_stmt)
+			.concat(make_return_statement(params[params.length - 2]));
+
+		expression["arguments"] = [computation];
+
+		return expression;
+
+	}
+
 	function make_condition_stmt(cond_tree) {
 		var condition_stmt = deep_copy(expression_statement_node);
 		condition_stmt["expression"] = deep_copy(call_expression_node);
@@ -305,6 +327,8 @@ function church_tree_to_esprima_ast(church_tree) {
 				return make_quoted_expression(church_tree);
 			} else if (church_tree[0] == "mh-query") {
 				return make_mh_query_expression(church_tree);
+			} else if (church_tree[0] == "rejection-query") {
+				return make_rejection_query_expression(church_tree);
 			} else {
 				return make_call_expression(church_tree);
 			}

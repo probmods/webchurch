@@ -12,6 +12,11 @@ function plus() {
 	return sum;
 }
 
+function sum(list) {
+	assertNumArgs(args_to_array(arguments), 1);
+	return plus.apply(null, listToArray(list, true));
+}
+
 function minus() {
 	var args = args_to_array(arguments);
 	assertAtLeastNumArgs(args, 1);
@@ -155,10 +160,27 @@ function repeat(n, fn) {
 	return list.apply(null, results);
 }
 
+function is_equal(x, y) {
+	assertNumArgs(args_to_array(arguments), 2)
+	if (typeof(x) == typeof(y)) {
+		if (Array.isArray(x)) {
+			if (x.length == y.length) {
+				return is_equal(x[0], y[0]) && is_equal(x[1], y[1]);
+			} else {
+				return false;
+			}
+		} else {
+			return x == y;
+		}
+	} else {
+		return false
+	}
+}
+
 function apply(fn, list) {
 	assertType(fn, "function");
 	assertList(list);
-	return fn.apply(null, listToArray(list));
+	return fn.apply(null, listToArray(list, true));
 }
 
 function map() {
@@ -183,11 +205,20 @@ function map() {
 	return helper(lists);
 }
 
-function listToArray(list) {
+function uniform_draw(list) {
+	assertList(list);
+	return uniformDraw(listToArray(list, false));
+}
+
+function hist(x) {
+	return x;
+}
+
+function listToArray(list, recurse) {
 	var array = [];
 	while (list.length != 0) {
 		var left = list[0];
-		array.push(Array.isArray(left) ? listToArray(left) : left);
+		array.push((Array.isArray(left) && recurse)? listToArray(left) : left);
 		list = list[1];
 	}
 	return array;
@@ -230,6 +261,7 @@ function assertAtLeastNumArgs(args, n) {
 
 module.exports = {
 	plus: plus,
+	sum: sum,
 	minus: minus,
 	mult: mult,
 	div: div,
@@ -249,7 +281,12 @@ module.exports = {
 	rest: rest,
 	length: length,
 	repeat: repeat,
+	is_equal: is_equal,
 
 	apply: apply,
-	map: map
+	map: map,
+
+	uniform_draw: uniform_draw,
+
+	hist: hist
 }
