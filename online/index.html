@@ -34,14 +34,14 @@
       var js_outmirror = null
       var exec_outmirror = null
 
-      var church_to_js = require("./church_to_js").church_to_js
-      var church_builtins = require("./church_builtins")
-      var format_result = require("./format_result").format_result
-
       var pr = require("./probabilistic/index")
       var util = require("./probabilistic/util")
       var transform = require("./probabilistic/transform")
       util.openModule(pr)
+
+      var church_to_js = require("./church_to_js").church_to_js
+      var church_builtins = require("./church_builtins")
+      var format_result = require("./format_result").format_result
 
       function __updateJSOutput(str)
       {

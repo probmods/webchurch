@@ -210,18 +210,34 @@ function uniform_draw(list) {
 	return uniformDraw(listToArray(list, false));
 }
 
+function wrapped_flip() {
+	return flip.apply(null, arguments) == 1;
+}
+
+function wrapped_traceMH(comp, samples, lag) {
+	return arrayToList(traceMH(comp, samples, lag, false).map(function(x) {return x.sample}));
+}
+
 function hist(x) {
 	return x;
 }
 
 function listToArray(list, recurse) {
 	var array = [];
-	while (list.length != 0) {
+	while (list.length > 0) {
 		var left = list[0];
-		array.push((Array.isArray(left) && recurse)? listToArray(left) : left);
+		array.push((Array.isArray(left) && recurse) ? listToArray(left) : left);
 		list = list[1];
 	}
 	return array;
+}
+
+function arrayToList(arr) {
+	if (arr.length == 0) {
+		return [];
+	} else {
+		return [Array.isArray(arr[0]) ? arrayToList[arr[0]] : arr[0], arrayToList(arr.slice(1))];
+	}
 }
 
 function assertType(n, type) {
@@ -259,6 +275,8 @@ function assertAtLeastNumArgs(args, n) {
 	}
 }
 
+
+
 module.exports = {
 	plus: plus,
 	sum: sum,
@@ -287,6 +305,8 @@ module.exports = {
 	map: map,
 
 	uniform_draw: uniform_draw,
+	wrapped_flip: wrapped_flip,
+	wrapped_traceMH: wrapped_traceMH,
 
 	hist: hist
 }

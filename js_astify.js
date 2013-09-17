@@ -31,19 +31,14 @@ var church_builtins_map = {
 	"map": "map",
 
 	"uniform-draw": "uniform_draw",
+	"flip": "wrapped_flip",
 
 	"hist": "hist"
 }
 
 var probjs_builtins_map = {
 	"mem": "mem",
-	"flip": "flip",
 	"multinomial": "multinomial",
-}
-
-var church_query_map = {
-	"mh-query": "traceMH",
-	"rejection-query": "rejectionQuery"
 }
 
 var true_aliases = ["#t", "#T", "true"];
@@ -230,11 +225,10 @@ function church_tree_to_esprima_ast(church_tree) {
 		if (params.length < 5) {
 			throw new Error("Wrong number of arguments");
 		}
-
 		var expression = deep_copy(call_expression_node);
-		expression["callee"] = {"type": "Identifier", "name": "distrib"};
+		expression["callee"] = {"type": "Identifier", "name": "church_builtins.wrapped_traceMH"};
 
-		var condition_stmt = make_condition_stmt(make_expression(params[params.length - 1]))
+		var condition_stmt = make_condition_stmt(params[params.length - 1]);
 
 		var computation = deep_copy(function_expression_node);
 		computation["body"]["body"] = make_expression_statement_list(params.slice(2, -2))
@@ -243,9 +237,10 @@ function church_tree_to_esprima_ast(church_tree) {
 
 		expression["arguments"] = [
 			computation,
-			{"type": "Identifier", "name": "traceMH"},
 			make_expression(params[0]),
-			make_expression(params[1])];
+			make_expression(params[1]),
+			{"type": "Literal", "value": false}
+		];
 
 		return expression;
 	}
