@@ -18,27 +18,40 @@ var church_builtins_map = {
 	"or": "or",
 	"not": "not",
 
+	"null?": "is_null",
 	"list": "list",
+	"list?": "is_list",
 	"pair": "pair",
 	"pair?": "is_pair",
 	"first": "first",
+	"second": "second",
 	"rest": "rest",
 	"length": "length",
 	"repeat": "repeat",
+	"make-list": "make_list",
+	"eq?": "is_eq",
 	"equal?": "is_equal",
+	"member": "member",
 
 	"apply": "apply",
 	"map": "map",
 
-	"uniform-draw": "uniform_draw",
+	"uniform-draw": "wrapped_uniform_draw",
+	"multinomial": "wrapped_multinomial",
 	"flip": "wrapped_flip",
+	"uniform": "wrapped_uniform",
+	"gaussian": "wrapped_gaussian",
+	"dirichlet": "wrapped_dirichlet",
 
-	"hist": "hist"
+	// "hist": "hist"
 }
 
 var probjs_builtins_map = {
 	"mem": "mem",
-	"multinomial": "multinomial",
+}
+
+var js_builtins_map = {
+	"round": "Math.round"
 }
 
 var true_aliases = ["#t", "#T", "true"];
@@ -162,6 +175,15 @@ function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
 
 // TODO: add all kinds of error-checking.
 function church_tree_to_esprima_ast(church_tree) {
+	var heads_to_helpers = {
+		"lambda": make_function_expression,
+		"lambda-query": make_lambda_query_expression,
+		"if": make_if_expression,
+		"quote": make_quoted_expression,
+		"mh-query": make_mh_query_expression,
+		"rejection-query": make_rejection_query_expression
+	}
+
 	function make_declaration(church_tree) {
 		var node = deep_copy(declaration_node);
 		node["declarations"][0]["id"]["name"] = rename(church_tree[1]);
@@ -176,7 +198,7 @@ function church_tree_to_esprima_ast(church_tree) {
 		if (typeof(lambda_args) == "object") {
 			func_expression = deep_copy(function_expression_node);
 			for (var i = 0; i < lambda_args.length; i++) {
-				func_expression["params"].push(make_simple_expression(lambda_args[i]));
+				func_expression["params"].push(make_leaf_expression(lambda_args[i]));
 			}
 			var procedure_statements = make_expression_statement_list(church_actions.slice(0, -1));
 			var return_statement = deep_copy(return_statement_node);
@@ -199,7 +221,7 @@ function church_tree_to_esprima_ast(church_tree) {
 		if (typeof(lambda_args) == "object") {
 			lambda = deep_copy(function_expression_node);
 			for (var i = 0; i < lambda_args.length; i++) {
-				lambda["params"].push(make_simple_expression(lambda_args[i]));
+				lambda["params"].push(make_leaf_expression(lambda_args[i]));
 			}
 			var defines = make_expression_statement_list(params.slice(0, -2));
 			var condition_stmt = make_condition_stmt(params[params.length-1]);
@@ -288,35 +310,73 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_if_expression(church_tree) {
+		function helper(test, consequent, alternate) {
+			var if_statement = deep_copy(if_statement_node);
+			if_statement["test"] = make_expression(test);
+			if_statement["consequent"] = deep_copy(block_statement_node);
+			if_statement["consequent"]["body"].push(make_return_statement(consequent));
+
+			if (alternate != undefined) {
+				// Detect basic nested ifs
+				if (alternate[0] == "if") {
+					if_statement["alternate"] = helper.apply(null, alternate.slice(1));
+				} else {
+					if_statement["alternate"] = deep_copy(block_statement_node);
+					if_statement["alternate"]["body"].push(make_return_statement(alternate));
+				}
+			}
+			return if_statement;
+		}
 		var if_expression = deep_copy(call_expression_node);
 		var callee = deep_copy(function_expression_node);
-		var if_statement = deep_copy(if_statement_node);
-		if_statement["test"] = make_expression(church_tree[1]);
-		if_statement["consequent"] = deep_copy(block_statement_node);
-		if_statement["consequent"]["body"].push(make_return_statement(church_tree[2]));
-
-		if (church_tree.length == 4) {
-			if_statement["alternate"] = deep_copy(block_statement_node);
-			if_statement["alternate"]["body"].push(make_return_statement(church_tree[3]));
-		}
-		callee["body"]["body"] = [if_statement];
+		callee["body"]["body"] = [helper.apply(null, church_tree.slice(1))];
 		if_expression["callee"] = callee;
 		return if_expression;
 	}
 
+	// function make_case_expression(church_tree) {
+	// 	function helper(key, clauses) {
+	// 		if (clauses.length == 0) {
+	// 			return make_leaf_expression([]);
+	// 		} else {
+	// 			if (clauses[0][0] == "else") {
+	// 				return make_return_statement(clauses[0][1]);
+	// 			} else {
+	// 				var if_statement = deep_copy(if_statement_node);
+	// 				// if_statement["test"] = make_call_expression(["member", key, clauses[0][0]]);
+	// 				if_statement["test"] = make_leaf_expression("true")
+	// 				if_statement["consequent"] = deep_copy(block_statement_node);
+	// 				if_statement["consequent"]["body"].push(make_return_statement([]));
+	// 				if_statement["alternate"] = deep_copy(block_statement_node);
+	// 				if_statement["alternate"]["body"].push(make_return_statement([]));
+	// 				return if_statement;
+	// 			}
+	// 		}
+	// 	}
+	// 	var case_expression = deep_copy(call_expression_node);
+	// 	var callee = deep_copy(function_expression_node);
+	// 	callee["body"]["body"] = helper(church_tree[1], church_tree.slice(2));
+	// 	case_expression["callee"] = callee;
+	// 	console.log("******************")
+	// 	console.log(case_expression);
+	// 	return case_expression;
+	// }
+
 	function make_quoted_expression(church_tree) {
 		function quote_helper(quoted) {
 			if (Array.isArray(quoted)) {
-				var array = deep_copy(array_node);
-				if (quoted.length > 0) {
+				if (quoted.length == 0) {
+					return make_leaf_expression(quoted);
+				} else {
+					var array = deep_copy(array_node);
 					array["elements"] = [quote_helper(quoted[0]), quote_helper(quoted.slice(1))];
+					return array;
 				}
-				return array;
 			} else {
 				if (is_identifier(quoted)) {
-					return make_simple_expression('"' + quoted + '"');
+					return make_leaf_expression('"' + quoted + '"');
 				} else {
-					return make_simple_expression(quoted);
+					return make_leaf_expression(quoted);
 				}
 			}
 		}
@@ -326,25 +386,13 @@ function church_tree_to_esprima_ast(church_tree) {
 	function make_expression(church_tree) {
 		// TODO: Turn this into a shorter map-style thing.
 		if (Array.isArray(church_tree) && church_tree.length > 0) {
-			if (church_tree[0] == "lambda") {
-				return make_function_expression(church_tree);
-			} else if (church_tree[0] == "lambda-query") {
-				return make_lambda_query_expression(church_tree);
-			} else if (church_tree[0] == "if") {
-				return make_if_expression(church_tree);
-			} else if (church_tree[0] == "define") {
-				// TODO: figure out whether to catch defines here or in make_expression_statement
-			} else if (church_tree[0] == "quote") {
-				return make_quoted_expression(church_tree);
-			} else if (church_tree[0] == "mh-query") {
-				return make_mh_query_expression(church_tree);
-			} else if (church_tree[0] == "rejection-query") {
-				return make_rejection_query_expression(church_tree);
+			if (church_tree[0] in heads_to_helpers) {
+				return heads_to_helpers[church_tree[0]](church_tree);
 			} else {
 				return make_call_expression(church_tree);
 			}
 		} else {
-			return make_simple_expression(church_tree);
+			return make_leaf_expression(church_tree);
 		}
 	}
 
@@ -358,6 +406,10 @@ function church_tree_to_esprima_ast(church_tree) {
 			expression = deep_copy(expression_node);
 			expression["type"] = "Identifier";
 			expression["name"] = probjs_builtins_map[church_leaf];
+		} else if (church_leaf in js_builtins_map) {
+			expression = deep_copy(expression_node);
+			expression["type"] = "Identifier";
+			expression["name"] = js_builtins_map[church_leaf];
 		} else {
 			expression = deep_copy(expression_node);
 			expression["type"] = "Identifier";
@@ -366,11 +418,11 @@ function church_tree_to_esprima_ast(church_tree) {
 		return expression;
 	}
 
-	function make_simple_expression(church_leaf) {
+	function make_leaf_expression(church_leaf) {
 		var expression = deep_copy(expression_node);
 		if (Array.isArray(church_leaf) && church_leaf.length == 0) {
-			expression["type"] = "ArrayExpression";
-			expression["elements"] = [];
+			expression["type"] = "Identifier";
+			expression["name"] = "church_builtins.the_empty_list";
 		} else if (true_aliases.indexOf(church_leaf) != -1) {
 			expression["type"] = "Literal";
 			expression["value"] = true;
@@ -380,8 +432,16 @@ function church_tree_to_esprima_ast(church_tree) {
 		} else if (is_identifier(church_leaf)) {
 			expression = make_identifier_expression(church_leaf);
 		} else {
-			expression["type"] = "Literal";
-			expression["value"] = get_value_of_string_or_number(church_leaf);
+			value = get_value_of_string_or_number(church_leaf);
+			if (value < 0) {
+				expression["type"] = "UnaryExpression";
+				expression["operator"] = "-"
+				expression["argument"] = {"type": "Literal", "value": -value}
+			} else {
+				expression["type"] = "Literal";
+				expression["value"] = value
+			}
+
 		}
 		return expression;
 	}

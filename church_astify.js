@@ -49,7 +49,16 @@ function church_astify(expr) {
 			var lambda = ["lambda", ast[1].slice(1)].concat(ast.slice(2));
 			return ["define", ast[1][0], lambda];
 		} else {
-			return ast
+			return ast;
+		}
+	}
+
+	function dsgr_let(ast) {
+		if (ast[0] == "let") {
+			return [["lambda", ast[1].map(function(x) {return x[0]}), ast[2]]].concat(
+				ast[1].map(function(x) {return x[1]}));
+		} else {
+			return ast;
 		}
 	}
 
@@ -62,7 +71,28 @@ function church_astify(expr) {
 		return ast;
 	}
 
-	var desugar_fns = [dsgr_define, dsgr_quote];
+	function dsgr_case(ast) {
+		function case_helper(key, clauses) {
+			if (clauses.length == 0) {
+				return [];
+			} else {
+				if (clauses[0][0] == "else") {
+					return clauses[0][1];
+				} else {
+					return ["if", ["member", key, ["quote", clauses[0][0]]], clauses[0][1], case_helper(key, clauses.slice(1))];
+				}
+			}
+		}
+
+		if (ast[0] == "case") {
+			return case_helper(ast[1], ast.slice(2));
+		} else {
+			return ast;
+		}
+	}
+
+	// Order is important, particularly desugaring quotes before anything else.
+	var desugar_fns = [dsgr_quote, dsgr_define, dsgr_let, dsgr_case];
 
 	var ast = astify_expr(expr);
 	for (var i = 0; i < desugar_fns.length; i++) {

@@ -1,3 +1,5 @@
+var the_empty_list = [];
+
 function sizeof(obj) { return Object.keys(obj).length; }
 
 function args_to_array(args) { return Array.prototype.slice.call(args, 0 ); }
@@ -68,6 +70,11 @@ function or() {
 	return false;
 }
 
+function not(x) {
+	assertNumArgs(args_to_array(arguments), 1);
+ 	return !x;
+}
+
 function cmp_nums(cmp_fn, args) {
 	assertAtLeastNumArgs(args, 2)
 	for (var i = 0; i < args.length - 1; i++) {
@@ -98,13 +105,31 @@ function eq() {
 	return cmp_nums(function(x, y) {return x == y;}, args_to_array(arguments));
 }
 
+function is_null(x) {
+	assertNumArgs(args_to_array(arguments), 1)
+	return x == the_empty_list;
+}
+
 function list() {
 	var args = args_to_array(arguments);
-	var result = [];
+	var result = the_empty_list;
 	for (var i = args.length-1; i >= 0; i--) {
 		result = [args[i], result];
 	}
 	return result;
+}
+
+function is_list(list) {
+	assertNumArgs(args_to_array(arguments), 1)
+	if (Array.isArray(list)) {
+		if (list.length == 0) {
+			return true;
+		} else {
+			return is_list(list[1]);
+		}
+	} else {
+		return false;
+	}
 }
 
 function pair(a, b) {
@@ -124,6 +149,10 @@ function first(x) {
 	} else {
 		return x[0];
 	}
+}
+
+function second(x) {
+	return first(rest.apply(null, arguments));
 }
 
 function rest(x) {
@@ -153,15 +182,32 @@ function repeat(n, fn) {
 	assertNumArgs(args_to_array(arguments), 2);
 	assertInteger(n);
 	assertType(fn, "function");
+	if (n == 0) return the_empty_list;
 	var results = [];
 	for (; n > 0; n--) {
 		results.unshift(fn());
 	}
-	return list.apply(null, results);
+	return arrayToList(results);
+}
+
+function make_list(n, x) {
+	assertNumArgs(args_to_array(arguments), 2);
+	assertInteger(n);
+	if (n == 0) return the_empty_list;
+	var results = []
+	for (; n > 0; n--) {
+		results.unshift(x);
+	}
+	return arrayToList(results);
+}
+
+function is_eq(x, y) {
+	assertNumArgs(args_to_array(arguments), 2);
+	return typeof(x) == typeof(y) && x == y;
 }
 
 function is_equal(x, y) {
-	assertNumArgs(args_to_array(arguments), 2)
+	assertNumArgs(args_to_array(arguments), 2);
 	if (typeof(x) == typeof(y)) {
 		if (Array.isArray(x)) {
 			if (x.length == y.length) {
@@ -177,6 +223,22 @@ function is_equal(x, y) {
 	}
 }
 
+function member_base(x, list, eq_fn) {
+	assertList(list);
+	if (list.length == 0) {
+		return false;
+	} else if (eq_fn(x, list[0])) {
+		return list;
+	} else {
+		return member_base(x, list[1], eq_fn);
+	}
+}
+
+function member(x, list) {
+	assertNumArgs(args_to_array(arguments), 2);
+	return member_base(x, list, is_equal);
+}
+
 function apply(fn, list) {
 	assertType(fn, "function");
 	assertList(list);
@@ -189,7 +251,7 @@ function map() {
 		var remaining_lists = []
 		for (var i = 0; i < lists.length; i++) {
 			if (lists[i].length == 0) {
-				return [];
+				return the_empty_list;
 			} else {
 				fn_args.push(lists[i][0]);
 				remaining_lists.push(lists[i][1]);
@@ -205,17 +267,48 @@ function map() {
 	return helper(lists);
 }
 
-function uniform_draw(list) {
-	assertList(list);
-	return uniformDraw(listToArray(list, false));
+function wrapped_uniform_draw(items) {
+	assertList(items);
+	return uniformDraw(listToArray(items, false), false);
+}
+
+function wrapped_multinomial(items, probs) {
+	assertList(items);
+	assertList(probs);
+	if (items.length != probs.length) {
+		throw new Error("Lists of items and probabilities must be of equal length");
+	}
+	return multinomialDraw(listToArray(items, false), listToArray(probs), null);
 }
 
 function wrapped_flip() {
 	return flip.apply(null, arguments) == 1;
 }
 
+function wrapped_uniform(a, b) {
+	assertNumArgs(args_to_array(arguments), 2);
+	return uniform(a, b, false, null);
+}
+
+function wrapped_gaussian(mu, sigma) {
+	assertNumArgs(args_to_array(arguments), 2);
+	return gaussian(mu, sigma, false, null);
+}
+
+function wrapped_dirichlet(alpha) {
+	assertNumArgs(args_to_array(arguments), 1);
+	assertList(alpha);
+	assertAllType(alpha, "number");
+	alpha = listToArray(alpha, true);
+	return arrayToList(dirichlet(alpha, false, null));
+}
+
 function wrapped_traceMH(comp, samples, lag) {
-	return arrayToList(traceMH(comp, samples, lag, false).map(function(x) {return x.sample}));
+	inn = traceMH(comp, samples, lag, false).map(function(x) {return x.sample})
+	console.log(inn)
+	res = arrayToList(inn);
+	// console.log(res)
+	return res;
 }
 
 function hist(x) {
@@ -234,15 +327,22 @@ function listToArray(list, recurse) {
 
 function arrayToList(arr) {
 	if (arr.length == 0) {
-		return [];
+		return the_empty_list;
 	} else {
-		return [Array.isArray(arr[0]) ? arrayToList[arr[0]] : arr[0], arrayToList(arr.slice(1))];
+		return [arr[0], arrayToList(arr.slice(1))];
 	}
 }
 
 function assertType(n, type) {
 	if (typeof(n) != type) {
 		throw new Error('"' + n + '" is not a ' + type); 
+	}
+}
+
+function assertAllType(list, type) {
+	if (list.length != 0) {
+		assertType(list[0], type);
+		assertAllType(list[1], type);
 	}
 }
 
@@ -260,6 +360,8 @@ function assertList(list) {
 			throw new Error("Expected list");
 		}
 		assertList(list[1]);
+	} else {
+		throw new Error("Expected list");
 	}
 }
 
@@ -275,9 +377,9 @@ function assertAtLeastNumArgs(args, n) {
 	}
 }
 
-
-
 module.exports = {
+	the_empty_list: the_empty_list,
+
 	plus: plus,
 	sum: sum,
 	minus: minus,
@@ -291,22 +393,34 @@ module.exports = {
 
 	and: and,
 	or: or,
+	not: not,
 
+	is_null: is_null,
 	list: list,
+	is_list: is_list,
 	pair: pair,
 	is_pair: is_pair,
 	first: first,
+	second: second,
 	rest: rest,
 	length: length,
 	repeat: repeat,
+	make_list: make_list,
+	is_eq: is_eq,
 	is_equal: is_equal,
+	member: member,
 
 	apply: apply,
 	map: map,
 
-	uniform_draw: uniform_draw,
+	wrapped_uniform_draw: wrapped_uniform_draw,
+	wrapped_multinomial: wrapped_multinomial,
 	wrapped_flip: wrapped_flip,
+	wrapped_uniform: wrapped_uniform,
+	wrapped_gaussian: wrapped_gaussian,
+	wrapped_dirichlet: wrapped_dirichlet,
 	wrapped_traceMH: wrapped_traceMH,
 
+	arrayToList: arrayToList,
 	hist: hist
 }
