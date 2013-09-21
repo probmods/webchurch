@@ -159,6 +159,10 @@ function second(x) {
 	return first(rest.apply(null, arguments));
 }
 
+function third(x) {
+	return first(rest.apply(null, rest.apply(null, arguments)));
+}
+
 function rest(x) {
 	assertNumArgs(args_to_array(arguments), 1);
 	if (x.length != 2) {
@@ -387,6 +391,7 @@ module.exports = {
 	is_pair: is_pair,
 	first: first,
 	second: second,
+    third: third,
 	rest: rest,
 	length: length,
 	make_list: make_list,

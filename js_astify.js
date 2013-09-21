@@ -29,6 +29,7 @@ var church_builtins_map = {
 	"pair?": "is_pair",
 	"first": "first",
 	"second": "second",
+    "third": "third",
 	"rest": "rest",
 	"length": "length",
 	"make-list": "make_list",
@@ -55,7 +56,10 @@ var probjs_builtins_map = {
 
 var js_builtins_map = {
 	"round": "Math.round",
-	"abs": "Math.abs"
+	"abs": "Math.abs",
+    "exp": "Math.exp",
+    "log": "Math.log",
+    "pow": "Math.pow"
 }
 
 var higher_order_builtins_map = {}
