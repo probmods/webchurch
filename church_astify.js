@@ -79,7 +79,7 @@ function church_astify(expr) {
 				if (clauses[0][0] == "else") {
 					return clauses[0][1];
 				} else {
-					return ["if", ["member", key, ["quote", clauses[0][0]]], clauses[0][1], case_helper(key, clauses.slice(1))];
+					return ["if", ["member", key, ["list"].concat(clauses[0][0])], clauses[0][1], case_helper(key, clauses.slice(1))];
 				}
 			}
 		}

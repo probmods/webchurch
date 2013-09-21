@@ -1,8 +1,12 @@
+// IMPORTANT: any builtin function may have up to one ERP call only.
+
 var the_empty_list = [];
 
 function sizeof(obj) { return Object.keys(obj).length; }
 
 function args_to_array(args) { return Array.prototype.slice.call(args, 0 ); }
+
+function args_to_list(args) { return arrayToList(args_to_array(args)); }
 
 function plus() {
 	var args = args_to_array(arguments);
@@ -178,18 +182,6 @@ function length(x) {
 	return len;
 }
 
-function repeat(n, fn) {
-	assertNumArgs(args_to_array(arguments), 2);
-	assertInteger(n);
-	assertType(fn, "function");
-	if (n == 0) return the_empty_list;
-	var results = [];
-	for (; n > 0; n--) {
-		results.unshift(fn());
-	}
-	return arrayToList(results);
-}
-
 function make_list(n, x) {
 	assertNumArgs(args_to_array(arguments), 2);
 	assertInteger(n);
@@ -239,32 +231,15 @@ function member(x, list) {
 	return member_base(x, list, is_equal);
 }
 
+function sample(fn) {
+	assertType(fn, "function");
+	return fn();
+}
+
 function apply(fn, list) {
 	assertType(fn, "function");
 	assertList(list);
-	return fn.apply(null, listToArray(list, true));
-}
-
-function map() {
-	function helper(lists) {
-		var fn_args = []
-		var remaining_lists = []
-		for (var i = 0; i < lists.length; i++) {
-			if (lists[i].length == 0) {
-				return the_empty_list;
-			} else {
-				fn_args.push(lists[i][0]);
-				remaining_lists.push(lists[i][1]);
-			}
-		}
-		return [fn.apply(null, fn_args), helper(remaining_lists)];
-	}
-
-	var args = args_to_array(arguments);
-	assertAtLeastNumArgs(args, 2);
-	fn = args[0];
-	lists = args.slice(1);
-	return helper(lists);
+	return fn.apply(null, listToArray(list, false));
 }
 
 function wrapped_uniform_draw(items) {
@@ -287,11 +262,21 @@ function wrapped_flip() {
 
 function wrapped_uniform(a, b) {
 	assertNumArgs(args_to_array(arguments), 2);
+	assertType(a, "number");
+	assertType(b, "number");
 	return uniform(a, b, false, null);
+}
+
+function wrapped_random_integer(n) {
+	assertNumArgs(args_to_array(arguments), 1);
+	assertType(n, "number");
+	return Math.floor(uniform(0, 1, false, null) * n);
 }
 
 function wrapped_gaussian(mu, sigma) {
 	assertNumArgs(args_to_array(arguments), 2);
+	assertType(mu, "number");
+	assertType(sigma, "number");
 	return gaussian(mu, sigma, false, null);
 }
 
@@ -404,23 +389,25 @@ module.exports = {
 	second: second,
 	rest: rest,
 	length: length,
-	repeat: repeat,
 	make_list: make_list,
 	is_eq: is_eq,
 	is_equal: is_equal,
 	member: member,
 
 	apply: apply,
-	map: map,
 
 	wrapped_uniform_draw: wrapped_uniform_draw,
 	wrapped_multinomial: wrapped_multinomial,
 	wrapped_flip: wrapped_flip,
 	wrapped_uniform: wrapped_uniform,
+	wrapped_random_integer: wrapped_random_integer,
 	wrapped_gaussian: wrapped_gaussian,
 	wrapped_dirichlet: wrapped_dirichlet,
 	wrapped_traceMH: wrapped_traceMH,
 
+	// Utility functions, not exposed to Church
+	args_to_array: args_to_array,
+	args_to_list: args_to_list,
 	arrayToList: arrayToList,
 	hist: hist
 }
