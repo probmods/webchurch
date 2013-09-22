@@ -91,8 +91,18 @@ function church_astify(expr) {
 		}
 	}
 
+	function dsgr_query(ast) {
+		if (["query", "mh-query", "rejection-query", "exact-query"].indexOf(ast[0]) != -1) {
+			var cond = ast[ast.length - 1]
+			if (!Array.isArray(cond) || cond[0] != "condition") {
+				ast[ast.length - 1] = ["condition", cond];
+			}
+		}
+		return ast;
+	}
+ 
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [dsgr_quote, dsgr_define, dsgr_let, dsgr_case];
+	var desugar_fns = [dsgr_quote, dsgr_define, dsgr_let, dsgr_case, dsgr_query];
 
 	var ast = astify_expr(expr);
 	for (var i = 0; i < desugar_fns.length; i++) {

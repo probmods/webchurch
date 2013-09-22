@@ -51,6 +51,7 @@ var church_builtins_map = {
 }
 
 var probjs_builtins_map = {
+	"condition": "condition",
 	"mem": "mem",
 }
 
@@ -267,7 +268,7 @@ function church_tree_to_esprima_ast(church_tree) {
 		var expression = deep_copy(call_expression_node);
 		expression["callee"] = {"type": "Identifier", "name": "church_builtins.wrapped_traceMH"};
 
-		var condition_stmt = make_condition_stmt(params[params.length - 1]);
+		var condition_stmt = make_expression_statement(params[params.length - 1]);
 
 		var computation = deep_copy(function_expression_node);
 		computation["body"]["body"] = make_expression_statement_list(params.slice(2, -2))
@@ -292,7 +293,7 @@ function church_tree_to_esprima_ast(church_tree) {
 		var expression = deep_copy(call_expression_node);
 		expression["callee"] = {"type": "Identifier", "name": "rejectionSample"};
 
-		var condition_stmt = make_condition_stmt(params[params.length - 1])
+		var condition_stmt = make_expression_statement(params[params.length - 1])
 
 		var computation = deep_copy(function_expression_node);
 		computation["body"]["body"] = make_expression_statement_list(params.slice(0, -2))
@@ -303,14 +304,6 @@ function church_tree_to_esprima_ast(church_tree) {
 
 		return expression;
 
-	}
-
-	function make_condition_stmt(cond_tree) {
-		var condition_stmt = deep_copy(expression_statement_node);
-		condition_stmt["expression"] = deep_copy(call_expression_node);
-		condition_stmt["expression"]["callee"] = {"type": "Identifier", "name": "condition"};
-		condition_stmt["expression"]["arguments"] = [make_expression(cond_tree)];
-		return condition_stmt;
 	}
 
 	function make_call_expression(church_tree) {
