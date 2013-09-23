@@ -160,7 +160,7 @@ function second(x) {
 }
 
 function third(x) {
-	return first(rest.apply(null, rest.apply(null, arguments)));
+	return first(rest(rest(x)));
 }
 
 function rest(x) {
