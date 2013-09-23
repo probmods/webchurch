@@ -1,3 +1,7 @@
+# move probabilistic-js/probabilistic into current directory
+cp -r probabilistic-js/probabilistic .
+
+# compile
 browserify \
   -r ./church_to_js \
   -r ./church_builtins \
@@ -6,3 +10,6 @@ browserify \
   -r ./probabilistic/util \
   -r ./probabilistic/transform \
   > online/webchurch.js
+
+# remove probabilistic directory
+rm -rf probabilistic
