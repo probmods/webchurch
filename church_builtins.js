@@ -163,6 +163,30 @@ function third(x) {
 	return first(rest(rest(x)));
 }
 
+function fourth(x) {
+	return first(rest(rest(rest(x))));
+}
+
+function fifth(x) {
+	return first(rest(rest(rest(rest(x)))));
+}
+
+function sixth(x) {
+	return first(rest(rest(rest(rest(rest(x))))));
+}
+
+function seventh(x) {
+	return first(rest(rest(rest(rest(rest(rest(x)))))));
+}
+
+function max(x) {
+  return Math.max.apply(Math, listToArray(x));
+}
+
+function min(x) {
+  return Math.min.apply(Math, listToArray(x));
+}
+
 function rest(x) {
 	assertNumArgs(args_to_array(arguments), 1);
 	if (x.length != 2) {
@@ -392,6 +416,12 @@ module.exports = {
 	first: first,
 	second: second,
     third: third,
+    fourth: fourth,
+    fifth: fifth,
+    sixth: sixth,
+    seventh: seventh,
+    max: max,
+    min: min,
 	rest: rest,
 	length: length,
 	make_list: make_list,
