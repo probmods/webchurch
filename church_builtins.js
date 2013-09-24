@@ -219,6 +219,18 @@ function flatten(x) {
   return arrayToList(flattened);
 }
 
+function fold(fn, initialValue, list) {
+	assertType(fn, "function");
+	assertList(list);
+	assertType(initialValue, "number");
+	var arr = listToArray(list);
+	var cumulativeValue = initialValue;
+	for (var i=0; i<arr.length; i++) {
+	  cumulativeValue = fn(arr[i], cumulativeValue);
+	}
+	return cumulativeValue;
+}
+
 function rest(x) {
 	assertNumArgs(args_to_array(arguments), 1);
 	if (x.length != 2) {
@@ -475,6 +487,7 @@ module.exports = {
     expt: expt,
     append: append,
     flatten: flatten,
+    fold: fold,
 	rest: rest,
 	length: length,
 	make_list: make_list,
