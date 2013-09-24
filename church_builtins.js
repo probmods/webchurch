@@ -160,22 +160,27 @@ function second(x) {
 }
 
 function third(x) {
+  assertList(x);
 	return first(rest(rest(x)));
 }
 
 function fourth(x) {
+  assertList(x);
 	return first(rest(rest(rest(x))));
 }
 
 function fifth(x) {
+  assertList(x);
 	return first(rest(rest(rest(rest(x)))));
 }
 
 function sixth(x) {
+  assertList(x);
 	return first(rest(rest(rest(rest(rest(x))))));
 }
 
 function seventh(x) {
+  assertList(x);
 	return first(rest(rest(rest(rest(rest(rest(x)))))));
 }
 
@@ -191,13 +196,27 @@ function expt(a, b) {
   return Math.pow(a, b);
 }
 
-//i'm sure this can be done better but at least it works for now
 function append() {
   var args = args_to_array(arguments);
   return arrayToList([].concat.apply([], args.map(function(x) {
     assertList(x);
     return listToArray(x);
   })));
+}
+
+function flatten(x) {
+  assertList(x);
+  var flattened = [];
+  var arr = listToArray(x);flatten
+  for (var i=0; i<arr.length; i++) {
+    var elem = arr[i];
+    if (is_list(elem)) {
+      flattened = flattened.concat((listToArray(flatten(elem))));
+    } else {
+      flattened.push(elem);
+    }
+  }
+  return arrayToList(flattened);
 }
 
 function rest(x) {
@@ -455,7 +474,7 @@ module.exports = {
     min: min,
     expt: expt,
     append: append,
-    //flatten: flatten,
+    flatten: flatten,
 	rest: rest,
 	length: length,
 	make_list: make_list,
