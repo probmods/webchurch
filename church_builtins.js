@@ -187,6 +187,20 @@ function min(x) {
   return Math.min.apply(Math, listToArray(x));
 }
 
+function expt(a, b) {
+  return Math.pow(a, b);
+}
+
+//i'm sure this can be done better but at least it works for now
+function append() {
+  var args = args_to_array(arguments);
+  var retArray = [];
+  for (var i=0; i<args.length; i++) {
+    retArray = retArray.concat(listToArray(args[i]));
+  }
+  return arrayToList(retArray);
+}
+
 function rest(x) {
 	assertNumArgs(args_to_array(arguments), 1);
 	if (x.length != 2) {
@@ -422,6 +436,8 @@ module.exports = {
     seventh: seventh,
     max: max,
     min: min,
+    expt: expt,
+    append: append,
 	rest: rest,
 	length: length,
 	make_list: make_list,
