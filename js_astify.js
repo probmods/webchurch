@@ -54,9 +54,13 @@ var church_builtins_map = {
 	"sample-integer": "wrapped_random_integer",
 	"random-integer": "wrapped_random_integer",
 	"gaussian": "wrapped_gaussian",
+	"gamma": "wrapped_gamma",
+	"beta": "wrapped_beta",
 	"dirichlet": "wrapped_dirichlet",
 
 }
+
+var equals_conditionable_erps = ["flip", "uniform", "gaussian"]
 
 var probjs_builtins_map = {
 	"condition": "condition",
@@ -270,7 +274,7 @@ function church_tree_to_esprima_ast(church_tree) {
 	function make_mh_query_expression(church_tree) {
 		var params = church_tree.slice(1);
 		// TODO: better error-checking
-		if (params.length < 5) {
+		if (params.length < 4) {
 			throw new Error("Wrong number of arguments");
 		}
 		var expression = deep_copy(call_expression_node);
@@ -315,9 +319,32 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_call_expression(church_tree) {
+		function is_equals_conditionable_erp(church_tree) {
+			return Array.isArray(church_tree) && equals_conditionable_erps.indexOf(church_tree[0]) >= 0
+		}
+
 		var call_expression = deep_copy(call_expression_node);
-		call_expression["callee"] = make_expression(church_tree[0]);
-		call_expression["arguments"] = make_expression_list(church_tree.slice(1));
+		var callee = church_tree[0];
+		var args = church_tree.slice(1);
+		if (callee == "condition" && args.length > 0 && args[0][0] == "=") {
+			var erp_call;
+			var conditioned_value;
+			if (is_equals_conditionable_erp(args[0][1])) {
+				erp_call = args[0][1];
+				conditioned_value = args[0][2];
+			} else if (is_equals_conditionable_erp(args[0][2])) {
+				erp_call = args[0][2];
+				conditioned_value = args[0][1];
+			}
+			if (erp_call) {
+				call_expression["callee"] = make_expression(erp_call[0]);
+				call_expression["arguments"] = make_expression_list(erp_call.slice(1)).concat(
+					{"type": "Literal", "value": false}, make_expression(conditioned_value));
+				return call_expression;
+			}
+		} 
+		call_expression["callee"] = make_expression(callee);
+		call_expression["arguments"] = make_expression_list(args);
 		return call_expression;
 	}
 

@@ -298,15 +298,15 @@ function wrapped_multinomial(items, probs) {
 	return multinomialDraw(listToArray(items, false), listToArray(probs), null);
 }
 
-function wrapped_flip() {
-	return flip.apply(null, arguments) == 1;
+function wrapped_flip(p, isStructural, conditionedValue) {
+	return flip(p, isStructural, conditionedValue) == 1;
 }
 
-function wrapped_uniform(a, b) {
-	assertNumArgs(args_to_array(arguments), 2);
+function wrapped_uniform(a, b, isStructural, conditionedValue) {
+	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
 	assertType(a, "number");
 	assertType(b, "number");
-	return uniform(a, b, false, null);
+	return uniform(a, b, isStructural, conditionedValue);
 }
 
 function wrapped_random_integer(n) {
@@ -315,11 +315,25 @@ function wrapped_random_integer(n) {
 	return Math.floor(uniform(0, 1, false, null) * n);
 }
 
-function wrapped_gaussian(mu, sigma) {
-	assertNumArgs(args_to_array(arguments), 2);
+function wrapped_gaussian(mu, sigma, isStructural, conditionedValue) {
+	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
 	assertType(mu, "number");
 	assertType(sigma, "number");
-	return gaussian(mu, sigma, false, null);
+	return gaussian(mu, sigma, isStructural, conditionedValue);
+}
+
+function wrapped_gamma(a, b, isStructural, conditionedValue) {
+	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
+	assertType(a, "number");
+	assertType(b, "number");
+	return gamma(a, b, isStructural, conditionedValue);
+}
+
+function wrapped_beta(a, b, isStructural, conditionedValue) {
+	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
+	assertType(a, "number");
+	assertType(b, "number");
+	return beta(a, b, isStructural, conditionedValue);
 }
 
 function wrapped_dirichlet(alpha) {
@@ -332,9 +346,7 @@ function wrapped_dirichlet(alpha) {
 
 function wrapped_traceMH(comp, samples, lag) {
 	inn = traceMH(comp, samples, lag, false).map(function(x) {return x.sample})
-	console.log(inn)
 	res = arrayToList(inn);
-	// console.log(res)
 	return res;
 }
 
@@ -395,6 +407,12 @@ function assertList(list) {
 function assertNumArgs(args, n) {
 	if (args.length != n) {
 		throw new Error("Wrong number of arguments, expected " + n);
+	}
+}
+
+function assertNumArgsMulti(args, choices) {
+	if (choices.indexOf(args.length) < 0) {
+		throw new Error("Wrong number of arguments, expected " + choices.join(" or "));
 	}
 }
 
