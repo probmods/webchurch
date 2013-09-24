@@ -194,11 +194,10 @@ function expt(a, b) {
 //i'm sure this can be done better but at least it works for now
 function append() {
   var args = args_to_array(arguments);
-  var retArray = [];
-  for (var i=0; i<args.length; i++) {
-    retArray = retArray.concat(listToArray(args[i]));
-  }
-  return arrayToList(retArray);
+  return arrayToList([].concat.apply([], args.map(function(x) {
+    assertList(x);
+    return listToArray(x);
+  })));
 }
 
 function rest(x) {
@@ -438,6 +437,7 @@ module.exports = {
     min: min,
     expt: expt,
     append: append,
+    //flatten: flatten,
 	rest: rest,
 	length: length,
 	make_list: make_list,
