@@ -196,6 +196,13 @@ function expt(a, b) {
   return Math.pow(a, b);
 }
 
+function mean(lst) {
+    vals = listToArray(lst)
+    sum = 0
+    for (v in vals) {sum += vals[v];}
+    return sum / vals.length;
+}
+
 function append() {
   var args = args_to_array(arguments);
   return arrayToList([].concat.apply([], args.map(function(x) {
@@ -219,6 +226,7 @@ function flatten(x) {
   return arrayToList(flattened);
 }
 
+//FIXME: needs to be higher-order-builtin (ie. in church header) because it can trigger additional randomness..?
 function fold(fn, initialValue, list) {
 	assertType(fn, "function");
 	assertList(list);
@@ -229,6 +237,14 @@ function fold(fn, initialValue, list) {
 	  cumulativeValue = fn(arr[i], cumulativeValue);
 	}
 	return cumulativeValue;
+}
+
+function repeattest(n,fn) {
+    var lst = the_empty_list
+    for (var i=0; i<n; i++) {
+        lst = pair(fn(),lst);
+    }
+    return lst
 }
 
 function rest(x) {
@@ -485,6 +501,7 @@ module.exports = {
     max: max,
     min: min,
     expt: expt,
+    mean: mean,
     append: append,
     flatten: flatten,
     fold: fold,
@@ -505,6 +522,8 @@ module.exports = {
 	wrapped_gaussian: wrapped_gaussian,
 	wrapped_dirichlet: wrapped_dirichlet,
 	wrapped_traceMH: wrapped_traceMH,
+    
+repeattest: repeattest,
 
 	// Utility functions, not exposed to Church
 	args_to_array: args_to_array,
