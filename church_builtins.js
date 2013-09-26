@@ -504,7 +504,6 @@ module.exports = {
     mean: mean,
     append: append,
     flatten: flatten,
-    fold: fold,
 	rest: rest,
 	length: length,
 	make_list: make_list,

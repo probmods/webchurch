@@ -40,7 +40,6 @@ var church_builtins_map = {
     "mean": "mean",
     "append": "append",
     "flatten": "flatten",
-    "fold": "fold",
 	"rest": "rest",
 	"length": "length",
 	"make-list": "make_list",
@@ -65,11 +64,11 @@ var church_builtins_map = {
 
 }
 
-var equals_conditionable_erps = ["flip", "uniform", "gaussian"]
+var equals_conditionable_erps = ["flip", "uniform", "gaussian"];
 
 var probjs_builtins_map = {
 	"condition": "condition",
-	"mem": "mem",
+	"mem": "mem"
 }
 
 var js_builtins_map = {
@@ -80,7 +79,7 @@ var js_builtins_map = {
     "pow": "Math.pow"
 }
 
-var higher_order_builtins_map = {}
+var higher_order_builtins_map = {};
 for (key in higher_order_builtins) {
 	higher_order_builtins_map[key] = key;
 }
