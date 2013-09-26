@@ -1,3 +1,5 @@
+var brackets_map = {"(": ")", "[": "]"}
+
 function make_generic_node(head, children) {
 	return {"head": head, "children": children};
 }
@@ -8,14 +10,16 @@ function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
 function church_astify(expr) {
 	// Destroys the passed expression
 	function astify_expr(expr) {
-		function helper(top_level) {
+
+		function helper(opening_bracket) {
 			var result = []
 			while (expr.length > 0) {
-				if (expr[0] == "(") {
-					expr.shift()
-					result.push(helper(false));
-				} else if (expr[0] == ")") {
-					if (top_level) {
+				if (expr[0] == "(" || expr[0] == "[") {
+					var bracket = expr[0];
+					expr.shift();
+					result.push(helper(bracket));
+				} else if (expr[0] == ")" || expr[0] == "]") {
+					if (expr[0] != brackets_map[opening_bracket]) {
 						throw new Error("Unexpected close parens");
 					} else {
 						expr.shift();
@@ -25,13 +29,13 @@ function church_astify(expr) {
 					result.push(expr.shift());
 				}
 			}
-			if (top_level) {
+			if (!opening_bracket) {
 				return result;
 			} else {
 				throw new Error("Unclosed parens");
 			}
 		}
-		return helper(true);
+		return helper();
 	}
 
 	function traverse(ast, fn) {

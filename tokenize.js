@@ -1,4 +1,4 @@
-var delimiters = ["(", ")", "'", "\""]
+var delimiters = ["(", ")", "[", "]", "'", "\""]
 var whitespace_re = /^\s/
 
 function tokenize(s) {
