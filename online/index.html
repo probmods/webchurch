@@ -7,6 +7,7 @@
     <script src="codemirror/codemirror.js"></script>
     <script src="codemirror/scheme.js"></script>
     <script src="codemirror/matchbrackets.js"></script>
+    <script src="store.js"></script>
     <script src="webchurch.js"></script>
     <!-- <link rel="stylesheet" href="codemirror/docs.css"> -->
     <style type="text/css">.CodeMirror {border-top: 1px solid black; border-bottom: 1px solid black;}</style>
@@ -21,9 +22,7 @@
    (and (flip x) (flip y))
    #t))
 
-(lq 0.5 0.5)
-
-</textarea></div>
+(lq 0.5 0.5)</textarea></div>
 
     <script>
       var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
@@ -31,6 +30,12 @@
         matchBrackets: true,
         continueComments: "Enter"
       });
+
+      var savedCode = store.get('code');
+      if (savedCode) {
+      editor.setValue(savedCode);
+      }
+      
       var js_outmirror = null
       var exec_outmirror = null
 
@@ -79,6 +84,7 @@
       function __runCode()
       {
         var church_code = editor.getValue()
+      store.set('code', church_code);
         var js_code = church_to_js(church_code)
         __updateJSOutput(js_code)
         try
@@ -91,6 +97,7 @@
           __updateExecOutput(JSON.stringify(e.message))
         }
       }
+      
     </script>
 
     <button style="margin-top: 10px; font-size: 14pt" onclick="__runCode()">
