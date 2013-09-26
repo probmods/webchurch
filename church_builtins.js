@@ -111,7 +111,7 @@ function eq() {
 
 function is_null(x) {
 	assertNumArgs(args_to_array(arguments), 1)
-	return x == the_empty_list;
+	return x == the_empty_list || (Array.isArray(x) && x.length == 0);
 }
 
 function list() {
