@@ -214,7 +214,7 @@ function append() {
 function flatten(x) {
   assertList(x);
   var flattened = [];
-  var arr = listToArray(x);flatten
+  var arr = listToArray(x);
   for (var i=0; i<arr.length; i++) {
     var elem = arr[i];
     if (is_list(elem)) {
