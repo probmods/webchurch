@@ -40,9 +40,11 @@ function church_astify(expr) {
 
 	function traverse(ast, fn) {
 		ast = fn(ast);
-		for (var i = 0; i < ast.length; i++) {
-			if (Array.isArray(ast[i])) {
-				ast[i] = traverse(ast[i], fn);
+		if (Array.isArray(ast)) {
+			for (var i = 0; i < ast.length; i++) {
+				if (Array.isArray(ast[i])) {
+					ast[i] = traverse(ast[i], fn);
+				}
 			}
 		}
 		return ast;
@@ -78,7 +80,7 @@ function church_astify(expr) {
 	function dsgr_case(ast) {
 		function case_helper(key, clauses) {
 			if (clauses.length == 0) {
-				return [];
+				return undefined;
 			} else {
 				if (clauses[0][0] == "else") {
 					return clauses[0][1];
@@ -104,9 +106,29 @@ function church_astify(expr) {
 		}
 		return ast;
 	}
+
+	function dsgr_cond(ast) {
+		function cond_helper(clauses) {
+			if (clauses.length == 0) {
+				return undefined;
+			} else {
+				if (clauses[0][0] == "else") {
+					return clauses[0][1];
+				} else {
+					return ["if", clauses[0][0], clauses[0][1], cond_helper(clauses.slice(1))];
+				}
+			}
+		}
+
+		if (ast[0] == "cond") {
+			return cond_helper(ast.slice(1));
+		} else {
+			return ast;
+		}
+	}
  
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [dsgr_quote, dsgr_define, dsgr_let, dsgr_case, dsgr_query];
+	var desugar_fns = [dsgr_quote, dsgr_define, dsgr_let, dsgr_case, dsgr_query, dsgr_cond];
 
 	var ast = astify_expr(expr);
 	for (var i = 0; i < desugar_fns.length; i++) {
