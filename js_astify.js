@@ -68,7 +68,8 @@ var equals_conditionable_erps = ["flip", "uniform", "gaussian"];
 
 var probjs_builtins_map = {
 	"condition": "condition",
-	"mem": "mem"
+	"mem": "mem",
+	"marginalize": "marginalize"
 }
 
 var js_builtins_map = {
@@ -257,9 +258,26 @@ function church_tree_to_esprima_ast(church_tree) {
 		return node;
 	}
 
+	function make_marginalize(lambda_args, mh_query) {
+		var call_expression = deep_copy(call_expression_node);
+		call_expression["callee"] = {"type": "Identifier", "name": "marginalize"};
+
+		var computation = make_query_computation(mh_query.slice(3, -1), mh_query[mh_query.length - 1], lambda_args);
+
+		call_expression["arguments"] = [
+			computation,
+			{"type": "Identifier", "name": "traceMH"},
+			make_expression(mh_query[1]),
+			make_expression(mh_query[2])];
+		return call_expression;
+	}
+
 	function make_function_expression(church_tree) {
 		var lambda_args = church_tree[1];
 		var church_actions = church_tree.slice(2);
+		if (church_actions.length == 1 && church_actions[0][0] == "mh-query") {
+			return make_marginalize(lambda_args, church_actions[0]);
+		}
 		var func_expression = deep_copy(function_expression_node);
 		func_expression["body"]["body"] = make_expression_statement_list(church_actions.slice(0, -1));
 		func_expression["body"]["body"].push(make_return_statement(church_actions[church_actions.length-1]));
@@ -284,15 +302,8 @@ function church_tree_to_esprima_ast(church_tree) {
 		var expression = deep_copy(call_expression_node);
 		expression["callee"] = {"type": "Identifier", "name": "church_builtins.wrapped_traceMH"};
 
-		var condition_stmt = make_expression_statement(params[params.length - 1]);
-
-		var computation = deep_copy(function_expression_node);
-		computation["body"]["body"] = make_expression_statement_list(params.slice(2, -2))
-			.concat(condition_stmt)
-			.concat(make_return_statement(params[params.length - 2]));
-
 		expression["arguments"] = [
-			computation,
+			make_query_computation(params.slice(2, -1), params[params.length - 1]),
 			make_expression(params[0]),
 			make_expression(params[1]),
 			{"type": "Literal", "value": false}
@@ -308,18 +319,18 @@ function church_tree_to_esprima_ast(church_tree) {
 		}
 		var expression = deep_copy(call_expression_node);
 		expression["callee"] = {"type": "Identifier", "name": "rejectionSample"};
-
-		var condition_stmt = make_expression_statement(params[params.length - 1])
-
-		var computation = deep_copy(function_expression_node);
-		computation["body"]["body"] = make_expression_statement_list(params.slice(0, -2))
-			.concat(condition_stmt)
-			.concat(make_return_statement(params[params.length - 2]));
-
-		expression["arguments"] = [computation];
+		expression["arguments"] = [make_query_computation(params.slice(0, -1), params[params.length - 1])];
 
 		return expression;
+	}
 
+	function make_query_computation(statements, condition, args) {
+		args = args || [];
+		var tree = ["lambda", args];
+		tree = tree.concat(statements.slice(0, -1));
+		tree.push(condition);
+		tree.push(statements[statements.length - 1]);
+		return make_function_expression(tree);
 	}
 
 	function make_call_expression(church_tree) {
