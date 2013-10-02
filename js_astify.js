@@ -275,7 +275,7 @@ function church_tree_to_esprima_ast(church_tree) {
 	function make_function_expression(church_tree) {
 		var lambda_args = church_tree[1];
 		var church_actions = church_tree.slice(2);
-		if (church_actions.length == 1 && church_actions[0][0] == "mh-query") {
+		if (church_actions.length == 1 && church_actions[0][0] == "embedded-mh-query") {
 			return make_marginalize(lambda_args, church_actions[0]);
 		}
 		var func_expression = deep_copy(function_expression_node);
