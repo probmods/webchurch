@@ -13,3 +13,5 @@ browserify \
 
 # remove probabilistic directory
 rm -rf probabilistic
+
+cat online/webchurch.js ww-stub.js > online/webchurch-ww.js
