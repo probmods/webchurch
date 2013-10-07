@@ -396,6 +396,20 @@ function wrapped_traceMH(comp, samples, lag) {
 	return res;
 }
 
+function wrapped_enumerate(comp) {
+	var d = enumerateDist(comp)
+    var p=[],v=[]
+    var norm = 0
+    for (x in d) {
+        p.push(d[x].prob)
+        v.push(d[x].val)
+        norm += d[x].prob
+    }
+	res = list(arrayToList(v), arrayToList(p.map(function(x){return x/norm})));
+	return res;
+}
+
+
 function hist(x) {
 	return x;
 }
@@ -521,6 +535,7 @@ module.exports = {
 	wrapped_gaussian: wrapped_gaussian,
 	wrapped_dirichlet: wrapped_dirichlet,
 	wrapped_traceMH: wrapped_traceMH,
+    wrapped_enumerate: wrapped_enumerate,
     
 repeattest: repeattest,
 

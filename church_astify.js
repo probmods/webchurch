@@ -98,7 +98,7 @@ function church_astify(expr) {
 	}
 
 	function dsgr_query(ast) {
-		if (["query", "mh-query", "rejection-query", "exact-query"].indexOf(ast[0]) != -1) {
+		if (["query", "mh-query", "rejection-query", "exact-query", "enumeration-query"].indexOf(ast[0]) != -1) {
 			var cond = ast[ast.length - 1]
 			if (!Array.isArray(cond) || cond[0] != "condition") {
 				ast[ast.length - 1] = ["condition", cond];

@@ -331,7 +331,7 @@ function church_tree_to_esprima_ast(church_tree) {
 			throw new Error("Wrong number of arguments");
 		}
 		var expression = deep_copy(call_expression_node);
-		expression["callee"] = {"type": "Identifier", "name": "enumerationSample"};
+		expression["callee"] = {"type": "Identifier", "name": "church_builtins.wrapped_enumerate"};
 		expression["arguments"] = [make_query_computation(params.slice(0, -1), params[params.length - 1])];
 
 		return expression;
