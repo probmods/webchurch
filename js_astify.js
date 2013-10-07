@@ -247,7 +247,8 @@ function church_tree_to_esprima_ast(church_tree) {
 		"if": make_if_expression,
 		"quote": make_quoted_expression,
 		"mh-query": make_mh_query_expression,
-		"rejection-query": make_rejection_query_expression
+		"rejection-query": make_rejection_query_expression,
+		"enumeration-query": make_enumeration_query_expression
 	}
 
 	function make_declaration(church_tree) {
@@ -319,6 +320,18 @@ function church_tree_to_esprima_ast(church_tree) {
 		}
 		var expression = deep_copy(call_expression_node);
 		expression["callee"] = {"type": "Identifier", "name": "rejectionSample"};
+		expression["arguments"] = [make_query_computation(params.slice(0, -1), params[params.length - 1])];
+
+		return expression;
+	}
+
+	function make_enumeration_query_expression(church_tree) {
+		var params = church_tree.slice(1);
+		if (params.length < 2) {
+			throw new Error("Wrong number of arguments");
+		}
+		var expression = deep_copy(call_expression_node);
+		expression["callee"] = {"type": "Identifier", "name": "enumerationSample"};
 		expression["arguments"] = [make_query_computation(params.slice(0, -1), params[params.length - 1])];
 
 		return expression;
