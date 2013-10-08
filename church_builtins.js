@@ -185,11 +185,13 @@ function seventh(x) {
 }
 
 function max(x) {
-  return Math.max.apply(Math, listToArray(x));
+    var args = args_to_array(arguments);
+  return Math.max.apply(Math, args);
 }
 
 function min(x) {
-  return Math.min.apply(Math, listToArray(x));
+    var args = args_to_array(arguments);
+  return Math.min.apply(Math, args);
 }
 
 function expt(a, b) {
