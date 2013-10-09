@@ -393,7 +393,7 @@ function wrapped_dirichlet(alpha) {
 }
 
 function wrapped_traceMH(comp, samples, lag) {
-	inn = traceMH(comp, samples, lag, false).map(function(x) {return x.sample})
+	inn = traceMH(comp, samples, lag, false, "lessdumb").map(function(x) {return x.sample})
 	res = arrayToList(inn);
 	return res;
 }
