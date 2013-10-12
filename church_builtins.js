@@ -1,4 +1,4 @@
-// IMPORTANT: any builtin function may have up to one ERP call only.
+// IMPORTANT: any builtin function may have up to one ERP-calling loop only.
 
 var the_empty_list = [];
 
@@ -228,7 +228,6 @@ function flatten(x) {
   return arrayToList(flattened);
 }
 
-//FIXME: needs to be higher-order-builtin (ie. in church header) because it can trigger additional randomness..?
 function fold(fn, initialValue, list) {
 	assertType(fn, "function");
 	assertList(list);
@@ -241,13 +240,21 @@ function fold(fn, initialValue, list) {
 	return cumulativeValue;
 }
 
-function repeattest(n,fn) {
-    var lst = the_empty_list
-    for (var i=0; i<n; i++) {
-        lst = pair(fn(),lst);
-    }
-    return lst
+function repeat(n,fn) {
+    ret = []
+    for(i=0;i<n;i++) {ret[i] = fn()}
+    return arrayToList(ret)
 }
+
+function map(fn, list) {
+    arr = listToArray(list)
+    for(i=0;i<arr.length;i++) {
+        arr[i] = fn(arr[i])
+    }
+    return arrayToList(arr)
+}
+
+function sample(fn) {return fn()}
 
 function rest(x) {
 	assertNumArgs(args_to_array(arguments), 1);
@@ -528,6 +535,11 @@ module.exports = {
 	member: member,
 
 	apply: apply,
+    
+    fold: fold,
+    repeat: repeat,
+    map: map,
+    sample: sample,
 
 	wrapped_uniform_draw: wrapped_uniform_draw,
 	wrapped_multinomial: wrapped_multinomial,
@@ -539,7 +551,6 @@ module.exports = {
 	wrapped_traceMH: wrapped_traceMH,
     wrapped_enumerate: wrapped_enumerate,
     
-repeattest: repeattest,
 
 	// Utility functions, not exposed to Church
 	args_to_array: args_to_array,
