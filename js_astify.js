@@ -1,6 +1,6 @@
 // var esprima = require('esprima');
 var escodegen = require("escodegen");
-var higher_order_builtins = require("./higher_order_builtins");
+//var higher_order_builtins = require("./higher_order_builtins");
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 
@@ -48,6 +48,11 @@ var church_builtins_map = {
 	"member": "member",
 
 	"apply": "apply",
+    
+    "fold": "fold",
+    "map": "map",
+    "repeat": "repeat",
+    "sample": "sample",
 
 	"uniform-draw": "wrapped_uniform_draw",
 	"multinomial": "wrapped_multinomial",
@@ -60,8 +65,6 @@ var church_builtins_map = {
 	"beta": "wrapped_beta",
 	"dirichlet": "wrapped_dirichlet",
     
-    "repeattest": "repeattest"
-
 }
 
 var equals_conditionable_erps = ["flip", "uniform", "gaussian"];
@@ -80,10 +83,10 @@ var js_builtins_map = {
     "pow": "Math.pow"
 }
 
-var higher_order_builtins_map = {};
-for (key in higher_order_builtins) {
-	higher_order_builtins_map[key] = key;
-}
+//var higher_order_builtins_map = {};
+//for (key in higher_order_builtins) {
+//	higher_order_builtins_map[key] = key;
+//}
 
 var true_aliases = ["#t", "#T", "true"];
 
@@ -233,7 +236,7 @@ function format_identifier(id) {
 function rename_unmapped(s) { return identifier_prefix + format_identifier(s);}
 
 function rename(s) {
-	return (church_builtins_map[s] || higher_order_builtins_map[s] ||
+	return (church_builtins_map[s] || //higher_order_builtins_map[s] ||
 			probjs_builtins_map[s] || js_builtins_map[s] || rename_unmapped(s));
 }
 
@@ -247,7 +250,8 @@ function church_tree_to_esprima_ast(church_tree) {
 		"if": make_if_expression,
 		"quote": make_quoted_expression,
 		"mh-query": make_mh_query_expression,
-		"rejection-query": make_rejection_query_expression
+		"rejection-query": make_rejection_query_expression,
+		"enumeration-query": make_enumeration_query_expression
 	}
 
 	function make_declaration(church_tree) {
@@ -319,6 +323,18 @@ function church_tree_to_esprima_ast(church_tree) {
 		}
 		var expression = deep_copy(call_expression_node);
 		expression["callee"] = {"type": "Identifier", "name": "rejectionSample"};
+		expression["arguments"] = [make_query_computation(params.slice(0, -1), params[params.length - 1])];
+
+		return expression;
+	}
+
+	function make_enumeration_query_expression(church_tree) {
+		var params = church_tree.slice(1);
+		if (params.length < 2) {
+			throw new Error("Wrong number of arguments");
+		}
+		var expression = deep_copy(call_expression_node);
+		expression["callee"] = {"type": "Identifier", "name": "church_builtins.wrapped_enumerate"};
 		expression["arguments"] = [make_query_computation(params.slice(0, -1), params[params.length - 1])];
 
 		return expression;
@@ -442,14 +458,16 @@ function church_tree_to_esprima_ast(church_tree) {
 			expression = deep_copy(expression_node);
 			expression["type"] = "Identifier";
 			expression["name"] = js_builtins_map[church_leaf];
-		} else if (church_leaf in higher_order_builtins_map) {
-			expression = deep_copy(expression_node);
-			expression["type"] = "Identifier";
-			expression["name"] = higher_order_builtins_map[church_leaf];
-			if (!(church_leaf in higher_order_builtins_parsed)) {
-				higher_order_builtins_to_parse[church_leaf] = null;
-			}
-		} else {
+		}
+//        else if (church_leaf in higher_order_builtins_map) {
+//			expression = deep_copy(expression_node);
+//			expression["type"] = "Identifier";
+//			expression["name"] = higher_order_builtins_map[church_leaf];
+//			if (!(church_leaf in higher_order_builtins_parsed)) {
+//				higher_order_builtins_to_parse[church_leaf] = null;
+//			}
+//		}
+        else {
 			expression = deep_copy(expression_node);
 			expression["type"] = "Identifier";
 			expression["name"] = rename_unmapped(church_leaf);
@@ -514,16 +532,16 @@ function church_tree_to_esprima_ast(church_tree) {
 
 	var ast = program_node;
 	// Filled by make_leaf_expression while parsing the tree
-	var higher_order_builtins_parsed = {};
-	var higher_order_builtins_to_parse = {};
+//	var higher_order_builtins_parsed = {};
+//	var higher_order_builtins_to_parse = {};
 	var body = make_expression_statement_list(church_tree);
-	// This captures any dependencies that the functions themselves might have.
-	while (Object.keys(higher_order_builtins_to_parse).length > 0) {
-		var fn = Object.keys(higher_order_builtins_to_parse)[0];
-		delete(higher_order_builtins_to_parse[fn]);
-		higher_order_builtins_parsed[fn] = null;
-		body.unshift(make_expression_statement(church_astify(tokenize(higher_order_builtins[fn]))[0]));
-	}
+//	// This captures any dependencies that the functions themselves might have.
+//	while (Object.keys(higher_order_builtins_to_parse).length > 0) {
+//		var fn = Object.keys(higher_order_builtins_to_parse)[0];
+//		delete(higher_order_builtins_to_parse[fn]);
+//		higher_order_builtins_parsed[fn] = null;
+//		body.unshift(make_expression_statement(church_astify(tokenize(higher_order_builtins[fn]))[0]));
+//	}
 
 	ast["body"] = body;
 	return ast;

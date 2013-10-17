@@ -1,4 +1,4 @@
-// IMPORTANT: any builtin function may have up to one ERP call only.
+// IMPORTANT: any builtin function may have up to one ERP-calling loop only.
 
 var the_empty_list = [];
 
@@ -185,11 +185,13 @@ function seventh(x) {
 }
 
 function max(x) {
-  return Math.max.apply(Math, listToArray(x));
+    var args = args_to_array(arguments);
+  return Math.max.apply(Math, args);
 }
 
 function min(x) {
-  return Math.min.apply(Math, listToArray(x));
+    var args = args_to_array(arguments);
+  return Math.min.apply(Math, args);
 }
 
 function expt(a, b) {
@@ -226,7 +228,6 @@ function flatten(x) {
   return arrayToList(flattened);
 }
 
-//FIXME: needs to be higher-order-builtin (ie. in church header) because it can trigger additional randomness..?
 function fold(fn, initialValue, list) {
 	assertType(fn, "function");
 	assertList(list);
@@ -239,13 +240,21 @@ function fold(fn, initialValue, list) {
 	return cumulativeValue;
 }
 
-function repeattest(n,fn) {
-    var lst = the_empty_list
-    for (var i=0; i<n; i++) {
-        lst = pair(fn(),lst);
-    }
-    return lst
+function repeat(n,fn) {
+    ret = []
+    for(i=0;i<n;i++) {ret[i] = fn()}
+    return arrayToList(ret)
 }
+
+function map(fn, list) {
+    arr = listToArray(list)
+    for(i=0;i<arr.length;i++) {
+        arr[i] = fn(arr[i])
+    }
+    return arrayToList(arr)
+}
+
+function sample(fn) {return fn()}
 
 function rest(x) {
 	assertNumArgs(args_to_array(arguments), 1);
@@ -391,10 +400,24 @@ function wrapped_dirichlet(alpha) {
 }
 
 function wrapped_traceMH(comp, samples, lag) {
-	inn = traceMH(comp, samples, lag, false).map(function(x) {return x.sample})
+	inn = traceMH(comp, samples, lag, false, "lessdumb").map(function(x) {return x.sample})
 	res = arrayToList(inn);
 	return res;
 }
+
+function wrapped_enumerate(comp) {
+	var d = enumerateDist(comp)
+    var p=[],v=[]
+    var norm = 0
+    for (x in d) {
+        p.push(d[x].prob)
+        v.push(d[x].val)
+        norm += d[x].prob
+    }
+	res = list(arrayToList(v), arrayToList(p.map(function(x){return x/norm})));
+	return res;
+}
+
 
 function hist(x) {
 	return x;
@@ -512,6 +535,11 @@ module.exports = {
 	member: member,
 
 	apply: apply,
+    
+    fold: fold,
+    repeat: repeat,
+    map: map,
+    sample: sample,
 
 	wrapped_uniform_draw: wrapped_uniform_draw,
 	wrapped_multinomial: wrapped_multinomial,
@@ -521,8 +549,8 @@ module.exports = {
 	wrapped_gaussian: wrapped_gaussian,
 	wrapped_dirichlet: wrapped_dirichlet,
 	wrapped_traceMH: wrapped_traceMH,
+    wrapped_enumerate: wrapped_enumerate,
     
-repeattest: repeattest,
 
 	// Utility functions, not exposed to Church
 	args_to_array: args_to_array,
