@@ -279,14 +279,18 @@ function length(x) {
 	return len;
 }
 
+// predefine the length, decently quick and
+// not so complicated as recursive merge
+// http://jsperf.com/best-init-array/3
 function make_list(n, x) {
 	assertNumArgs(args_to_array(arguments), 2);
 	assertInteger(n);
 	if (n == 0) return the_empty_list;
-	var results = []
-	for (; n > 0; n--) {
-		results.unshift(x);
-	}
+	var results = new Array(n);
+
+  for (var i = 0; i < n; i += 1) {
+    results[i] = x;
+  }
 	return arrayToList(results);
 }
 
@@ -437,7 +441,11 @@ function arrayToList(arr) {
 	if (arr.length == 0) {
 		return the_empty_list;
 	} else {
-		return [arr[0], arrayToList(arr.slice(1))];
+    var i = arr.length, r = [];
+    while (i--) {
+      r = [arr[i], r];
+    }
+    return r;
 	}
 }
 
