@@ -1,10 +1,29 @@
+var util = require('./util.js');
+
 var delimiters = ["(", ")", "[", "]", "'", "\""]
 var whitespace_re = /^\s/
+
+function get_site_map(s) {
+	var map = {};
+	var row = 1;
+	var col = 1;
+	for (var i = 0; i < s.length; i++) {
+		if (s[i] == "\n") {
+			row++;
+			col = 1;
+		} else {
+			map[i] = row + ":" + col;
+			col++;
+		}
+	}
+	return map;
+}
 
 function tokenize(s) {
 	tokens = [];
 	var begin = 0;
 	var end = 0;
+	var site_map = get_site_map(s);
 	while (begin < s.length) {
 		if (s[begin].match(whitespace_re)) {
 			begin++;
@@ -14,7 +33,7 @@ function tokenize(s) {
 			if (s[begin] == "\"") {
 				for (end = begin + 1; ; end++) {
 					if (end > s.length) {
-						throw new Error("Unclosed double quote");
+						util.throw_church_error("SyntaxError", site_map[begin], "Unclosed double quote");
 					} else if (s.slice(end, end + 2) == "\\\"") {
 						end++;
 					} else if (s[end] == "\"") {
@@ -31,11 +50,13 @@ function tokenize(s) {
 					}
 				}
 			}
-			tokens.push(s.slice(begin, end));
+			tokens.push({text: s.slice(begin, end), start: site_map[begin], end: site_map[end-1]});
 			begin = end;
 		}
 	}
 	return tokens;
 }
 
-exports.tokenize = tokenize;
+module.exports = {
+	tokenize: tokenize
+}

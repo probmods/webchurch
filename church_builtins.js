@@ -1,4 +1,4 @@
-// IMPORTANT: any builtin function may have up to one ERP-calling loop only.
+var util = require('./util.js');
 
 var the_empty_list = [];
 
@@ -26,6 +26,7 @@ function sum(list) {
 function minus() {
 	var args = args_to_array(arguments);
 	assertAtLeastNumArgs(args, 1);
+	assertType(args[0], "number");
 	if (args.length == (1)) {
 		return -args[0];
 	} else {
@@ -449,9 +450,9 @@ function arrayToList(arr) {
 	}
 }
 
-function assertType(n, type) {
+function assertType(x, type) {
 	if (typeof(n) != type) {
-		throw new Error('"' + n + '" is not a ' + type); 
+		throw new Error('"' + util.format_result(x) + '" is not a ' + type); 
 	}
 }
 
@@ -464,7 +465,7 @@ function assertAllType(list, type) {
 
 function assertInteger(n) {
 	if (typeof(n) != "number" && parseInt(n) != n) {
-		throw new Error('"' + n + '" is not an integer'); 
+		throw new Error('"' + util.format_result(n) + '" is not an integer'); 
 	}
 }
 
@@ -477,19 +478,19 @@ function assertList(list) {
 		}
 		assertList(list[1]);
 	} else {
-		throw new Error("Expected list");
+		throw new Error("Expected list, got ");
 	}
 }
 
 function assertNumArgs(args, n) {
 	if (args.length != n) {
-		throw new Error("Wrong number of arguments, expected " + n);
+		throw new Error("Wrong number of arguments, expected " + n + ", got " + args.length);
 	}
 }
 
 function assertNumArgsMulti(args, choices) {
 	if (choices.indexOf(args.length) < 0) {
-		throw new Error("Wrong number of arguments, expected " + choices.join(" or "));
+		throw new Error("Wrong number of arguments, expected " + choices.join(" or ") + ", got " + args.length);
 	}
 }
 
