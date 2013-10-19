@@ -5,5 +5,6 @@ Installation & usage
 - `npm install esprima@1.0.4`
 - `npm install escodegen@0.0.23`
 - `npm install browserify`
+- `npm install source-map`
 - Execute `compile.sh`
 - Point your browser to `./online/index.html`
