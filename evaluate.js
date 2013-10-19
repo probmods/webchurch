@@ -33,68 +33,59 @@ function get_church_sites_to_tokens_map(tokens) {
 	return map;
 }
 
-function get_site_from_stack(split_stack) {
+function get_sites_from_stack(split_stack) {
+	var sites = [];
 	for (var i = 0; i < split_stack.length; i++) {
-		if (split_stack[i].match(/evaluate\.js/)) {
+		// This makes the fairly safe assumption that the first run of consecutive
+		// stack frames containing "<anonymous>" belong to the generated code
+		if (split_stack[i].match("<anonymous>")) {
 			var site = split_stack[i].match(/(\d+:\d+)[^:]*$/)[1].split(":");
-			return [site[0], parseInt(site[1]-1)]; 
+			sites.push([site[0], parseInt(site[1]-1)]); 
+		} else if (sites.length > 0) {
+			break;
 		}
 	}
+	return sites;
 }
 
 function evaluate(church_codestring) {
 	var tokens = tokenize(church_codestring);
 	var church_ast = church_astify(tokens);
 	var js_ast = js_astify(church_ast);
-	util.spit(js_ast, "JS_AST")
 	js_ast = transform.probTransformAST(js_ast)
 	var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
-	console.log("CODE")
-	console.log(code_and_source_map.code)
-
 
 	var result;
 	try {
 		var result = eval(code_and_source_map.code);
 	} catch (err) {
-		// console.log(err.stack)
 		var js_to_church_site_map = get_js_to_church_site_map(code_and_source_map.map);
-		console.log("JS2CHURCH SITE MAP")
-		console.log(js_to_church_site_map)
 		var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
-		console.log("CHURCH SITES TO TOKENS MAP")
-		console.log(church_sites_to_tokens_map)
-
+		util.spit(church_sites_to_tokens_map)
 		var stack = err.stack.split("\n");
 		var msg = stack[0].split(":");
-		// IMPORTANT: For an as-of-yet unknown reason, running code in eval()
-		// returns different locations for errors. The only known case so far is
-		// on function calls where the function is not defined. In eval, the
-		// error refers to the beginning of the line containing the call, instead
-		// of where the function is. Thanks to the prob-js transform, we are
-		// guaranteed that there can only be one Church function call per line,
-		// so for errors we just look up the offending line. This is very
-		// likely to break if the prob-js transform changes majorly.
 
-		var js_site = get_site_from_stack(stack.slice(1));
-
-		// console.log("STACK")
-		// console.log(stack);
-
-		var church_site = js_to_church_site_map[js_site[0]] && js_to_church_site_map[js_site[0]][js_site[1]];
-		console.log("JS SITE")
-		console.log(js_site)
-		console.log("CHURCH SITE")
-		console.log(church_site)
-		var token = church_sites_to_tokens_map[church_site];
-		util.spit(token, "TOKEN")
-		if (token) {
-			if (msg[0] == "ReferenceError") {
-				util.throw_church_error(msg[0], token.start, token.end, token.text + " is not defined");
-			}
+		var js_sites = get_sites_from_stack(stack.slice(1));
+		var church_sites = [];
+		for (var i = 0; i < js_sites.length; i++) {
+			var js_site = js_sites[i];
+			var church_site = js_to_church_site_map[js_site[0]] && js_to_church_site_map[js_site[0]][js_site[1]];
+			church_sites.push(church_site);
 		}
-		console.log(err.stack)
-		throw {name: err.name, message: err.message}
+
+ 		church_sites = church_sites.filter(function (x) {return x});
+ 		if (church_sites.length == 0) {
+ 			throw err;
+ 		} else {
+			var token = church_sites_to_tokens_map[church_sites[0]];
+			var e = util.make_church_error(msg[0], token.start, token.end, 
+				msg[0] == "ReferenceError" ? token.text + " is not defined" : err.message);
+			e.stack = church_sites.map(function(x) {
+				var tok = church_sites_to_tokens_map[x];
+				return tok.start + "-" + tok.end;
+			}).join(",");
+ 			throw e;
+ 		}
 	}
 
 	return util.format_result(result);

@@ -10,6 +10,7 @@ function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
 
 // TODO: add all kinds of error-checking.
 function church_astify(tokens) {
+	// astify changes the opening bracket tokens so the end site is the matching closing bracket
 	function astify(tokens) {
 
 		function helper(opening_bracket) {
@@ -18,29 +19,35 @@ function church_astify(tokens) {
 			while (tokens.length > 0) {
 				if (tokens[0].text == "(" || tokens[0].text == "[") {
 					var bracket = tokens[0];
-					tokens.shift();
+					storage.push(tokens.shift());
 					result.children.push(helper(bracket));
 				} else if (tokens[0].text == ")" || tokens[0].text == "]") {
 					if (!opening_bracket || tokens[0].text != brackets_map[opening_bracket.text]) {
-						util.throw_church_error("SyntaxError", tokens[0].start, tokens[0].end, "Unexpected close parens");
+						throw util.make_church_error("SyntaxError", tokens[0].start, tokens[0].end, "Unexpected close parens");
 					} else {
-						result["end"] = tokens[0].start
-						tokens.shift();
+						result["end"] = tokens[0].start;
+						opening_bracket.end = tokens[0].start;
+						storage.push(tokens.shift());
 						return result;
 					}
 				} else {
-					result.children.push(tokens.shift());
+					var token = tokens.shift();
+					storage.push(token);
+					result.children.push(token);
 				}
 			}
 			if (!opening_bracket) {
 				return result;
 			} else {
-				util.throw_church_error("SyntaxError", opening_bracket.start, opening_bracket.end, "Unclosed parens");
+				throw util.make_church_error("SyntaxError", opening_bracket.start, opening_bracket.end, "Unclosed parens");
 			}
 		}
-		var end 
-		tokens = JSON.parse(JSON.stringify(tokens));
-		return helper();
+		var storage = []
+		var ast = helper();
+		for (var i = 0; i < storage.length; i++) {
+			tokens.push(storage[i]);
+		}
+		return ast;
 	}
 
 	function traverse(ast, fn) {
@@ -59,7 +66,7 @@ function church_astify(tokens) {
 	function dsgr_define(ast) {
 		if (ast.children[0].text=="define") {
 			if (ast.children.length != 3) {
-				util.throw_church_error("SyntaxError", ast.start, ast.end, "Invalid define");
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, "Invalid define");
 			}
 			// Function define sugar
 			if (!util.is_leaf(ast.children[1])) {
@@ -82,7 +89,7 @@ function church_astify(tokens) {
 	function dsgr_lambda(ast) {
 		if (ast.children[0].text=="lambda") {
 			if (ast.children.length < 3) {
-				util.throw_church_error("SyntaxError", ast.start, ast.end, "lambda has no body");
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, "lambda has no body");
 			}
 		}
 		return ast;
@@ -91,7 +98,7 @@ function church_astify(tokens) {
 	function dsgr_let(ast) {
 		if (ast.children[0].text=="let") {
 			if (ast.children.length < 3) {
-				util.throw_church_error("SyntaxError", ast.start, ast.end, "let has no body");
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, "let has no body");
 			}
 			var bindings = ast.children[1];
 			var valid_bindings = true;
@@ -106,7 +113,7 @@ function church_astify(tokens) {
 				}
 			}
 			if (!valid_bindings) {
-				util.throw_church_error_range("SyntaxError", bindings.start, bindings.end, "let has invalid bindings");
+				throw util.make_church_error_range("SyntaxError", bindings.start, bindings.end, "let has invalid bindings");
 			}
 
 			return {
@@ -130,7 +137,7 @@ function church_astify(tokens) {
 	function dsgr_quote(ast) {
 		var last = ast.children[ast.children.length-1];
 		if (last.text=="'") {
-			util.throw_church_error("SyntaxError", last.start, last.end, "Invalid single quote")
+			throw util.make_church_error("SyntaxError", last.start, last.end, "Invalid single quote")
 		}
 		for (var i = ast.children.length - 2; i >= 0; i--) {
 			if (ast.children[i].text == "'") {
@@ -152,12 +159,12 @@ function church_astify(tokens) {
 			var clause = clauses[0];
 			if (util.is_leaf(clause) || clause.children.length != 2 ||
 				(util.is_leaf(clause.children[0]) && clause.children[0].text!="else")) {
-				util.throw_church_error("SyntaxError", clause.start, clause.end, "Bad clause for case");
+				throw util.make_church_error("SyntaxError", clause.start, clause.end, "Bad clause for case");
 			}
 
 			if (clause.children[0].text=="else") {
 				if (clauses.length > 1) {
-					util.throw_church_error("SyntaxError", clause.start, clause.end, "Bad placement of else clause in case");
+					throw util.make_church_error("SyntaxError", clause.start, clause.end, "Bad placement of else clause in case");
 				} else {
 					return clause.children[1];
 				}
@@ -165,7 +172,7 @@ function church_astify(tokens) {
 				for (var i = 0; i < clause.children[0]; i++) {
 					var datum = clause.children[0].children[i];
 					if (util.is_leaf(datum)) {
-						util.throw_church_error("SyntaxError", datum.start, datum.end, " for case");
+						throw util.make_church_error("SyntaxError", datum.start, datum.end, " for case");
 					}
 				}
 
@@ -192,7 +199,7 @@ function church_astify(tokens) {
 
 		if (ast.children[0].text=="case") {
 			if (ast.children.length < 3) {
-				util.throw_church_error("SyntaxError", ast.start, ast.end, "case is missing clauses");
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, "case is missing clauses");
 			}
 			return case_helper(ast.children[1], ast.children.slice(2));
 		} else {
@@ -207,11 +214,11 @@ function church_astify(tokens) {
 			}
 			var clause = clauses[0];
 			if (util.is_leaf(clause) || clause.children.length != 2) {
-				util.throw_church_error("SyntaxError", clause.start, clause.end, "Bad clause for cond");
+				throw util.make_church_error("SyntaxError", clause.start, clause.end, "Bad clause for cond");
 			}
 			if (clause.children[0].text=="else") {
 				if (clauses.length > 1) {
-					util.throw_church_error("SyntaxError", clause.start, clause.end, "Bad placement of else clause in cond");
+					throw util.make_church_error("SyntaxError", clause.start, clause.end, "Bad placement of else clause in cond");
 				} else {
 					return clause.children[1];
 				}
@@ -234,7 +241,7 @@ function church_astify(tokens) {
 
 		if (ast.children[0].text=="cond") {
 			if (ast.children.length < 2) {
-				util.throw_church_error("SyntaxError", ast.start, ast.end, "cond is missing clauses");
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, "cond is missing clauses");
 			}
 			return cond_helper(ast.children.slice(1));
 		} else {
@@ -263,7 +270,7 @@ function church_astify(tokens) {
 		
 		if (["rejection-query", "enumeration-query"].indexOf(ast.children[0].text) != -1) {
 			if (ast.children.length < 3) {
-				util.throw_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
 			}
 			return {
 				children: [
@@ -276,7 +283,7 @@ function church_astify(tokens) {
 		}
 		if (["mh-query"].indexOf(ast.children[0].text) != -1) {
 			if (ast.children.length < 5) {
-				util.throw_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
 			}
 			return {
 				children: [

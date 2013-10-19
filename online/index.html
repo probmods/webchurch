@@ -44,9 +44,14 @@
       var transform = require("./probabilistic/transform")
       util.openModule(pr)
 
-      var church_to_js = require("./church_to_js").church_to_js
+      // var church_to_js = function(church) {
+      //   return require("escodegen").generate(
+      //     require("./js_astify").church_tree_to_esprima_ast(
+      //       require("./church_astify").church_astify(
+      //         require("./tokenize").tokenize(church))))
+      // }
+      var evaluate = require("./evaluate").evaluate
       var church_builtins = require("./church_builtins")
-      var format_result = require("./format_result").format_result
 
       function __updateJSOutput(str)
       {
@@ -85,12 +90,11 @@
       {
         var church_code = editor.getValue()
       store.set('code', church_code);
-        var js_code = church_to_js(church_code)
-        __updateJSOutput(js_code)
+        // var js_code = church_to_js(church_code)
+        // __updateJSOutput(js_code)
         try
         {
-          js_code = transform.probTransform(js_code)
-          __updateExecOutput(format_result(eval(js_code)))
+          __updateExecOutput(evaluate(church_code))
         }
         catch (e)
         {

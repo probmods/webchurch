@@ -21,8 +21,8 @@ function is_identifier(s) { return !(boolean_aliases[s] || is_string(s) || is_nu
 // * EVALUATION
 // ******************************
 
-function throw_church_error(name, start, end, msg) {
-	throw {name: "Church" + name, message: start + "-" + end + ": " + msg};
+function make_church_error(name, start, end, msg) {
+	return {name: "Church" + name, message: start + "-" + end + ": " + msg};
 }
 
 function format_result(obj) {
@@ -66,7 +66,7 @@ module.exports = {
 	is_string: is_string,
 	is_identifier: is_identifier,
 
-	throw_church_error: throw_church_error,
+	make_church_error: make_church_error,
 	format_result: format_result,
 	spit: spit
 }

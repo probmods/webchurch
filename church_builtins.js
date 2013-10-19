@@ -451,7 +451,7 @@ function arrayToList(arr) {
 }
 
 function assertType(x, type) {
-	if (typeof(n) != type) {
+	if (typeof(x) != type) {
 		throw new Error('"' + util.format_result(x) + '" is not a ' + type); 
 	}
 }

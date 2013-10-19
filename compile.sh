@@ -3,9 +3,8 @@ cp -r probabilistic-js/probabilistic .
 
 # compile
 browserify \
-  -r ./church_to_js \
   -r ./church_builtins \
-  -r ./format_result \
+  -r ./evaluate \
   -r ./probabilistic/index \
   -r ./probabilistic/util \
   -r ./probabilistic/transform \
