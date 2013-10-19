@@ -77,7 +77,7 @@ function or() {
 
 function not(x) {
 	assertNumArgs(args_to_array(arguments), 1);
- 	return !x;
+	return !x;
 }
 
 function cmp_nums(cmp_fn, args) {
@@ -150,7 +150,7 @@ function is_pair(x) {
 function first(x) {
 	assertNumArgs(args_to_array(arguments), 1);
 	if (x.length != 2) {
-		throw new Error("Argument does not have required pair structure");
+		throw new Error(util.format_result(x) + " does not have required pair structure");
 	} else {
 		return x[0];
 	}
@@ -161,72 +161,72 @@ function second(x) {
 }
 
 function third(x) {
-  assertList(x);
+	assertList(x);
 	return first(rest(rest(x)));
 }
 
 function fourth(x) {
-  assertList(x);
+	assertList(x);
 	return first(rest(rest(rest(x))));
 }
 
 function fifth(x) {
-  assertList(x);
+	assertList(x);
 	return first(rest(rest(rest(rest(x)))));
 }
 
 function sixth(x) {
-  assertList(x);
+	assertList(x);
 	return first(rest(rest(rest(rest(rest(x))))));
 }
 
 function seventh(x) {
-  assertList(x);
+	assertList(x);
 	return first(rest(rest(rest(rest(rest(rest(x)))))));
 }
 
 function max(x) {
-    var args = args_to_array(arguments);
-  return Math.max.apply(Math, args);
+	var args = args_to_array(arguments);
+	return Math.max.apply(Math, args);
 }
 
 function min(x) {
-    var args = args_to_array(arguments);
-  return Math.min.apply(Math, args);
+	var args = args_to_array(arguments);
+	return Math.min.apply(Math, args);
 }
 
 function expt(a, b) {
-  return Math.pow(a, b);
+	return Math.pow(a, b);
 }
 
 function mean(lst) {
-    vals = listToArray(lst)
-    sum = 0
-    for (v in vals) {sum += vals[v];}
-    return sum / vals.length;
+	vals = listToArray(lst)
+	sum = 0
+	for (v in vals) {sum += vals[v];}
+	return sum / vals.length;
 }
 
 function append() {
-  var args = args_to_array(arguments);
-  return arrayToList([].concat.apply([], args.map(function(x) {
-    assertList(x);
-    return listToArray(x);
-  })));
+	var args = args_to_array(arguments);
+	return arrayToList([].concat.apply([], args.map(function(x) {
+		assertList(x);
+		return listToArray(x);
+	})));
 }
 
 function flatten(x) {
-  assertList(x);
-  var flattened = [];
-  var arr = listToArray(x);
-  for (var i=0; i<arr.length; i++) {
-    var elem = arr[i];
-    if (is_list(elem)) {
-      flattened = flattened.concat((listToArray(flatten(elem))));
-    } else {
-      flattened.push(elem);
-    }
-  }
-  return arrayToList(flattened);
+	assertList(x);
+	var flattened = [];
+	var arr = listToArray(x);
+	for (var i=0; i<arr.length; i++) {
+		var elem = arr[i];
+		if (is_list(elem)) {
+			flattened = flattened.concat((listToArray(flatten(elem))));
+		} else {
+			flattened.push(elem);
+		}
+	}
+	return arrayToList(flattened);
 }
 
 function fold(fn, initialValue, list) {
@@ -242,17 +242,17 @@ function fold(fn, initialValue, list) {
 }
 
 function repeat(n,fn) {
-    ret = []
-    for(i=0;i<n;i++) {ret[i] = fn()}
-    return arrayToList(ret)
+	ret = []
+	for(i=0;i<n;i++) {ret[i] = fn()}
+	return arrayToList(ret)
 }
 
 function map(fn, list) {
-    arr = listToArray(list)
-    for(i=0;i<arr.length;i++) {
-        arr[i] = fn(arr[i])
-    }
-    return arrayToList(arr)
+	arr = listToArray(list)
+	for(i=0;i<arr.length;i++) {
+		arr[i] = fn(arr[i])
+	}
+	return arrayToList(arr)
 }
 
 function sample(fn) {return fn()}
@@ -289,9 +289,9 @@ function make_list(n, x) {
 	if (n == 0) return the_empty_list;
 	var results = new Array(n);
 
-  for (var i = 0; i < n; i += 1) {
-    results[i] = x;
-  }
+	for (var i = 0; i < n; i += 1) {
+		results[i] = x;
+	}
 	return arrayToList(results);
 }
 
@@ -412,13 +412,13 @@ function wrapped_traceMH(comp, samples, lag) {
 
 function wrapped_enumerate(comp) {
 	var d = enumerateDist(comp)
-    var p=[],v=[]
-    var norm = 0
-    for (x in d) {
-        p.push(d[x].prob)
-        v.push(d[x].val)
-        norm += d[x].prob
-    }
+	var p=[],v=[]
+	var norm = 0
+	for (x in d) {
+		p.push(d[x].prob)
+		v.push(d[x].val)
+		norm += d[x].prob
+	}
 	res = list(arrayToList(v), arrayToList(p.map(function(x){return x/norm})));
 	return res;
 }
@@ -442,11 +442,11 @@ function arrayToList(arr) {
 	if (arr.length == 0) {
 		return the_empty_list;
 	} else {
-    var i = arr.length, r = [];
-    while (i--) {
-      r = [arr[i], r];
-    }
-    return r;
+	var i = arr.length, r = [];
+	while (i--) {
+	  r = [arr[i], r];
+	}
+	return r;
 	}
 }
 
@@ -525,17 +525,17 @@ module.exports = {
 	is_pair: is_pair,
 	first: first,
 	second: second,
-    third: third,
-    fourth: fourth,
-    fifth: fifth,
-    sixth: sixth,
-    seventh: seventh,
-    max: max,
-    min: min,
-    expt: expt,
-    mean: mean,
-    append: append,
-    flatten: flatten,
+	third: third,
+	fourth: fourth,
+	fifth: fifth,
+	sixth: sixth,
+	seventh: seventh,
+	max: max,
+	min: min,
+	expt: expt,
+	mean: mean,
+	append: append,
+	flatten: flatten,
 	rest: rest,
 	length: length,
 	make_list: make_list,
@@ -544,11 +544,11 @@ module.exports = {
 	member: member,
 
 	apply: apply,
-    
-    fold: fold,
-    repeat: repeat,
-    map: map,
-    sample: sample,
+	
+	fold: fold,
+	repeat: repeat,
+	map: map,
+	sample: sample,
 
 	wrapped_uniform_draw: wrapped_uniform_draw,
 	wrapped_multinomial: wrapped_multinomial,
@@ -558,8 +558,8 @@ module.exports = {
 	wrapped_gaussian: wrapped_gaussian,
 	wrapped_dirichlet: wrapped_dirichlet,
 	wrapped_traceMH: wrapped_traceMH,
-    wrapped_enumerate: wrapped_enumerate,
-    
+	wrapped_enumerate: wrapped_enumerate,
+	
 
 	// Utility functions, not exposed to Church
 	args_to_array: args_to_array,

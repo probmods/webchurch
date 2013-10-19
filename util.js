@@ -57,7 +57,11 @@ function format_result(obj) {
 
 function log(obj, header) {
 	console.log(header||"*********************************");
-	console.log(JSON.stringify(obj, undefined, 2));
+	if (typeof(obj) == "string") {
+		console.log(obj);
+	} else {
+		console.log(JSON.stringify(obj, undefined, 2));
+	}
 }
 
 module.exports = {
