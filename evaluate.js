@@ -61,7 +61,6 @@ function evaluate(church_codestring) {
 	} catch (err) {
 		var js_to_church_site_map = get_js_to_church_site_map(code_and_source_map.map);
 		var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
-		util.spit(church_sites_to_tokens_map)
 		var stack = err.stack.split("\n");
 		var msg = stack[0].split(":");
 

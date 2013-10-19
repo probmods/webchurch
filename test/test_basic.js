@@ -44,7 +44,7 @@ for (var i = 0; i < tests.length; i++) {
 	try {
 		result = evaluate(tests[i][0]);
 	} catch(err) {
-		result = "EVAL ERROR"
+		result = err.message
 	}
 	if (result != tests[i][1]) {
 		console.log("Failed:\n" +

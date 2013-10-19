@@ -33,7 +33,7 @@ function tokenize(s) {
 			if (s[begin] == "\"") {
 				for (end = begin + 1; ; end++) {
 					if (end > s.length) {
-						throw util.make_church_error("SyntaxError", site_map[begin], "Unclosed double quote");
+						throw util.make_church_error("SyntaxError", site_map[begin], site_map[begin], "Unclosed double quote");
 					} else if (s.slice(end, end + 2) == "\\\"") {
 						end++;
 					} else if (s[end] == "\"") {

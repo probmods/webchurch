@@ -60,6 +60,23 @@ function church_astify(tokens) {
 		return ast;
 	}
 
+	function is_special_form(text) {
+		return ["define", "lambda", "case", "cond", "if", "let"].indexOf(text) != -1;
+	}
+
+	function assert_not_special_form(node) {
+		if (is_special_form(node.text)) {
+			throw util.make_church_error("SyntaxError", node.start, node.end, "Special form " + node.text + " cannot be used as an atom");
+		}
+	}
+
+	function validate_leaves(ast) {
+		for (var i = 1; i < ast.children.length; i++) {
+			assert_not_special_form(ast.children[i]);
+		}
+		return ast;
+	}
+
 	// NOTE: Many of the desugar functions don't add range information.
 	// For now, it seems unlikely they'll be needed.
 
@@ -298,9 +315,13 @@ function church_astify(tokens) {
 	}
  
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [dsgr_quote, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query];
+	var desugar_fns = [validate_leaves, dsgr_quote, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query];
 
 	var ast = astify(tokens);
+	// Special top-level check
+	for (var i = 0; i < ast.children.length; i++) {
+		assert_not_special_form(ast.children[i]);
+	}
 	for (var i = 0; i < desugar_fns.length; i++) {
 		ast = traverse(ast, desugar_fns[i]);
 	}

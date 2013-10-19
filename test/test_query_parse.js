@@ -24,7 +24,7 @@ for (var i = 0; i < tests.length; i++) {
 					tokenize(tests[i][0]))),
 			{format: {compact: true}})
 	} catch(err) {
-		result = "PARSE ERROR"
+		result = err.message
 	}
 	if (result != tests[i][1]) {
 		console.log("Failed:\n" +

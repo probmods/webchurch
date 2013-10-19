@@ -55,7 +55,7 @@ function format_result(obj) {
 	}
 }
 
-function spit(obj,header) {
+function log(obj, header) {
 	console.log(header||"*********************************");
 	console.log(JSON.stringify(obj, undefined, 2));
 }
@@ -68,5 +68,5 @@ module.exports = {
 
 	make_church_error: make_church_error,
 	format_result: format_result,
-	spit: spit
+	log: log
 }
