@@ -58,7 +58,7 @@ function evaluate(church_codestring) {
 	var result;
 	try {
 		var result = eval(code_and_source_map.code);
-        if (typeof runResult != "function") {
+        if (typeof result != "function") {
             result = util.format_result(result)
         }
 	} catch (err) {
