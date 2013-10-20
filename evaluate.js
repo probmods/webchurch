@@ -83,6 +83,7 @@ function evaluate(church_codestring) {
 				var tok = church_sites_to_tokens_map[x];
 				return tok.start + "-" + tok.end;
 			}).join(",");
+            e.stackarray = church_sites.map(function(x) {return church_sites_to_tokens_map[x]})
  			throw e;
  		}
 	}
