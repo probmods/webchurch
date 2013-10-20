@@ -58,6 +58,9 @@ function evaluate(church_codestring) {
 	var result;
 	try {
 		var result = eval(code_and_source_map.code);
+        if (typeof runResult != "function") {
+            result = util.format_result(result)
+        }
 	} catch (err) {
 		var js_to_church_site_map = get_js_to_church_site_map(code_and_source_map.map);
 		var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
@@ -88,7 +91,7 @@ function evaluate(church_codestring) {
  		}
 	}
 
-	return util.format_result(result);
+	return result;
 }
 
 module.exports = {
