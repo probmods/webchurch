@@ -63,6 +63,7 @@ function evaluate(church_codestring) {
         }
 	} catch (err) {
 		var js_to_church_site_map = get_js_to_church_site_map(code_and_source_map.map);
+    var churchLines = church_codestring.split("\n");
 		var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
 		var stack = err.stack.split("\n");
 		var msg = stack[0].split(":");
@@ -72,6 +73,7 @@ function evaluate(church_codestring) {
 		for (var i = 0; i < js_sites.length; i++) {
 			var js_site = js_sites[i];
 			var church_site = js_to_church_site_map[js_site[0]] && js_to_church_site_map[js_site[0]][js_site[1]];
+      debugger;
 			church_sites.push(church_site);
 		}
 
@@ -79,9 +81,38 @@ function evaluate(church_codestring) {
  		if (church_sites.length == 0) {
  			throw err;
  		} else {
-			var token = church_sites_to_tokens_map[church_sites[0]];
-			var e = util.make_church_error(msg[0], token.start, token.end, 
-				msg[0] == "ReferenceError" ? token.text + " is not defined" : err.message);
+			var token = church_sites_to_tokens_map[church_sites[0]],
+          displayedMessage = err.message;
+
+      if (msg[0] == "ReferenceError") {
+        debugger;;
+        displayedMessage = token.text + " is not defined";
+      }
+      
+      if ( msg[1].match(/is not a function/)  ) {
+        // error sometimes matches on starting paren rather than the function name
+        // so seek to next token, which is the function name
+        if (token.text == "(") {
+          var tokStart = token.start,
+              tokEnd = token.end,
+              tokeNum; 
+
+          for(var j = 0, jj = tokens.length; j < jj; j++) {
+            if (tokens[j].start == tokStart && tokens[j].end == tokEnd) {
+              tokeNum = j;
+            }
+          }
+          token = tokens[tokeNum + 1];
+        }
+        
+        var nonFunction = token.text;
+        
+        displayedMessage = nonFunction + " is not a function"; 
+
+      };
+      
+			var e = util.make_church_error(msg[0], token.start, token.end, displayedMessage);
+      
 			e.stack = church_sites.map(function(x) {
 				var tok = church_sites_to_tokens_map[x];
 				return tok.start + "-" + tok.end;
