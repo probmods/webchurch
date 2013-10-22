@@ -73,7 +73,7 @@ function evaluate(church_codestring) {
 		for (var i = 0; i < js_sites.length; i++) {
 			var js_site = js_sites[i];
 			var church_site = js_to_church_site_map[js_site[0]] && js_to_church_site_map[js_site[0]][js_site[1]];
-      debugger;
+
 			church_sites.push(church_site);
 		}
 
@@ -85,7 +85,6 @@ function evaluate(church_codestring) {
           displayedMessage = err.message;
 
       if (msg[0] == "ReferenceError") {
-        debugger;;
         displayedMessage = token.text + " is not defined";
       }
       
