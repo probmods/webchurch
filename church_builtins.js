@@ -242,17 +242,31 @@ function fold(fn, initialValue, list) {
 }
 
 function repeat(n,fn) {
-	ret = []
-	for(i=0;i<n;i++) {ret[i] = fn()}
-	return arrayToList(ret)
+	var ret = [];
+	for(var i=0;i<n;i++) {ret[i] = fn()}
+	return arrayToList(ret);
 }
 
-function map(fn, list) {
-	arr = listToArray(list)
-	for(i=0;i<arr.length;i++) {
-		arr[i] = fn(arr[i])
+function map() {
+  var args = args_to_array(arguments),
+      fn = args[0];
+  if (typeof fn == "undefined") {
+    throw new Error('mapping function is undefined');
+  }
+  
+  var lists = args.slice(1),
+      arr = [];
+
+  
+  var arrays = lists.map(listToArray),
+      n = Math.min.apply(this, arrays.map(function(a) { return a.length}));
+  
+  
+	for(var i=0;i<n;i++) {
+		arr[i] = fn.apply(this, arrays.map(function(L) { return L[i]}));
 	}
-	return arrayToList(arr)
+
+	return arrayToList(arr);
 }
 
 function sample(fn) {return fn()}
