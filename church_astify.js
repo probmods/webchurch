@@ -82,9 +82,9 @@ function church_astify(tokens) {
 
 	function dsgr_define(ast) {
 		if (ast.children[0].text=="define") {
-//			if (ast.children.length != 3) {
-//				throw util.make_church_error("SyntaxError", ast.start, ast.end, "Invalid define");
-//			}
+			if (ast.children.length >= 3) {
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, "Invalid define");
+			}
 			// Function define sugar
 			if (!util.is_leaf(ast.children[1])) {
 				var lambda = {
