@@ -78,6 +78,7 @@ var church_builtins_map = {
 
 var probjs_builtins_map = {
 	"condition": "condition",
+    "factor": "factor",
 	"mem": "mem",
 	"marginalize": "marginalize"
 }

@@ -82,7 +82,7 @@ function church_astify(tokens) {
 
 	function dsgr_define(ast) {
 		if (ast.children[0].text=="define") {
-			if (ast.children.length >= 3) {
+			if (ast.children.length < 3) {
 				throw util.make_church_error("SyntaxError", ast.start, ast.end, "Invalid define");
 			}
 			// Function define sugar
@@ -269,7 +269,8 @@ function church_astify(tokens) {
 	function dsgr_query(ast) {
 		// Makes the lambda that's passed to the query function
 		function query_helper(statements, condition, args) {
-			if (util.is_leaf(condition) || condition.children[0].text != "condition") {
+			if (util.is_leaf(condition) ||
+                (condition.children[0].text != "condition" && condition.children[0].text != "factor")) {
 				condition = {
 					children: [{text: "condition"}, condition],
 					start: condition.start,
