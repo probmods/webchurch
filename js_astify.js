@@ -1,3 +1,13 @@
+/*
+ This takes an AST for desugarred Church and turns it into a js AST.
+ 
+ The langauge this accepts is: 
+    expression_list = expression | expression expression_list
+    expression = lambda | application | define | if | quote | identifier | literal
+    TODO: fill grammar.
+*/
+
+
 var escodegen = require("escodegen");
 //var higher_order_builtins = require("./higher_order_builtins");
 var tokenize = require('./tokenize.js').tokenize;
