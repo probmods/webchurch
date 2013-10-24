@@ -7,6 +7,10 @@ tests = [
 	[" ( ", "1:2-1:2: Unclosed parens"],
 	["(define x)", "1:1-1:10: Invalid define"],
 	["define x 1", "1:1-1:6: Special form define cannot be used as an atom"],
+	["(define 1 2)", "1:9-1:9: Invalid variable name"],
+	["(define (1 x) x)", "1:10-1:10: Invalid variable name"],
+	["(lambda \"bad\" 1)", "1:9-1:13: Invalid variable name"],
+	["(let ((#t #f)) #t)", "1:8-1:9: Invalid variable name"],
 
 	["(rejection-query true)", "1:1-1:22: rejection-query has the wrong number of arguments"],
 

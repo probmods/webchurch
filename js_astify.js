@@ -262,6 +262,12 @@ function rename(s) {
 			rename_unmapped(s));
 }
 
+function validate_variable(church_tree) {
+	if (!(util.is_leaf(church_tree) && util.is_identifier(church_tree.text))) {
+		throw util.make_church_error("SyntaxError", church_tree.start, church_tree.end, "Invalid variable name");
+	}
+}
+
 function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
 
 // TODO: add all kinds of error-checking.
@@ -274,8 +280,9 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_declaration(church_tree) {
-		var node = deep_copy(declaration_node);
+		validate_variable(church_tree.children[1]);
 
+		var node = deep_copy(declaration_node);
 		node["declarations"][0]["id"]["name"] = rename(church_tree.children[1].text);
 		node["declarations"][0]["init"] = make_expression(church_tree.children[2]);
 		return node;
@@ -308,9 +315,11 @@ function church_tree_to_esprima_ast(church_tree) {
 		func_expression["body"]["body"].push(make_return_statement(church_actions[church_actions.length-1]));
 		if (!util.is_leaf(lambda_args)) {
 			for (var i = 0; i < lambda_args.children.length; i++) {
+				validate_variable(lambda_args.children[i]);
 				func_expression["params"].push(make_leaf_expression(lambda_args.children[i]));
 			}
 		} else {
+			validate_variable(lambda_args);
 			var variadic = deep_copy(variadic_header);
 			variadic["declarations"][0]["id"]["name"] = rename(lambda_args.text);
 			func_expression["body"]["body"].unshift(variadic);

@@ -145,7 +145,7 @@ function church_astify(tokens) {
 					{
 						children: [
 							{text: "lambda"},
-							bindings.children.map(function(x) {return x.children[0]}),
+							{children: bindings.children.map(function(x) {return x.children[0]})},
 							ast.children[2]
 						]
 					}
