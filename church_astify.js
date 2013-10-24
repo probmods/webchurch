@@ -87,10 +87,17 @@ function church_astify(tokens) {
 			}
 			// Function define sugar
 			if (!util.is_leaf(ast.children[1])) {
-				var lambda = {
+				var lambda_args;
+				// Variadic sugar
+				if (ast.children[1].children.length == 3 && ast.children[1].children[1].text == ".") {
+					lambda_args = ast.children[1].children[2];
+				} else {
+					lambda_args = {children: ast.children[1].children.slice(1)};
+				}
+				lambda = {
 					children: [
 						{text: "lambda"},
-						{children: ast.children[1].children.slice(1)}
+						lambda_args
 					].concat(ast.children.slice(2))
 				};
 				return {
