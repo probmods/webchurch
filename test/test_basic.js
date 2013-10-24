@@ -38,6 +38,7 @@ var tests = [
 	["(define (f x) x) (f 1)", 1],
 	["(define (f x y) (* x y)) (f 2 3)", 6],
 	["(define f (lambda (x) x)) (f 1)", 1],
+	["(define (f . x) x) (f 1 2 3)", "(1 2 3)"],
 
 	["(if #t 1)", 1],
 	["(if #t 1 2)", 1],
