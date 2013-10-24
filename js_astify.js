@@ -326,23 +326,24 @@ function church_tree_to_esprima_ast(church_tree) {
 		var call_expression = deep_copy(call_expression_node);
 		var callee = church_tree.children[0];
 		var args = church_tree.children.slice(1);
-		// if (callee.text == "condition" && args.length > 0 && !util.is_leaf(args.children[0]) && args.children[0].children[0] == "=") {
-		// 	var erp_call;
-		// 	var conditioned_value;
-		// 	if (is_equals_conditionable_erp(args.children[0].children[1])) {
-		// 		erp_call = args.children[0].children[1];
-		// 		conditioned_value = args.children[0].children[2];
-		// 	} else if (is_equals_conditionable_erp(args.children[0].children[2])) {
-		// 		erp_call = args.children[0].children[2];
-		// 		conditioned_value = args.children[0].children[1];
-		// 	}
-		// 	if (erp_call) {
-		// 		call_expression["callee"] = make_expression(erp_call.children[0]);
-		// 		call_expression["arguments"] = make_expression_list(erp_call.children.slice(1)).concat(
-		// 			{"type": "Literal", "value": false}, make_expression(conditioned_value));
-		// 		return call_expression;
-		// 	}
-		// } 
+
+		if (callee.text == "condition" && args.length > 0 && !util.is_leaf(args[0]) && args[0].children[0].text == "=") {
+			var erp_call;
+			var conditioned_value;
+			if (is_equals_conditionable_erp(args[0].children[1])) {
+				erp_call = args[0].children[1];
+				conditioned_value = args[0].children[2];
+			} else if (is_equals_conditionable_erp(args[0].children[2])) {
+				erp_call = args[0].children[2];
+				conditioned_value = args[0].children[1];
+			}
+			if (erp_call) {
+				call_expression["callee"] = make_expression(erp_call.children[0]);
+				call_expression["arguments"] = make_expression_list(erp_call.children.slice(1)).concat(
+					{"type": "Literal", "value": false}, make_expression(conditioned_value));
+				return call_expression;
+			}
+		} 
 		call_expression["callee"] = make_expression(callee);
 		call_expression["arguments"] = make_expression_list(args);
 		call_expression["loc"] = make_location(church_tree);
