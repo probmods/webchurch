@@ -1,5 +1,11 @@
-# move probabilistic-js/probabilistic into current directory
-cp -r probabilistic-js/probabilistic .
+# update probjs submodule
+git submodule update --recursive
+
+# symlink probabilistic-js/probabilistic into current directory
+if [ ! -e probabilistic ]
+then
+ln -s probabilistic-js/probabilistic .
+fi
 
 # compile
 browserify \
@@ -10,7 +16,5 @@ browserify \
   -r ./probabilistic/transform \
   > online/webchurch.js
 
-# remove probabilistic directory
-rm -rf probabilistic
-
+# add webworkers stub for compiled webworkers version
 cat online/webchurch.js ww-stub.js > online/webchurch-ww.js
