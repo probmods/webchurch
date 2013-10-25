@@ -11,10 +11,9 @@
 		"url": "https://github.com/probmods/webchurch.git"
 	},
 	"dependencies": {
-		"escodegen": "0.0.23",
+		"escodegen": "0.0.26",
 		"esprima": "1.0.4",
-		"source-map": "0.1.30",
-		"probabilistic-js": "~0.0.1"
+		"source-map": "0.1.30"
 	},
 	"author" : {
 		"name" : "Julius Cheng",
