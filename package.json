@@ -1,0 +1,25 @@
+{
+	"name": "webchurch",
+	"version": "0.0.1",
+	"description": "A Church-to-Javascript compiler that works on the web",
+	"main": "evaluate.js",
+	"bin": {
+		"webchurch": "./compile.sh"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/probmods/webchurch.git"
+	},
+	"dependencies": {
+		"escodegen": "0.0.23",
+		"esprima": "1.0.4",
+		"source-map": "0.1.30",
+		"probabilistic-js": "~0.0.1"
+	},
+	"author" : {
+		"name" : "Julius Cheng",
+		"email" : "juliusc@stanford.edu",
+		"url" : "http://stanford.edu/~juliusc"
+	},
+	"license": "MIT"
+}
