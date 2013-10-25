@@ -1,10 +1,10 @@
-Installation & usage
-================
+Dependencies
+============
+- nodejs (see `package.json` for npm dependencies)
 
-- `git clone https://github.com/dritchie/probabilistic-js` and copy the `probabilistic/` folder to the base folder.
-- `npm install esprima@1.0.4`
-- `npm install escodegen@0.0.23`
-- `npm install browserify`
-- `npm install source-map`
-- Execute `compile.sh`
+Installation & usage
+====================
+
+- `git submodule update --init --recursive`. This initializes the submodules (currently, just `probabilistic-js`)
+- `npm install`. This will create a `node_modules` folder and install node dependencies there.
 - Point your browser to `./online/index.html`
