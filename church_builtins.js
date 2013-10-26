@@ -419,21 +419,21 @@ function wrapped_dirichlet(alpha) {
 }
 
 function wrapped_traceMH(comp, samples, lag) {
-	inn = traceMH(comp, samples, lag, false, "lessdumb").map(function(x) {return x.sample})
-	res = arrayToList(inn);
+	var inn = traceMH(comp, samples, lag, false, "lessdumb").map(function(x) {return x.sample});
+	var res = arrayToList(inn);
 	return res;
 }
 
 function wrapped_enumerate(comp) {
-	var d = enumerateDist(comp)
-	var p=[],v=[]
-	var norm = 0
-	for (x in d) {
+	var d = enumerateDist(comp);
+	var p=[],v=[];
+	var norm = 0;
+	for (var x in d) {
 		p.push(d[x].prob)
 		v.push(d[x].val)
 		norm += d[x].prob
 	}
-	res = list(arrayToList(v), arrayToList(p.map(function(x){return x/norm})));
+	var res = list(arrayToList(v), arrayToList(p.map(function(x){return x/norm})));
 	return res;
 }
 

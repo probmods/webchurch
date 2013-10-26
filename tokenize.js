@@ -20,7 +20,7 @@ function get_site_map(s) {
 }
 
 function tokenize(s) {
-	tokens = [];
+	var tokens = [];
 	var begin = 0;
 	var end = 0;
 	var site_map = get_site_map(s);

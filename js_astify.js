@@ -14,7 +14,7 @@ var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var util = require('./util.js');
 
-var identifier_prefix = "_"
+var identifier_prefix = "_";
 
 var church_builtins_map = {
 	"+": "plus",
@@ -476,7 +476,7 @@ function church_tree_to_esprima_ast(church_tree) {
 		} else if (util.is_identifier(church_leaf.text)) {
 			expression = make_identifier_expression(church_leaf);
 		} else {
-			value = get_value_of_string_or_number(church_leaf.text);
+			var value = get_value_of_string_or_number(church_leaf.text);
 			if (value < 0) {
 				expression["type"] = "UnaryExpression";
 				expression["operator"] = "-"

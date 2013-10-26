@@ -56,8 +56,9 @@ function evaluate(church_codestring) {
 	var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
 
 	var result;
+
 	try {
-		var result = eval(code_and_source_map.code);
+		result = eval(code_and_source_map.code);
         if (typeof result != "function") {
             result = util.format_result(result)
         }

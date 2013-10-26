@@ -1,6 +1,6 @@
 var util = require('./util.js');
 
-var brackets_map = {"(": ")", "[": "]"}
+var brackets_map = {"(": ")", "[": "]"};
 
 function make_generic_node(head, children) {
 	return {"head": head, "children": children};
@@ -42,7 +42,7 @@ function church_astify(tokens) {
 				throw util.make_church_error("SyntaxError", opening_bracket.start, opening_bracket.end, "Unclosed parens");
 			}
 		}
-		var storage = []
+		var storage = [];
 		var ast = helper();
 		for (var i = 0; i < storage.length; i++) {
 			tokens.push(storage[i]);
@@ -94,7 +94,7 @@ function church_astify(tokens) {
 				} else {
 					lambda_args = {children: ast.children[1].children.slice(1)};
 				}
-				lambda = {
+				var lambda = {
 					children: [
 						{text: "lambda"},
 						lambda_args
@@ -104,7 +104,7 @@ function church_astify(tokens) {
 					children: [ast.children[0], ast.children[1].children[0], lambda],
 					start: ast.start,
 					end: ast.end
-				}
+				};
 			}
 		}
 		return ast;
@@ -161,7 +161,7 @@ function church_astify(tokens) {
 	function dsgr_quote(ast) {
 		var last = ast.children[ast.children.length-1];
 		if (last.text=="'") {
-			throw util.make_church_error("SyntaxError", last.start, last.end, "Invalid single quote")
+			throw util.make_church_error("SyntaxError", last.start, last.end, "Invalid single quote");
 		}
 		for (var i = ast.children.length - 2; i >= 0; i--) {
 			if (ast.children[i].text == "'") {
@@ -169,7 +169,7 @@ function church_astify(tokens) {
 					children: [{text: "quote", start: ast.children[i].start, end: ast.children[i].end}, ast.children[i+1]],
 					start: ast.children[i].start,
 					end: ast.children[i+1].end
-				})
+				});
 			}
 		}
 		return ast;
@@ -249,13 +249,13 @@ function church_astify(tokens) {
 			} else {
 				var next = cond_helper(
 					clauses.slice(1));
-				new_ast = {
+				var new_ast = {
 					children: [
 						{text: "if"},
 						clause.children[0],
 						clause.children[1],
 					]
-				}
+				};
 				if (next) {
 					new_ast.children.push(next);
 				}
@@ -282,9 +282,9 @@ function church_astify(tokens) {
 					children: [{text: "condition"}, condition],
 					start: condition.start,
 					end: condition.end
-				}
+				};
 			}
-			args = args || {children: []}
+			args = args || {children: []};
 			return {
 				children: [
 					{text: "lambda"},
