@@ -52,15 +52,16 @@ function evaluate(church_codestring) {
 	var tokens = tokenize(church_codestring);
 	var church_ast = church_astify(tokens);
 	var js_ast = js_astify(church_ast);
-	js_ast = transform.probTransformAST(js_ast)
+	js_ast = transform.probTransformAST(js_ast);
 	var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
+  // console.log(code_and_source_map.code);
 
 	var result;
 
 	try {
 		result = eval(code_and_source_map.code);
         if (typeof result != "function") {
-            result = util.format_result(result)
+            result = util.format_result(result);
         }
 	} catch (err) {
 		var js_to_church_site_map = get_js_to_church_site_map(code_and_source_map.map);
