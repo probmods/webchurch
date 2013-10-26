@@ -562,7 +562,7 @@ module.exports = {
 	fold: fold,
 	repeat: repeat,
 	map: map,
-	sample: sample,
+	// sample: sample,
 
 	wrapped_uniform_draw: wrapped_uniform_draw,
 	wrapped_multinomial: wrapped_multinomial,

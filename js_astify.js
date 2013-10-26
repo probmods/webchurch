@@ -61,7 +61,7 @@ var church_builtins_map = {
     "fold": "fold",
     "map": "map",
     "repeat": "repeat",
-    "sample": "sample",
+    // "sample": "sample",
 
 	"uniform-draw": "wrapped_uniform_draw",
 	"multinomial": "wrapped_multinomial",
@@ -72,9 +72,9 @@ var church_builtins_map = {
 	"gaussian": "wrapped_gaussian",
 	"gamma": "wrapped_gamma",
 	"beta": "wrapped_beta",
-	"dirichlet": "wrapped_dirichlet",
+	"dirichlet": "wrapped_dirichlet"
     
-}
+};
 
 var probjs_builtins_map = {
 	"condition": "condition",

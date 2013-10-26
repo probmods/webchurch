@@ -13,8 +13,8 @@ var map = "(define map (lambda x (let ((fn (first x)) (lists (rest x))) (if (nul
 
 
 module.exports = {
-	sample: sample,
+	// sample: sample,
 //	repeat: repeat,
-	map: map,
+	map: map
 //  fold: fold
 };
