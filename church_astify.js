@@ -208,10 +208,11 @@ function church_astify(tokens) {
 							children: [
 								{text: "member"},
 								key,
-								{children: [{text: "quote"}].concat(clause.children[0])}
+                {children: [{text: "list"}].concat(clause.children[0].children)}
+								// {children: [{text: "list"}].concat(clause.children[0])}
 							]
 						},
-						clause.children[1],
+						clause.children[1]
 					]
 				};
 				if (next) {
