@@ -9,7 +9,6 @@
 
 
 var escodegen = require("escodegen");
-//var higher_order_builtins = require("./higher_order_builtins");
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var util = require('./util.js');
@@ -73,14 +72,15 @@ var church_builtins_map = {
 	"gamma": "wrapped_gamma",
 	"beta": "wrapped_beta",
 	"dirichlet": "wrapped_dirichlet"
-    
 };
 
 var probjs_builtins_map = {
 	"condition": "condition",
     "factor": "factor",
 	"mem": "mem",
-	"marginalize": "marginalize"
+	"marginalize": "marginalize",
+    
+    "eval": "evaluate" //from webchurch
 }
 
 var js_builtins_map = {

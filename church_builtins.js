@@ -437,7 +437,6 @@ function wrapped_enumerate(comp) {
 	return res;
 }
 
-
 function hist(x) {
 	return x;
 }

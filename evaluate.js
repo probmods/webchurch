@@ -6,6 +6,7 @@ var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
 var util = require('./util.js');
 
+
 var pr = require('./probabilistic/index.js')
 var transform = require("./probabilistic/transform")
 
@@ -49,12 +50,13 @@ function get_sites_from_stack(split_stack) {
 }
 
 function evaluate(church_codestring) {
+//    var evaluate = this
 	var tokens = tokenize(church_codestring);
 	var church_ast = church_astify(tokens);
 	var js_ast = js_astify(church_ast);
 	js_ast = transform.probTransformAST(js_ast);
 	var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
-  // console.log(code_and_source_map.code);
+//   console.log(code_and_source_map.code);
 
 	var result;
 
