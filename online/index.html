@@ -41,6 +41,7 @@
 
       var pr = require("./probabilistic/index")
       var util = require("./probabilistic/util")
+      var format_result = require("./evaluate").format_result
       var transform = require("./probabilistic/transform")
       util.openModule(pr)
 
@@ -94,7 +95,7 @@
         // __updateJSOutput(js_code)
         try
         {
-          __updateExecOutput(evaluate(church_code))
+          __updateExecOutput(format_result(evaluate(church_code)))
         }
         catch (e)
         {
