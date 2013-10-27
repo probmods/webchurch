@@ -57,6 +57,8 @@ var church_builtins_map = {
 
 	"apply": "apply",
     
+    "eval": "wrapped_evaluate", //from webchurch
+    
     "fold": "fold",
     "map": "map",
     "repeat": "repeat",
@@ -78,9 +80,7 @@ var probjs_builtins_map = {
 	"condition": "condition",
     "factor": "factor",
 	"mem": "mem",
-	"marginalize": "marginalize",
-    
-    "eval": "evaluate" //from webchurch
+	"marginalize": "marginalize"
 }
 
 var js_builtins_map = {

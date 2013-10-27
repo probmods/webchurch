@@ -437,6 +437,12 @@ function wrapped_enumerate(comp) {
 	return res;
 }
 
+function wrapped_evaluate(code) {
+    //need to turn the code list back into a string before calling the webchurch evaluate...
+    code = util.format_result(code)
+    return evaluate(code)
+}
+
 function hist(x) {
 	return x;
 }
@@ -562,6 +568,7 @@ module.exports = {
 	repeat: repeat,
 	map: map,
 	// sample: sample,
+    wrapped_evaluate: wrapped_evaluate,
 
 	wrapped_uniform_draw: wrapped_uniform_draw,
 	wrapped_multinomial: wrapped_multinomial,
