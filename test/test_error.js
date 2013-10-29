@@ -1,5 +1,6 @@
 var evaluate = require("../evaluate.js").evaluate;
 var church_builtins = require("../church_builtins.js");
+var format_result = require("../evaluate.js").format_result;
 
 tests = [
 	["\"unclosed", "1:1-1:1: Unclosed double quote"],
@@ -26,7 +27,7 @@ tests = [
 
 for (var i = 0; i < tests.length; i++) {
 	try {
-		evaluate(tests[i][0]);
+		format_result(evaluate(tests[i][0]));
 	} catch(err) {
 		if (err.message != tests[i][1] || (tests[i].length == 3 && err.stack != tests[i][2])) {
 			console.log("Failed:\n" +

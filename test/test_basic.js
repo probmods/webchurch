@@ -1,5 +1,7 @@
 /* global console, require */
 
+
+
 var log = function() {
   var array = Array.prototype.slice.call(arguments, 0);
   array.forEach(function(x) {
@@ -15,6 +17,7 @@ var red = function(str) {
 
 var evaluate = require("../evaluate.js").evaluate;
 var church_builtins = require("../church_builtins.js");
+var format_result = require("../evaluate.js").format_result;
 
 var tests = [
 	["()", "()"],
@@ -162,7 +165,7 @@ for (var i = 0; i < tests.length; i++) {
       result;
 	
 	try {
-		result = evaluate(tests[i][0]);
+		result = format_result(evaluate(tests[i][0]));
 	} catch(err) {
 		result = err.message;
 	}
