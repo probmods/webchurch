@@ -185,6 +185,33 @@ function seventh(x) {
 	return first(rest(rest(rest(rest(rest(rest(x)))))));
 }
 
+function list_ref(lst, n) {
+  assertList(lst);
+  assertType(n, "number");
+  if (n < 0) {
+    throw new Error("Can't have negative list index");
+  }
+  
+  var res = lst, error = false;
+  for(var i = 0; i < n; i++) {
+    if (res.length < 2) {
+      error = true;
+      break;
+    }
+    res = res[1];
+  }
+  if (res.length == 0) {
+    throw new Error("list index too big: asked for item #" + (n+1) + " but list only contains " + i + " items");
+  }
+
+  return res[0]; 
+}
+
+function list_elt(lst, n) {
+  return list_ref(lst, n - 1);  
+}
+
+
 function max(x) {
 	var args = args_to_array(arguments);
 	return Math.max.apply(Math, args);
@@ -200,10 +227,14 @@ function expt(a, b) {
 }
 
 function mean(lst) {
-	vals = listToArray(lst)
-	sum = 0
-	for (v in vals) {sum += vals[v];}
-	return sum / vals.length;
+	var vals = listToArray(lst),
+      sum = 0,
+      n = vals.length;
+  
+	for (var i=0; i < n; i++) {
+    sum += vals[i];
+  }
+	return sum / n;
 }
 
 function append() {
@@ -561,7 +592,8 @@ module.exports = {
 	is_eq: is_eq,
 	is_equal: is_equal,
 	member: member,
-
+  list_ref: list_ref,
+  list_elt: list_elt, 
 	apply: apply,
 	
 	fold: fold,

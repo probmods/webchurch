@@ -51,9 +51,12 @@ var church_builtins_map = {
 	"rest": "rest",
 	"length": "length",
 	"make-list": "make_list",
+  "list-ref": "list_ref",
+  "list-elt": "list_elt",
 	"eq?": "is_eq",
 	"equal?": "is_equal",
 	"member": "member",
+
 
 	"apply": "apply",
     
