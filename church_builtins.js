@@ -625,6 +625,7 @@ module.exports = {
 	wrapped_uniform: wrapped_uniform,
 	wrapped_random_integer: wrapped_random_integer,
 	wrapped_gaussian: wrapped_gaussian,
+    wrapped_beta: wrapped_beta,
 	wrapped_dirichlet: wrapped_dirichlet,
 	wrapped_traceMH: wrapped_traceMH,
 	wrapped_enumerate: wrapped_enumerate,
