@@ -273,6 +273,8 @@ function fold(fn, initialValue, list) {
 }
 
 function repeat(n,fn) {
+    assertFunctionArg(fn);
+    assertType(n, "number");
 	var ret = [];
 	for(var i=0;i<n;i++) {ret[i] = fn()}
 	return arrayToList(ret);
