@@ -67,6 +67,12 @@ function and() {
 	return true
 }
 
+function all(list) {
+	assertNumArgs(args_to_array(arguments), 1);
+    assertArgType(list, "list", "all");
+	return and.apply(null, listToArray(list, true));
+}
+
 function or() {
 	var args = args_to_array(arguments);
 	for (var i = 0; i < args.length; i++) {
@@ -575,6 +581,7 @@ module.exports = {
 	eq: eq,
 
 	and: and,
+    all: all,
 	or: or,
 	not: not,
 

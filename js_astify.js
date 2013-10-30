@@ -27,6 +27,7 @@ var church_builtins_map = {
 	"<=": "leq",
 	"=": "eq",
 	"and": "and",
+    "all": "all",
 	"or": "or",
 	"not": "not",
 
