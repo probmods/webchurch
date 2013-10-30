@@ -12,6 +12,8 @@ tests = [
 	["(define (1 x) x)", "1:10-1:10: Invalid variable name"],
 	["(lambda \"bad\" 1)", "1:9-1:13: Invalid variable name"],
 	["(let ((#t #f)) #t)", "1:8-1:9: Invalid variable name"],
+	["(if #t)", "1:1-1:7: if has the wrong number of arguments"],
+	["(if #t 1 2 3)", "1:1-1:13: if has the wrong number of arguments"],
 
 	["(rejection-query true)", "1:1-1:22: rejection-query has the wrong number of arguments"],
 
