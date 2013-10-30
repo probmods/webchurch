@@ -261,9 +261,9 @@ function flatten(x) {
 }
 
 function fold(fn, initialValue, list) {
-	assertType(fn, "function");
+	assertFunctionArg(fn);
 	assertList(list);
-	assertType(initialValue, "number");
+//	assertType(initialValue, "number");
 	var arr = listToArray(list);
 	var cumulativeValue = initialValue;
 	for (var i=0; i<arr.length; i++) {
@@ -379,12 +379,12 @@ function member(x, list) {
 }
 
 function sample(fn) {
-	assertType(fn, "function");
+	assertFunctionArg(fn);
 	return fn();
 }
 
 function apply(fn, list) {
-	assertType(fn, "function");
+	assertFunctionArg(fn);
 	assertList(list);
 	return fn.apply(null, listToArray(list, false));
 }
@@ -503,6 +503,13 @@ function arrayToList(arr) {
 function assertType(x, type) {
 	if (typeof(x) != type) {
 		throw new Error('"' + util.format_result(x) + '" is not a ' + type); 
+	}
+}
+
+
+function assertFunctionArg(x) {
+	if (typeof(x) != 'function') {
+		throw new Error('argument "' + util.format_result(x) + '" not a function'); //doesn't say "is not a function" to avoid special purpose code in evaluate.js
 	}
 }
 
