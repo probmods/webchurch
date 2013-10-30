@@ -61,6 +61,9 @@ var tests = [
   ["(define (f . x) x) (f 1 2 3)", "(1 2 3)"],
   ["(apply + (repeat 123 (lambda () (apply + (repeat 1000 (lambda () 1))))))", 123000],
   ["(map (lambda (x y) (* x y)) '(1 2 3 4) '(5 6 7 8 9))", "(5 12 21 32)"],
+  ["(fold and #t '(#t #t #f))", "#f"],
+  ["(fold pair '() '(1 2 3))", "(3 2 1)"],
+  ["(fold + 0 '(1 2 3) '(2 4 6))", 18],
   // flip a coin 1000 times, make sure it comes up heads fewer than 600
   ["(< (apply + (map (lambda (x) (if x 1 0)) (repeat 1000 flip))) 600)", "#t"],
   ["(> (* (gaussian 0 1) (gaussian 0 1) ) -1000)", "#t"],
@@ -176,10 +179,10 @@ for (var i = 0; i < tests.length; i++) {
         churchCode,
         "",
         red("Got"),
-        expectedResult,
+        result,
         "", 
         red("Expected"),
-        result,
+        expectedResult,
         "");
 	} else {
 //    log("pass")

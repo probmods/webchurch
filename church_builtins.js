@@ -269,13 +269,22 @@ function flatten(x) {
 }
 
 function fold(fn, initialValue, list) {
-	assertArgType(fn,"function","fold");
-	assertArgType(list, "list", "fold");
-//	assertType(initialValue, "number");
-	var arr = listToArray(list);
+	var args = args_to_array(arguments);
+	var fn = args[0];
+	assertArgType(fn, "function", "fold");
+	var initialValue = args[1];
+	var lists = args.slice(2);
+	var arrs = [];
+	for (var i=0; i<lists.length; i++) {
+		assertArgType(lists[i], "list");
+		arrs.push(listToArray(lists[i]));
+	}
+	var max_length = Math.min.apply(this, arrs.map(function(el) {return el.length;}));
 	var cumulativeValue = initialValue;
-	for (var i=0; i<arr.length; i++) {
-	  cumulativeValue = fn(arr[i], cumulativeValue);
+	for (var i=0; i<max_length; i++) {
+		var fn_args = arrs.map(function(el) {return el[i];});
+		fn_args.push(cumulativeValue);
+		cumulativeValue = fn.apply(this, fn_args);
 	}
 	return cumulativeValue;
 }
