@@ -12,7 +12,7 @@ function plus() {
 	var args = args_to_array(arguments);
 	var sum = 0;
 	for (var i = 0; i < args.length; i++) {
-		assertType(args[i], "number");
+		assertArgType(args[i], "number", "+");
 		sum = sum + args[i];
 	}
 	return sum;
@@ -20,13 +20,14 @@ function plus() {
 
 function sum(list) {
 	assertNumArgs(args_to_array(arguments), 1);
+    assertArgType(list, "list", "sum");
 	return plus.apply(null, listToArray(list, true));
 }
 
 function minus() {
 	var args = args_to_array(arguments);
 	assertAtLeastNumArgs(args, 1);
-	assertType(args[0], "number");
+	assertArgType(args[0], "number", "-");
 	if (args.length == (1)) {
 		return -args[0];
 	} else {
@@ -38,7 +39,7 @@ function mult() {
 	var args = args_to_array(arguments);
 	var prod = 1;
 	for (var i = 0; i < args.length; i++) {
-		assertType(args[i], "number");
+		assertArgType(args[i], "number", "*");
 		prod = prod * args[i];
 	}
 	return prod;
@@ -47,17 +48,18 @@ function mult() {
 function div() {
 	var args = args_to_array(arguments);
 	assertAtLeastNumArgs(args, 1);
-	assertType(args[0], "number");
+	assertArgType(args[0], "number", "/");
 	if (args.length == (1)) {
 		return 1 / args[0];
 	} else {
-		return args[0] / mult.apply(null, args.slice(1));
+		return args[0] / mult.apply(null, args.slice(1)); //FIXME: going to give wrong argTo for divisors...
 	}
 }
 
 function and() {
 	var args = args_to_array(arguments);
 	for (var i = 0; i < args.length; i++) {
+        //FIXME: should check that types are boolean, or accept any truthy types?
 		if (!args[i]) {
 			return false;
 		}
@@ -83,7 +85,7 @@ function not(x) {
 function cmp_nums(cmp_fn, args) {
 	assertAtLeastNumArgs(args, 2)
 	for (var i = 0; i < args.length - 1; i++) {
-		assertType(args[i], "number");
+		assertArgType(args[i], "number", "comparison");
 		if (!cmp_fn(args[i], args[i+1])) return false; 
 	}
 	return true;
@@ -186,8 +188,8 @@ function seventh(x) {
 }
 
 function list_ref(lst, n) {
-  assertList(lst);
-  assertType(n, "number");
+  assertArgType(lst, "list", "list lookup");
+  assertArgType(n, "number", "list lookup");
   if (n < 0) {
     throw new Error("Can't have negative list index");
   }
@@ -240,13 +242,13 @@ function mean(lst) {
 function append() {
 	var args = args_to_array(arguments);
 	return arrayToList([].concat.apply([], args.map(function(x) {
-		assertList(x);
+		assertArgType(x,"list","append");
 		return listToArray(x);
 	})));
 }
 
 function flatten(x) {
-	assertList(x);
+	assertArgType(x,"list","flatten");
 	var flattened = [];
 	var arr = listToArray(x);
 	for (var i=0; i<arr.length; i++) {
@@ -261,8 +263,8 @@ function flatten(x) {
 }
 
 function fold(fn, initialValue, list) {
-	assertFunctionArg(fn);
-	assertList(list);
+	assertArgType(fn,"function","fold");
+	assertArgType(list, "list", "fold");
 //	assertType(initialValue, "number");
 	var arr = listToArray(list);
 	var cumulativeValue = initialValue;
@@ -273,8 +275,8 @@ function fold(fn, initialValue, list) {
 }
 
 function repeat(n,fn) {
-    assertFunctionArg(fn);
-    assertType(n, "number");
+    assertArgType(fn, "function", "repeat");
+    assertArgType(n, "number", "repeat");
 	var ret = [];
 	for(var i=0;i<n;i++) {ret[i] = fn()}
 	return arrayToList(ret);
@@ -283,10 +285,9 @@ function repeat(n,fn) {
 function map() {
   var args = args_to_array(arguments),
       fn = args[0];
-  if (typeof fn == "undefined") {
-    throw new Error('mapping function is undefined');
-  }
-  
+
+  assertArgType(fn, "function", "map");
+    
   var lists = args.slice(1),
       arr = [];
 
@@ -302,7 +303,7 @@ function map() {
 	return arrayToList(arr);
 }
 
-function sample(fn) {return fn()}
+//function sample(fn) {return fn()}
 
 function rest(x) {
 	assertNumArgs(args_to_array(arguments), 1);
@@ -315,6 +316,7 @@ function rest(x) {
 
 function length(x) {
 	assertNumArgs(args_to_array(arguments), 1);
+    assertArgType(x, "list", "length")
 	var len = 0;
 	while (x.length != 0) {
 		if (x.length != 2) {
@@ -332,7 +334,7 @@ function length(x) {
 // http://jsperf.com/best-init-array/3
 function make_list(n, x) {
 	assertNumArgs(args_to_array(arguments), 2);
-	assertInteger(n);
+	assertArgType(n, "integer", "make-list");
 	if (n == 0) return the_empty_list;
 	var results = new Array(n);
 
@@ -365,7 +367,7 @@ function is_equal(x, y) {
 }
 
 function member_base(x, list, eq_fn) {
-	assertList(list);
+	assertArgType(list,"list","member");
 	if (list.length == 0) {
 		return false;
 	} else if (eq_fn(x, list[0])) {
@@ -380,25 +382,20 @@ function member(x, list) {
 	return member_base(x, list, is_equal);
 }
 
-function sample(fn) {
-	assertFunctionArg(fn);
-	return fn();
-}
-
 function apply(fn, list) {
-	assertFunctionArg(fn);
-	assertList(list);
+	assertArgType(fn,"function","apply");
+	assertArgType(list,"list","apply");
 	return fn.apply(null, listToArray(list, false));
 }
 
 function wrapped_uniform_draw(items) {
-	assertList(items);
+	assertArgType(items,"list","uniform-draw");
 	return uniformDraw(listToArray(items, false), false);
 }
 
 function wrapped_multinomial(items, probs) {
-	assertList(items);
-	assertList(probs);
+	assertArgType(items,"list","multinomial");
+	assertArgType(probs,"list","multinomial");
 	if (items.length != probs.length) {
 		throw new Error("Lists of items and probabilities must be of equal length");
 	}
@@ -411,42 +408,42 @@ function wrapped_flip(p, isStructural, conditionedValue) {
 
 function wrapped_uniform(a, b, isStructural, conditionedValue) {
 	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
-	assertType(a, "number");
-	assertType(b, "number");
+	assertArgType(a, "number", "uniform");
+	assertArgType(b, "number", "uniform");
 	return uniform(a, b, isStructural, conditionedValue);
 }
 
 function wrapped_random_integer(n) {
 	assertNumArgs(args_to_array(arguments), 1);
-	assertType(n, "number");
-	return Math.floor(uniform(0, 1, false, null) * n);
+	assertArgType(n, "number", "random integer");
+	return Math.floor(uniform(0, 1, false, null) * n); //FIXME: this results in a continuous ERP when it should be discrete. use multinomial or uniformDraw...
 }
 
 function wrapped_gaussian(mu, sigma, isStructural, conditionedValue) {
 	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
-	assertType(mu, "number");
-	assertType(sigma, "number");
+	assertArgType(mu, "number", "gaussian");
+	assertArgType(sigma, "number", "gaussian");
 	return gaussian(mu, sigma, isStructural, conditionedValue);
 }
 
 function wrapped_gamma(a, b, isStructural, conditionedValue) {
 	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
-	assertType(a, "number");
-	assertType(b, "number");
+	assertArgType(a, "number", "gamma");
+	assertArgType(b, "number", "gamma");
 	return gamma(a, b, isStructural, conditionedValue);
 }
 
 function wrapped_beta(a, b, isStructural, conditionedValue) {
 	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
-	assertType(a, "number");
-	assertType(b, "number");
+	assertArgType(a, "number", "beta");
+	assertArgType(b, "number", "beta");
 	return beta(a, b, isStructural, conditionedValue);
 }
 
 function wrapped_dirichlet(alpha) {
 	assertNumArgs(args_to_array(arguments), 1);
-	assertList(alpha);
-	assertAllType(alpha, "number");
+	assertArgType(alpha, "list", "dirichlet");
+	assertAllType(alpha, "number", "dirichlet");
 	alpha = listToArray(alpha, true);
 	return arrayToList(dirichlet(alpha, false, null));
 }
@@ -476,6 +473,7 @@ function wrapped_evaluate(code) {
     return evaluate(code)
 }
 
+//dummy hist for testing
 function hist(x) {
 	return x;
 }
@@ -502,42 +500,45 @@ function arrayToList(arr) {
 	}
 }
 
-function assertType(x, type) {
-	if (typeof(x) != type) {
-		throw new Error('"' + util.format_result(x) + '" is not a ' + type); 
-	}
+
+///Asserts for checking arguments to functions.
+///FIXME: if we turn these off, does code go much faster?
+
+function assertArgType(x, type, argTo) {
+    argTo = (argTo == 'undefined')? '"' : '" to ' + argTo
+    switch(type) {
+        case "function":
+            if (typeof(x) != 'function') {
+                //doesn't say "is not a function" to avoid special purpose code in evaluate.js
+                throw new Error('argument "' + util.format_result(x) + argTo  + ' not a function');}
+            break;
+            
+        case "integer":
+            if (typeof(x) != "number" && parseInt(n) != n) {
+                throw new Error('"' + util.format_result(n) + argTo + '" is not an integer');
+            }
+            break;
+            
+        case "number":
+            if (typeof(x) != 'number') {
+                throw new Error('argument "' + util.format_result(x) + argTo  + ' is not a number');}
+            break;
+            
+        case "list":
+            if (!is_list(x)) {
+                throw new Error('argument "' + util.format_result(x) + argTo  + ' is not a list');}
+            break;
+            
+        default:
+            if (typeof(x) != type) {
+                throw new Error('argument "' + util.format_result(x) + argTo  + ' has incorrect type');}
+    }
 }
 
-
-function assertFunctionArg(x) {
-	if (typeof(x) != 'function') {
-		throw new Error('argument "' + util.format_result(x) + '" not a function'); //doesn't say "is not a function" to avoid special purpose code in evaluate.js
-	}
-}
-
-function assertAllType(list, type) {
+function assertAllType(list, type, argTo) {
 	if (list.length != 0) {
-		assertType(list[0], type);
-		assertAllType(list[1], type);
-	}
-}
-
-function assertInteger(n) {
-	if (typeof(n) != "number" && parseInt(n) != n) {
-		throw new Error('"' + util.format_result(n) + '" is not an integer'); 
-	}
-}
-
-function assertList(list) {
-	if (Array.isArray(list)) {
-		if (list.length == 0) {
-			return;
-		} else if (list.length != 2) {
-			throw new Error("Expected list");
-		}
-		assertList(list[1]);
-	} else {
-		throw new Error("Expected list, got ");
+		assertArgType(list[0], type, argTo);
+		assertAllType(list[1], type, argTo);
 	}
 }
 

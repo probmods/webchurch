@@ -21,7 +21,7 @@ tests = [
 	["(undef)", "1:2-1:6: undef is not defined", "1:2-1:6,1:1-1:7"],
 	["(+ (+ (undef 1)))", "1:8-1:12: undef is not defined", "1:8-1:12,1:7-1:15,1:4-1:16,1:1-1:17"],
 
-	["(+ 'a)", "1:2-1:2: \"a\" is not a number", "1:2-1:2,1:1-1:6"],
+	["(+ 'a)", "1:2-1:2: argument \"a\" to + is not a number", "1:2-1:2,1:1-1:6"],
 	["(second (pair 1 2))", "1:2-1:7: 2 does not have required pair structure", "1:2-1:7,1:1-1:19"]
 ]
 
