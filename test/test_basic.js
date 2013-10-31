@@ -128,41 +128,30 @@ var tests = [
 "(define samples\
   (mh-query\
    2000 20\
-\
    (define A (if (flip) 1 0))\
    (define B (if (flip) 1 0))\
    (define C (if (flip) 1 0))\
-\
    A\
-\
    (condition (>= (+ A B C) 2))))\
-\
 (< (abs (- 0.75 (mean samples))) 0.1)","#t"
   ],
 [
 "(define samples\
   (mh-query\
-   1000 10\
-\
+   500 5\
     (define strength (mem (lambda (person) (if (flip) 5 10))))\
-\
     (define lazy (lambda (person) (flip (/ 1 3))))\
-\
     (define (total-pulling team)\
       (sum\
          (map\
           (lambda (person) (if (lazy person) (/ (strength person) 2) (strength person)))\
           team)))\
-\
     (define (winner team1 team2)\
       (if (> (total-pulling team1) (total-pulling team2)) 'team1 'team2))\
-\
     (strength 'bob)\
-\
     (and (eq? 'team1 (winner '(bob mary) '(tom sue)))\
          (eq? 'team1 (winner '(bob sue) '(tom jim))))))\
-\
-(< (abs (- 9.18 (mean samples))) 0.2)",
+(< (abs (- 9.18 (mean samples))) 0.5)",
   "#t"
 ],
   ["(define letters '(a b c d e f g h i j k l m n o p q r s t u v w x y z) ) (define (vowel? letter) (if (member letter '(a e i o u y)) #t #f)) (define letter-probabilities (map (lambda (letter) (if (vowel? letter) 0.01 0.047)) letters)) (define (my-list-index needle haystack counter) (if (null? haystack) 'error (if (equal? needle (first haystack)) counter (my-list-index needle (rest haystack) (+ 1 counter))))) (define (get-position letter) (my-list-index letter letters 1)) (define dist (enumeration-query (define my-letter (multinomial letters letter-probabilities)) (define my-position (get-position my-letter)) (define my-win-probability (/ 1.0 (* my-position my-position))) (define win? (flip my-win-probability)) my-letter (flip my-win-probability))) (< (- 0.2755 (abs (first (second dist)))) 0.01)","#t"]
