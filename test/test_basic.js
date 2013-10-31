@@ -1,13 +1,13 @@
 /* global console, require */
 
-
-
 var log = function() {
   var array = Array.prototype.slice.call(arguments, 0);
   array.forEach(function(x) {
     console.log(x);
   }); 
 };
+
+log("Webchurch basic tests");
 
 // make a string appear red in terminal
 // HT http://stackoverflow.com/a/17524301/351392
@@ -29,7 +29,17 @@ var tests = [
 	["'abc", "abc"],
 	["'(1 2 3)", "(1 2 3)"],
 	["''a", "(quote a)"],
-
+  
+  ["(first '(1 2 3 4 5 6 7 8))", "1"],
+  ["(second '(1 2 3 4 5 6 7 8))", "2"],
+  ["(third '(1 2 3 4 5 6 7 8))", "3"],
+  ["(fourth '(1 2 3 4 5 6 7 8))", "4"],
+  ["(fifth '(1 2 3 4 5 6 7 8))", "5"],
+  ["(sixth '(1 2 3 4 5 6 7 8))", "6"],
+  ["(seventh '(1 2 3 4 5 6 7 8))", "7"],
+  ["(list? (repeat 123456 (lambda () 1)))", "#t"], // make sure list? is iterative
+  ["(list? (pair (repeat 12345 (lambda () 1)) 'a))", "#f"],
+  
 	["((lambda () 1))", 1],
 	["((lambda (x) x) 1)", 1],
 	["((lambda (x y) (+ x y)) 1 2)", 3],
@@ -61,6 +71,9 @@ var tests = [
   ["(define (f . x) x) (f 1 2 3)", "(1 2 3)"],
   ["(apply + (repeat 123 (lambda () (apply + (repeat 1000 (lambda () 1))))))", 123000],
   ["(map (lambda (x y) (* x y)) '(1 2 3 4) '(5 6 7 8 9))", "(5 12 21 32)"],
+  ["(fold and #t '(#t #t #f))", "#f"],
+  ["(fold pair '() '(1 2 3))", "(3 2 1)"],
+  ["(fold + 0 '(1 2 3) '(2 4 6))", 18],
   // flip a coin 1000 times, make sure it comes up heads fewer than 600
   ["(< (apply + (map (lambda (x) (if x 1 0)) (repeat 1000 flip))) 600)", "#t"],
   ["(> (* (gaussian 0 1) (gaussian 0 1) ) -1000)", "#t"],
@@ -119,45 +132,37 @@ var tests = [
 "(define samples\
   (mh-query\
    2000 20\
-\
    (define A (if (flip) 1 0))\
    (define B (if (flip) 1 0))\
    (define C (if (flip) 1 0))\
-\
    A\
-\
    (condition (>= (+ A B C) 2))))\
-\
 (< (abs (- 0.75 (mean samples))) 0.1)","#t"
   ],
 [
 "(define samples\
   (mh-query\
-   1000 10\
-\
+   500 5\
     (define strength (mem (lambda (person) (if (flip) 5 10))))\
-\
     (define lazy (lambda (person) (flip (/ 1 3))))\
-\
     (define (total-pulling team)\
       (sum\
          (map\
           (lambda (person) (if (lazy person) (/ (strength person) 2) (strength person)))\
           team)))\
-\
     (define (winner team1 team2)\
       (if (> (total-pulling team1) (total-pulling team2)) 'team1 'team2))\
-\
     (strength 'bob)\
-\
     (and (eq? 'team1 (winner '(bob mary) '(tom sue)))\
          (eq? 'team1 (winner '(bob sue) '(tom jim))))))\
-\
-(< (abs (- 9.18 (mean samples))) 0.2)",
+(< (abs (- 9.18 (mean samples))) 0.5)",
   "#t"
 ],
   ["(define letters '(a b c d e f g h i j k l m n o p q r s t u v w x y z) ) (define (vowel? letter) (if (member letter '(a e i o u y)) #t #f)) (define letter-probabilities (map (lambda (letter) (if (vowel? letter) 0.01 0.047)) letters)) (define (my-list-index needle haystack counter) (if (null? haystack) 'error (if (equal? needle (first haystack)) counter (my-list-index needle (rest haystack) (+ 1 counter))))) (define (get-position letter) (my-list-index letter letters 1)) (define dist (enumeration-query (define my-letter (multinomial letters letter-probabilities)) (define my-position (get-position my-letter)) (define my-win-probability (/ 1.0 (* my-position my-position))) (define win? (flip my-win-probability)) my-letter (flip my-win-probability))) (< (- 0.2755 (abs (first (second dist)))) 0.01)","#t"]
 ];
+
+var numPassed = 0,
+    numTests = tests.length;
 
 for (var i = 0; i < tests.length; i++) {
 	var churchCode = tests[i][0],
@@ -170,21 +175,27 @@ for (var i = 0; i < tests.length; i++) {
 		result = err.message;
 	}
 	if (result != expectedResult) {
-
-
-		log(red("Code"),
+		log("Fail #" + i, 
+        red("Code"),
         churchCode,
         "",
         red("Got"),
-        expectedResult,
+        result,
         "", 
         red("Expected"),
-        result,
+        expectedResult,
         "");
 	} else {
-//    log("pass")
+    process.stdout.write(".");
+    numPassed++;
   }
 
 }
 
-log("tests done");
+var allPassed = (numPassed == numTests);
+
+log("",
+    "Passed " + numPassed + " / " + numTests + " tests",
+    allPassed ? "Good" : "Bad" );
+
+process.exit(allPassed ? 0 : 1);

@@ -322,9 +322,18 @@ function church_astify(tokens) {
 		}
 		return ast;
 	}
+
+	function validate_if(ast) {
+		if (ast.children[0].text=="if") {
+			if (ast.children.length < 3 || ast.children.length > 4) {
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, "if has the wrong number of arguments");
+			}
+		}
+		return ast;
+	}
  
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [validate_leaves, dsgr_quote, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query];
+	var desugar_fns = [validate_leaves, dsgr_quote, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if];
 
 	var ast = astify(tokens);
 	// Special top-level check
