@@ -1,7 +1,5 @@
 /* global console, require */
 
-
-
 var log = function() {
   var array = Array.prototype.slice.call(arguments, 0);
   array.forEach(function(x) {
@@ -170,6 +168,9 @@ var tests = [
   ["(define letters '(a b c d e f g h i j k l m n o p q r s t u v w x y z) ) (define (vowel? letter) (if (member letter '(a e i o u y)) #t #f)) (define letter-probabilities (map (lambda (letter) (if (vowel? letter) 0.01 0.047)) letters)) (define (my-list-index needle haystack counter) (if (null? haystack) 'error (if (equal? needle (first haystack)) counter (my-list-index needle (rest haystack) (+ 1 counter))))) (define (get-position letter) (my-list-index letter letters 1)) (define dist (enumeration-query (define my-letter (multinomial letters letter-probabilities)) (define my-position (get-position my-letter)) (define my-win-probability (/ 1.0 (* my-position my-position))) (define win? (flip my-win-probability)) my-letter (flip my-win-probability))) (< (- 0.2755 (abs (first (second dist)))) 0.01)","#t"]
 ];
 
+var numPassed = 0,
+    numTests = tests.length;
+
 for (var i = 0; i < tests.length; i++) {
 	var churchCode = tests[i][0],
       expectedResult = tests[i][1],
@@ -181,9 +182,8 @@ for (var i = 0; i < tests.length; i++) {
 		result = err.message;
 	}
 	if (result != expectedResult) {
-
-
-		log(red("Code"),
+		log("Fail #" + i, 
+        red("Code"),
         churchCode,
         "",
         red("Got"),
@@ -193,9 +193,12 @@ for (var i = 0; i < tests.length; i++) {
         expectedResult,
         "");
 	} else {
-//    log("pass")
+    process.stdout.write(".");
+    numPassed++;
   }
 
 }
 
-log("tests done");
+log("",
+    "Passed " + numPassed + " / " + numTests + " tests",
+    (numPassed == numTests) ? "Good" : "Bad" );
