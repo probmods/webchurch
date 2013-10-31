@@ -7,6 +7,8 @@ var log = function() {
   }); 
 };
 
+log("Webchurch basic tests");
+
 // make a string appear red in terminal
 // HT http://stackoverflow.com/a/17524301/351392
 var red = function(str) {
@@ -34,7 +36,7 @@ var tests = [
   ["(fourth '(1 2 3 4 5 6 7 8))", "4"],
   ["(fifth '(1 2 3 4 5 6 7 8))", "5"],
   ["(sixth '(1 2 3 4 5 6 7 8))", "6"],
-  ["(seventh '(1 2 3 4 5 6 7 8))", "7"],
+  ["(seventh '(1 2 3 4 5 6 7 8))", "6"],
   
 	["((lambda () 1))", 1],
 	["((lambda (x) x) 1)", 1],
@@ -188,6 +190,10 @@ for (var i = 0; i < tests.length; i++) {
 
 }
 
+var allPassed = (numPassed == numTests);
+
 log("",
     "Passed " + numPassed + " / " + numTests + " tests",
-    (numPassed == numTests) ? "Good" : "Bad" );
+    allPassed ? "Good" : "Bad" );
+
+process.exit(allPassed ? 0 : 1);
