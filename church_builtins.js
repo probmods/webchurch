@@ -609,8 +609,8 @@ module.exports = {
 	is_eq: is_eq,
 	is_equal: is_equal,
 	member: member,
-  list_ref: list_ref,
-  list_elt: list_elt, 
+    list_ref: list_ref,
+    list_elt: list_elt, 
 	apply: apply,
 	
 	fold: fold,
