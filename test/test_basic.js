@@ -37,6 +37,8 @@ var tests = [
   ["(fifth '(1 2 3 4 5 6 7 8))", "5"],
   ["(sixth '(1 2 3 4 5 6 7 8))", "6"],
   ["(seventh '(1 2 3 4 5 6 7 8))", "7"],
+  ["(list? (repeat 123456 (lambda () 1)))", "#t"], // make sure list? is iterative
+  ["(list? (pair (repeat 12345 (lambda () 1)) 'a))", "#f"],
   
 	["((lambda () 1))", 1],
 	["((lambda (x) x) 1)", 1],

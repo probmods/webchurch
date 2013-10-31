@@ -133,15 +133,17 @@ function list() {
 }
 
 function is_list(list) {
-	assertNumArgs(args_to_array(arguments), 1)
-	if (Array.isArray(list)) {
-		if (list.length == 0) {
+	assertNumArgs(args_to_array(arguments), 1);
+  var lst = list;
+  while (true) {
+	  if (!Array.isArray(lst)) {
+      return false;
+    }
+		if (lst.length == 0) {
 			return true;
 		} else {
-			return is_list(list[1]);
+			lst = lst[1];
 		}
-	} else {
-		return false;
 	}
 }
 
