@@ -169,27 +169,27 @@ function second(x) {
 }
 
 function third(x) {
-	// assertList(x);
+	assertArgType(x, "list", "third");
 	return first(rest(rest(x)));
 }
 
 function fourth(x) {
-	// assertList(x);
+	assertArgType(x, "list", "fourth");
 	return first(rest(rest(rest(x))));
 }
 
 function fifth(x) {
-	// assertList(x);
+	assertArgType(x, "list", "fifth");
 	return first(rest(rest(rest(rest(x)))));
 }
 
 function sixth(x) {
-	// assertList(x);
+	assertArgType(x, "list", "sixth");
 	return first(rest(rest(rest(rest(rest(x))))));
 }
 
 function seventh(x) {
-	// assertList(x);
+	assertArgType(x, "list", "seventh");
 	return first(rest(rest(rest(rest(rest(rest(x)))))));
 }
 
