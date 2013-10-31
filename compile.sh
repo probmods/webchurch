@@ -1,5 +1,5 @@
-echo "- Update probabilistic-js"
-git submodule update --recursive
+# echo "- Update probabilistic-js"
+# git submodule update --recursive
 
 echo "- Symlinking probabilistic-js"
 # symlink probabilistic-js/probabilistic into current directory
@@ -9,7 +9,13 @@ ln -s probabilistic-js/probabilistic .
 fi
 
 echo "- Installing hooks"
-cp hooks/* .git/hooks/
+if [ -d ".git" ]
+then
+    if [ -d ".git/hooks" ]
+    then
+        cp hooks/* .git/hooks/
+    fi
+fi
 
 echo "- Browserifying"
 browserify \
