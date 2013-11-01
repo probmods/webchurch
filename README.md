@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/probmods/webchurch.png?branch=master)](https://travis-ci.org/probmods/webchurch)
+
 Dependencies
 ============
 - nodejs (see `package.json` for npm dependencies)
