@@ -226,7 +226,7 @@ function get_value_of_string_or_number(s) {
 	}
 }
 
-function convert_char(char) { return ("_" + char.charCodeAt(0)); }
+function convert_char(c) { return ("_" + c.charCodeAt(0)); }
 
 // Any identifier that doesn't match the form [a-zA-Z_$][0-9a-zA-Z_$]* isn't
 // okay in JS, so we need to rename them.
@@ -253,7 +253,7 @@ function make_location(node) {
 		var end_coords = node.end.split(":");
 		return {
 			start: {line: start_coords[0], column: start_coords[1]},
-			end: {line: end_coords[0], column: end_coords[1]},
+			end: {line: end_coords[0], column: end_coords[1]}
 		};
 	}
 }
