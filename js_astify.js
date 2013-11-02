@@ -84,7 +84,8 @@ var probjs_builtins_map = {
 	"condition": "condition",
     "factor": "factor",
 	"mem": "mem",
-	"marginalize": "marginalize"
+	"marginalize": "marginalize",
+    "baseval":"evaluate"
 }
 
 var js_builtins_map = {
@@ -174,8 +175,14 @@ var call_expression_node = {
 	"callee": null,
 	"arguments": []
 }
-var if_statement_node = {
-	"type": "IfStatement",
+//var if_statement_node = { //NOTE: using ternary operator instead of if statements, since that maps onto the semantics of church ifs best.
+//	"type": "IfStatement",
+//	"test": null,
+//	"consequent": null,
+//	"alternate": null
+//}
+var conditional_expression_node = { //ternary operator a?b:c
+	"type": "ConditionalExpression",
 	"test": null,
 	"consequent": null,
 	"alternate": null
@@ -184,6 +191,7 @@ var block_statement_node = {
 	"type": "BlockStatement",
 	"body": []
 }
+
 
 // This line must be the first line of any variadic Church function.
 // It retrieves the caller's arguments, not its own arguments because of the
@@ -369,29 +377,43 @@ function church_tree_to_esprima_ast(church_tree) {
 		return return_statement;
 	}
 
-	function make_if_expression(church_tree) {
-		function helper(test, consequent, alternate) {
-			var if_statement = deep_copy(if_statement_node);
-			if_statement["test"] = make_expression(test);
-			if_statement["consequent"] = deep_copy(block_statement_node);
-			if_statement["consequent"]["body"].push(make_return_statement(consequent));
-
-			if (alternate != undefined) {
-				// Detect basic nested ifs. This results in else ifs.
-				if (!util.is_leaf(alternate) && alternate.children[0] == "if") {
-					if_statement["alternate"] = helper.apply(null, alternate.children.slice(1));
-				} else {
-					if_statement["alternate"] = deep_copy(block_statement_node);
-					if_statement["alternate"]["body"].push(make_return_statement(alternate));
-				}
-			}
-			return if_statement;
-		}
-		var if_expression = deep_copy(call_expression_node);
-		var callee = deep_copy(function_expression_node);
-		callee["body"]["body"] = [helper.apply(null, church_tree.children.slice(1))];
-		if_expression["callee"] = callee;
-		return if_expression;
+//	function make_if_expression(church_tree) {
+//		function helper(test, consequent, alternate) {
+//			var if_statement = deep_copy(if_statement_node);
+//			if_statement["test"] = make_expression(test);
+//			if_statement["consequent"] = deep_copy(block_statement_node);
+//			if_statement["consequent"]["body"].push(make_return_statement(consequent));
+//
+//			if (alternate != undefined) {
+//				// Detect basic nested ifs. This results in else ifs.
+//				if (!util.is_leaf(alternate) && alternate.children[0] == "if") {
+//					if_statement["alternate"] = helper.apply(null, alternate.children.slice(1));
+//				} else {
+//					if_statement["alternate"] = deep_copy(block_statement_node);
+//					if_statement["alternate"]["body"].push(make_return_statement(alternate));
+//				}
+//			}
+//			return if_statement;
+//		}
+//		var if_expression = deep_copy(call_expression_node);
+//		var callee = deep_copy(function_expression_node);
+//		callee["body"]["body"] = [helper.apply(null, church_tree.children.slice(1))];
+//		if_expression["callee"] = callee;
+//		return if_expression;
+//	}
+    function make_if_expression(church_tree) {
+        var conditional_expression = deep_copy(conditional_expression_node)
+        conditional_expression.test = make_expression(church_tree.children[1])
+        conditional_expression.consequent = make_expression(church_tree.children[2])
+        if(church_tree.children[3]) {
+            conditional_expression.alternate = make_expression(church_tree.children[3])
+        } else {
+            conditional_expression.alternate = deep_copy(expression_node)
+            conditional_expression.alternate.type = "Identifier"
+            conditional_expression.alternate.name = "undefined"
+        }
+            
+		return conditional_expression;
 	}
 
 	function make_quoted_expression(church_tree) {
