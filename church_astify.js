@@ -254,7 +254,7 @@ function church_astify(tokens) {
 					children: [
 						{text: "if"},
 						clause.children[0],
-						clause.children[1],
+						clause.children[1]
 					]
 				};
 				if (next) {
@@ -289,7 +289,7 @@ function church_astify(tokens) {
 			return {
 				children: [
 					{text: "lambda"},
-					args,
+					args
 				].concat(statements.slice(0, -1)).concat(condition).concat(statements[statements.length-1])
 			};
 		}

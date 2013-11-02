@@ -79,7 +79,7 @@ var tests = [
   ["(> (* (gaussian 0 1) (gaussian 0 1) ) -1000)", "#t"],
   ["(define f (mem (lambda (x) (gaussian 0 1)))) (= (f 'a) (f 'a))", "#t"],
   ["(define make-coin (lambda (weight) (lambda () (flip weight)))) (define coin (make-coin 0.8)) (define data (repeat 1000 (lambda () (sum (map (lambda (x) (if x 1 0)) (repeat 10 coin)))))) (> (mean data) 0.79)", "#t"],
-  ["(define (f) (define lung-cancer (flip 0.01)) (define cold (flip 0.2)) (define cough (or cold lung-cancer)) (if cough 1 0)) (> (apply + (repeat 10000 f)) 2000)", "#t"],
+  ["(define (f) (define lung-cancer (flip 0.01)) (define cold (flip 0.2)) (define cough (or cold lung-cancer)) (if cough 1 0)) (> (apply + (repeat 20000 f)) 2000)", "#t"],
   
 // generative models problem 1
 ["\
