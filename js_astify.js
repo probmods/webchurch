@@ -54,6 +54,8 @@ var church_builtins_map = {
 	"make-list": "make_list",
   "list-ref": "list_ref",
   "list-elt": "list_elt",
+    "take": "take",
+    "drop": "drop",
 	"eq?": "is_eq",
 	"equal?": "is_equal",
 	"member": "member",

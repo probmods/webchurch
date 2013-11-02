@@ -221,6 +221,14 @@ function list_elt(lst, n) {
   return list_ref(lst, n - 1);  
 }
 
+function take(lst,n) {
+    return arrayToList(listToArray(lst).slice(0,n))
+}
+
+function drop(lst,n) {
+    return arrayToList(listToArray(lst).slice(n))
+}
+
 
 function max(x) {
 	var args = args_to_array(arguments);
@@ -621,7 +629,9 @@ module.exports = {
 	is_equal: is_equal,
 	member: member,
     list_ref: list_ref,
-    list_elt: list_elt, 
+    list_elt: list_elt,
+    take: take,
+    drop: drop,
 	apply: apply,
 	
 	fold: fold,
