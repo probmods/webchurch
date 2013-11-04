@@ -199,33 +199,58 @@ var block_statement_node = {
 // It retrieves the caller's arguments, not its own arguments because of the
 // way that probabilistic-js transforms function calls.
 // Very likely to break if the transform changes.
+//var variadic_header = {
+//	"type": "VariableDeclaration",
+//	"declarations": [
+//		{
+//			"type": "VariableDeclarator",
+//			"id": {
+//				"type": "Identifier",
+//				"name": null
+//			},
+//			"init": {
+//				"type": "CallExpression",
+//				"callee": {
+//					"type": "Identifier",
+//					"name": "church_builtins.args_to_list"
+//				},
+//				"arguments": [
+//					{
+//						"type": "Identifier",
+//						"name": "arguments.callee.caller.arguments"
+//					}
+//				]
+//			}
+//		}
+//	],
+//	"kind": "var"
+//}
 var variadic_header = {
 	"type": "VariableDeclaration",
 	"declarations": [
-		{
-			"type": "VariableDeclarator",
-			"id": {
-				"type": "Identifier",
-				"name": null
-			},
-			"init": {
-				"type": "CallExpression",
-				"callee": {
-					"type": "Identifier",
-					"name": "church_builtins.args_to_list"
-				},
-				"arguments": [
-					{
-						"type": "Identifier",
-						"name": "arguments.callee.caller.arguments"
-					}
-				]
-			}
-		}
-	],
+                     {
+                     "type": "VariableDeclarator",
+                     "id": {
+                     "type": "Identifier",
+                     "name": null
+                     },
+                     "init": {
+                     "type": "CallExpression",
+                     "callee": {
+                     "type": "Identifier",
+                     "name": "church_builtins.args_to_list"
+                     },
+                     "arguments": [
+                                   {
+                                   "type": "Identifier",
+                                   "name": "arguments"
+                                   }
+                                   ]
+                     }
+                     }
+                     ],
 	"kind": "var"
 }
-
 
 function strip_quotes(s) { return s.slice(1, -1); }
 function get_value_of_string_or_number(s) { 
