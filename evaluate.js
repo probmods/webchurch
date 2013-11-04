@@ -8,7 +8,9 @@ var util = require('./util.js');
 
 
 var pr = require('./probabilistic/index.js')
-var transform = require("./probabilistic/transform")
+//var transform = require("./probabilistic/transform")
+var transform = require("./wctransform")
+
 
 // Note: escodegen zero-indexes columns, while JS evaluators and the Church
 // tokenizer uses 1-indexed columns.

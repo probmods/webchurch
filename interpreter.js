@@ -6,20 +6,17 @@ Nothing fancy here.
 var escodegen = require('escodegen');
 var church_builtins = require('./church_builtins');
 var erp = require('./probabilistic/erp.js')
+var pr = require('./probabilistic/index.js')
 // make erp exports directly avaialable (gnarly use of eval to get in scope):
 for (var prop in erp) {
     eval(prop + "= erp."+prop)
 }
 
 
-
-//Use flat environment structure. later bindings will overwrite (hence shadow) earlier. This means must copy env on (compound) function application. Do this by using the constructor...
-var Environment = function Environment(oldenv) {
-    oldbindings = (oldenv==undefined)?{}:oldenv.bindings
+var Environment = function Environment(baseenv) {
+    this.base = baseenv
     this.bindings = {}
-    for(n in oldbindings) {
-        this.bindings[n] = oldbindings[n]
-    }
+    this.depth = (baseenv==undefined)?0:baseenv.depth+1
 }
 
 Environment.prototype.bind = function Environment_bind(name, val) {
@@ -28,128 +25,80 @@ Environment.prototype.bind = function Environment_bind(name, val) {
 
 Environment.prototype.lookup = function Environment_lookup(name) {
     val = this.bindings[name]
-//    if (val == undefined) {throw new Error("Variable "+name+" is undefined.")}
+    if((val == undefined) && this.base) {return this.base.lookup(name)}
     return val
 }
 
 
-function interpret(ast, env) {
-    env = (env==undefined?new Environment():env)
-    var ret
-    switch (ast.type) {
-        //First the statements:
-        case 'Program':
-        case 'BlockStatement':
-            var ret
-            for (a in ast.body) {
-                ret = interpret(ast.body[a],env)
-            }
-            return ret
-            
-        case 'ExpressionStatement':
-            return interpret(ast.expression, env)
-            
-        case 'IfStatement':
-            var test = interpret(ast.test,env)
-            return test?interpret(ast.consequent,env):interpret(ast.alternate, env)
-            
-        case 'ReturnStatement':
-            var val = interpret(ast.argument, env)
-            var e ={thrown_return: true, val: val}
-            throw e
-            
-        case 'VariableDeclaration':
-            env.bind(ast.declarations.id.name, inerpret(ast.declarations.init,env))
-            return undefined
-            
-            
-        //Next the expresisons:
-        case 'FunctionExpression':
-            //represent a closure as the AST extended by an env field, which is a copy of current env.
-            ast.env = new Environment(env)
-            return ast
-            
-        case 'MemberExpression':
-            var ob = interpret(ast.object,env)
-            if (!ast.computed) {
-                return ob[ast.property.name]
-            } else {
-                throw new Error("Have not implemented computed member reference.")
-            }
-            
-        case 'ArrayExpression':
-            var ret = []
-            for (a in ast.elements) {
-                ret.push(interpret(ast.elements[a],env))
-            }
-            return ret
-            
-        case 'CallExpression':
-            var fn = interpret(ast.callee,env)
-            var args = []
-            for(a in ast.arguments) {
-                args.push(interpret(ast.arguments[a], env))
-            }
-            if(fn.type && (fn.type == 'FunctionExpression')) {
-                for(a in args) {
-                    fn.env.bind(fn.params[a].name,args[a])
-                }
-                try {
-                    interpret(fn.body,fn.env)
-                } catch (e) {
-                    if (e.thrown_return) {return e.val}
-                    throw e
-                }
-                return undefined
-            }
-//            else {
-//              //if callee is provided from erp.js, call it:
-//                if(fn in erp) {
-//                    erp[fn].apply(null,args)
-//                }
-//            }
-            //if callee isn't a closure built by interpreter or an erp, assume its a js function already:
-            return fn.apply(fn,args)
-            
-            
-//        case 'ConditionalExpression':
-        
-            
-        case 'Identifier':
-            //lookup in interpreter environment:
-            var v = env.lookup(ast.name)
-            //if not found, assume it will be defined in js environment for interpreter:
-            if(!v){v = eval(ast.name)} //FIXME: better way to do this?
-            return v
-            
-        case 'Literal':
-            return ast.value
-        
-        default:
-            throw new Error("Don't know how to handle "+ast.type)
-    }
-}
-
-//an abstract interpreter / tracer.
-//there are now ordinary values and abstract sites.
-
 //the abstract value class:
 function Abstract() {
-    this.id = nextId()
+    this.id = "ab"+nextId()
 }
+
+function isAbstract(a) {return a instanceof Abstract}
+function isClosure(fn) {return fn.type && (fn.type == 'FunctionExpression')}
 
 var AbstractId = 0
 function nextId(){return AbstractId++}
 
-function _newAbstractVal(){
-    return new Abstract()
+function _randomChoice(erp, params) {
+    var ret = new Abstract()
+    global_trace.push("var "+valString(ret)+" = random(" + valString(erp) +", "+ valString(params) +";")
+    return ret
 }
 
+//tmp:
+function condition(val) {
+    return val
+}
+function traceMH(val) {
+    return "tmp"
+}
+
+function valString(ob) {
+    if (isAbstract(ob)){
+        return ob.id
+    } else {
+        var json = JSON.stringify(ob)
+        return "JSON.parse(" + json + ")"
+    }
+}
+
+
+var max_trace_depth = 100
 global_trace=[]
 
-//the tracer. be a normal interpreter except for certain cases where there is an abstract value. then emit a statement into the trace.
+//global_trace= {
+//	"type": "Program",
+//	"body": []
+//}
+//
+//function addTraceStatement(name, ast) {
+//    var declaration_node = {
+//        "type": "VariableDeclaration",
+//        "declarations": [
+//                         {
+//                         "type": "VariableDeclarator",
+//                         "id": {
+//                         "type": "Identifier",
+//                         "name": name
+//                         },
+//                         "init": ast
+//                         }
+//                         ],
+//        "kind": "var"
+//    }
+//    global_trace.body.push(declaration_node)
+//}
+
+
+
+//an abstract interpreter / tracer.
+//a normal interpreter except for certain cases where there is an abstract value. then emit a statement into the trace.
 function tracer(ast, env) {
     env = (env==undefined?new Environment():env)
+//    console.log(ast)
+//    console.log(env)
     var ret
     switch (ast.type) {
             //First the statements:
@@ -164,21 +113,22 @@ function tracer(ast, env) {
         case 'ExpressionStatement':
             return tracer(ast.expression, env)
             
-        case 'IfStatement':
-            var test = tracer(ast.test,env)
-            if(test instanceof Abstract) {
-                //FIXME: tracing both sides of if could lead to infinite recursion, but maybe not for cases we care about...
-                var ret = new Abstract()
-                var cons = tracer(ast.consequent,env)
-                cons = (cons instanceof Abstract)? "ab"+cons.id : cons //FIXME to string?
-                var alt = tracer(ast.alternate, env)
-                alt = (alt instanceof Abstract)? "ab"+alt.id : alt
-                var tracestring = "var ab"+ret.id+" = ab"+test.id+"?"+cons+":"+alt+";"
-                global_trace.push(tracestring)
-
-                return ret
-            }
-            return test?tracer(ast.consequent,env):tracer(ast.alternate, env)
+//comment out because church compile uses ternary op, not if...
+//        case 'IfStatement':
+//            var test = tracer(ast.test,env)
+//            if(test instanceof Abstract) {
+//                //FIXME: tracing both sides of if could lead to infinite recursion, but maybe not for cases we care about...
+//                var ret = new Abstract()
+//                var cons = tracer(ast.consequent,env)
+//                cons = (cons instanceof Abstract)? cons.id : cons //FIXME to string?
+//                var alt = tracer(ast.alternate, env)
+//                alt = (alt instanceof Abstract)? alt.id : alt
+//                var tracestring = "var "+ret.id+" = "+test.id+"?"+cons+":"+alt+";"
+//                global_trace.push(tracestring)
+//
+//                return ret
+//            }
+//            return test?tracer(ast.consequent,env):tracer(ast.alternate, env)
             
         case 'ReturnStatement':
             var val = tracer(ast.argument, env)
@@ -186,14 +136,14 @@ function tracer(ast, env) {
             throw e
             
         case 'VariableDeclaration':
-            env.bind(ast.declarations.id.name, inerpret(ast.declarations.init,env))
+            env.bind(ast.declarations[0].id.name, tracer(ast.declarations[0].init,env))
             return undefined
             
             
-            //Next the expresisons:
+        //Next the expresisons:
         case 'FunctionExpression':
-            //represent a closure as the AST extended by an env field, which is a copy of current env.
-            ast.env = new Environment(env)
+            //represent a closure as the AST with a pointer t the enclosing env.
+            ast.env = env
             return ast
             
         case 'MemberExpression':
@@ -217,40 +167,34 @@ function tracer(ast, env) {
             for(a in ast.arguments) {
                 var val = tracer(ast.arguments[a], env)
                 args.push(val)
-                if(val instanceof Abstract) {abstract_args=true}
+                if(isAbstract(val) || isClosure(val)) {abstract_args=true}
             }
             var fn = tracer(ast.callee,env)
             
-            if(fn.type && (fn.type == 'FunctionExpression')) {
+            if(isClosure(fn)) {
+                var callenv = new Environment(fn.env)
                 for(a in args) {
-                    fn.env.bind(fn.params[a].name,args[a])
+//                    console.log("binding arg "+fn.params[a].name+" to "+args[a])
+                    callenv.bind(fn.params[a].name,args[a])
                 }
                 try {
-                    tracer(fn.body,fn.env)
+                    tracer(fn.body,callenv)
                 } catch (e) {
                     if (e.thrown_return) {return e.val}
                     throw e
                 }
                 return undefined
             }
-            //            else {
-            //              //if callee is provided from erp.js, call it:
-            //                if(fn in erp) {
-            //                    erp[fn].apply(null,args)
-            //                }
-            //            }
-            //if callee isn't a closure and any args are abstract, emit new assignment into trace:
-            if(abstract_args) {
+    
+            //if callee isn't a closure and any args are abstract, emit new assignment into trace.
+            //if the fn is list or pair, go ahead and do it, even with abstract args to ennable allocation removal. NOTE: could abstracts in lists screw up other things?
+            var isadtcons = (fn == church_builtins.list) || (fn == church_builtins.pair)
+            if(abstract_args && !isadtcons) {
                 var ret = new Abstract()
-                var fnstring = escodegen.generate(ast.callee)
-                tracestring = "var ab"+ret.id+" = "+fnstring+"("
+                var fnstring = escodegen.generate(ast.callee) //FIXME: use json?
+                tracestring = "var "+ret.id+" = "+fnstring+"("
                 for(a in args){
-                    if(args[a] instanceof Abstract) {
-                        tracestring = tracestring + " ab"+args[a].id+","
-                    }
-                    else {
-                        tracestring = tracestring + " " + args[a] + ","
-                    }
+                    tracestring = tracestring + valString(args[a]) + ","
                 }
                 global_trace.push(tracestring.slice(0,-1)+");")
                 return ret
@@ -261,15 +205,18 @@ function tracer(ast, env) {
             
         case 'ConditionalExpression':
             var test = tracer(ast.test,env)
-            if(test instanceof Abstract) {
+            if(isAbstract(test)) {
                 //FIXME: tracing both sides of if could lead to infinite recursion, but maybe not for cases we care about...
                 var ret = new Abstract()
-                var cons = tracer(ast.consequent,env)
-                cons = (cons instanceof Abstract)? "ab"+cons.id : cons //FIXME to string?
-                var alt = tracer(ast.alternate, env)
-                alt = (alt instanceof Abstract)? "ab"+alt.id : alt
-                var tracestring = "var ab"+ret.id+" = ab"+test.id+"?"+cons+":"+alt+";"
-                global_trace.push(tracestring)
+                if(env.depth==max_trace_depth) {
+                    //depth maxed out, don't trace branches, just generate code for this call to trace:
+                    global_trace.push("var "+ret.id +" = "+escodegen.generate(ast))
+                } else {
+                    var cons = valString(tracer(ast.consequent,env))
+                    var alt = valString(tracer(ast.alternate, env))
+                    var tracestring = "var "+ret.id+" = "+valString(test)+"?"+cons+":"+alt+";"
+                    global_trace.push(tracestring)
+                }
                 
                 return ret
             }
@@ -280,7 +227,7 @@ function tracer(ast, env) {
             //lookup in interpreter environment:
             var v = env.lookup(ast.name)
             //if not found, assume it will be defined in js environment for interpreter:
-            if(!v){v = eval(ast.name)} //FIXME: better way to do this?
+            if(v == undefined){v = eval(ast.name)} //FIXME: better way to do this?
             return v
             
         case 'Literal':
@@ -292,10 +239,150 @@ function tracer(ast, env) {
 }
 
 
+//var precompile_queries =
+//{
+//enter: function(ast) {
+//    if(ast.type == 'CallExpression'
+//       && ast.callee.type == 'Identifier'
+//       && ast.callee.name == 'church_builtins.wrapped_traceMH') {
+//        
+//        
+//        
+//        return expanded
+//    }
+//    return node
+//}
+//}
+
+
 
 module.exports =
 {
-    interpret : interpret,
+//    interpret : interpret,
     tracer: tracer,
 global_trace: global_trace
 }
+
+
+/* Notes:
+ 
+ -Should generate the trace as an AST to make further transforms easier.
+ -Make a query transformer that does the tracing compilation only on the query computation().
+ -Do a condition propogation pass?
+ 
+ -One special kind of randomChoice is those guaranteed to exist. Those can get simple static names. Can detect from the interpretation by passing down whether we are in an (abstract) if branch.
+ -Another special kind of randomChoice are the non-structural ones.
+ -Maybe all randomChoices that are traced through should get simple static ids, then keep a big vector that ins't all used?
+
+
+ -Webchurch generates a simpler js sublanguage than full js.. so transform can be simpler. Make a specialized transform for webchurch, and just use probabilistic-js runtime.
+ -In transform, first put into A-normal form, by lifting any CallExpression to enclosing statement (which turns into a block statement).
+ -Then can wrap calls with enter / leave without making and using a thunk.
+ -Combine the above: 
+    -on enter:  
+        if a ConditionalExpression replace any non-imediate subexpression (ie not identifier or literal) with function(){subexp}() statement. (to maintain control flow.) mark this call as skipped so it desn't get moved.
+    -on leave:
+        if a CallExpression (an not skip marked) replace with a fresh identifier, add to  list of calls to move.
+        if a Statement, if call list is not empty, replace with Block statement which is variable declaration for each call, wrapped in enterfn/leavefn, then original statement.
+ -Within code generated by tracing, don't need enter/leave wrapping. Only right before randomChoice or untraced fall-through.
+ 
+ -Trace through ERP lookup (scoring / sampling)?
+ 
+*/
+
+//function interpret(ast, env) {
+//    env = (env==undefined?new Environment():env)
+//    var ret
+//    switch (ast.type) {
+//        //First the statements:
+//        case 'Program':
+//        case 'BlockStatement':
+//            var ret
+//            for (a in ast.body) {
+//                ret = interpret(ast.body[a],env)
+//            }
+//            return ret
+//
+//        case 'ExpressionStatement':
+//            return interpret(ast.expression, env)
+//
+//        case 'IfStatement':
+//            var test = interpret(ast.test,env)
+//            return test?interpret(ast.consequent,env):interpret(ast.alternate, env)
+//
+//        case 'ReturnStatement':
+//            var val = interpret(ast.argument, env)
+//            var e ={thrown_return: true, val: val}
+//            throw e
+//
+//        case 'VariableDeclaration':
+//            env.bind(ast.declarations.id.name, inerpret(ast.declarations.init,env))
+//            return undefined
+//
+//
+//        //Next the expresisons:
+//        case 'FunctionExpression':
+//            //represent a closure as the AST extended by an env field, which is a copy of current env.
+//            ast.env = new Environment(env)
+//            return ast
+//
+//        case 'MemberExpression':
+//            var ob = interpret(ast.object,env)
+//            if (!ast.computed) {
+//                return ob[ast.property.name]
+//            } else {
+//                throw new Error("Have not implemented computed member reference.")
+//            }
+//
+//        case 'ArrayExpression':
+//            var ret = []
+//            for (a in ast.elements) {
+//                ret.push(interpret(ast.elements[a],env))
+//            }
+//            return ret
+//
+//        case 'CallExpression':
+//            var fn = interpret(ast.callee,env)
+//            var args = []
+//            for(a in ast.arguments) {
+//                args.push(interpret(ast.arguments[a], env))
+//            }
+//            if(fn.type && (fn.type == 'FunctionExpression')) {
+//                for(a in args) {
+//                    fn.env.bind(fn.params[a].name,args[a])
+//                }
+//                try {
+//                    interpret(fn.body,fn.env)
+//                } catch (e) {
+//                    if (e.thrown_return) {return e.val}
+//                    throw e
+//                }
+//                return undefined
+//            }
+////            else {
+////              //if callee is provided from erp.js, call it:
+////                if(fn in erp) {
+////                    erp[fn].apply(null,args)
+////                }
+////            }
+//            //if callee isn't a closure built by interpreter or an erp, assume its a js function already:
+//            return fn.apply(fn,args)
+//
+//
+////        case 'ConditionalExpression':
+//
+//
+//        case 'Identifier':
+//            //lookup in interpreter environment:
+//            var v = env.lookup(ast.name)
+//            //if not found, assume it will be defined in js environment for interpreter:
+//            if(!v){v = eval(ast.name)} //FIXME: better way to do this?
+//            return v
+//
+//        case 'Literal':
+//            return ast.value
+//
+//        default:
+//            throw new Error("Don't know how to handle "+ast.type)
+//    }
+//}
