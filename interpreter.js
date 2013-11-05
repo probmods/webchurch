@@ -283,11 +283,13 @@ global_trace: global_trace
     -Apply tracer to trace out the computation in any query calls.
         -Propogate conditions as far up as possible.
         -Add notation for guaranteed random choices.
+        -Trace out / inline RC lookups?
     -Apply wctransfrom transformer to add addressing (and put in pseudo A-normal form).
         -The wctransform doesn't need to annotate primitive calls with addresses.
  
  -Runtime
-    -guaranteed rcs should have different (fast) lookup path.
+    -Guaranteed rcs should have different (fast) lookup path.
+    -Non-structural proposals use flat list
  
 */
 

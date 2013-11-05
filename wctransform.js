@@ -70,18 +70,22 @@ leave: function(node)
             return idNode
         }
         
+        //catch calls that are being moved at closest Statement:
         if(node.type == 'ExpressionStatement'
            || node.type == 'Program'
            || node.type == 'BlockStatement'
            || node.type == 'ReturnStatement'
            || node.type == 'VariableDeclaration'
            ) {
+            
             if(calls) {
+                //statements that don't already have a body sequence get wrapped in a block statement:
                 if(node.type == 'ExpressionStatement'
                    || node.type == 'ReturnStatement'
                    || node.type == 'VariableDeclaration') {
                     node = {type: "BlockStatement", body: [node]}
                 }
+                //stick moved calls onto top of body sequence, then reset calls:
                 node.body = calls.concat(node.body)
                 calls = []
                 return node
