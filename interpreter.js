@@ -82,31 +82,6 @@ function valString(ob) {
 var max_trace_depth = 100
 global_trace=[]
 
-//global_trace= {
-//	"type": "Program",
-//	"body": []
-//}
-//
-//function addTraceStatement(name, ast) {
-//    var declaration_node = {
-//        "type": "VariableDeclaration",
-//        "declarations": [
-//                         {
-//                         "type": "VariableDeclarator",
-//                         "id": {
-//                         "type": "Identifier",
-//                         "name": name
-//                         },
-//                         "init": ast
-//                         }
-//                         ],
-//        "kind": "var"
-//    }
-//    global_trace.body.push(declaration_node)
-//}
-
-
-
 //an abstract interpreter / tracer.
 //a normal interpreter except for certain cases where there is an abstract value. then emit a statement into the trace.
 function tracer(ast, env) {
