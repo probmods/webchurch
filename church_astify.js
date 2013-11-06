@@ -333,7 +333,7 @@ function church_astify(tokens) {
 	}
  
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [validate_leaves, dsgr_quote, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if];
+	var desugar_fns = [dsgr_quote, validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if];
 
 	var ast = astify(tokens);
 	// Special top-level check
