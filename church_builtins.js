@@ -310,18 +310,22 @@ function repeat(n,fn) {
 function map() {
   var args = args_to_array(arguments),
       fn = args[0];
-
+  
   assertArgType(fn, "function", "map");
     
   var lists = args.slice(1),
-      arr = [];
+      arr = [],
+      numLists = lists.length; 
 
+  var arrays = lists.map(function(L) { return listToArray(L) });
+  // ^ have to write it verbosely because otherwise, map will pass in extra arguments
+  // namely the current index and the entire array. the index element will
+  // get used as the recursive flag to the listToArray function
+  // this causes nested maps to have the wrong behavior
   
-  var arrays = lists.map(listToArray),
-      n = Math.min.apply(this, arrays.map(function(a) { return a.length}));
-  
-  
-	for(var i=0;i<n;i++) {
+  var n = Math.min.apply(this, arrays.map(function(a) { return a.length}));
+
+  for(var i=0;i<n;i++) {
 		arr[i] = fn.apply(this, arrays.map(function(L) { return L[i]}));
 	}
 
