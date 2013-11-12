@@ -19,7 +19,7 @@ function plus() {
 }
 
 function sum(list) {
-	assertNumArgs(args_to_array(arguments), 1);
+	assertNumArgs(args_to_array(arguments), 1, "sum");
     assertArgType(list, "list", "sum");
 	return plus.apply(null, listToArray(list, true));
 }
@@ -68,7 +68,7 @@ function and() {
 }
 
 function all(list) {
-	assertNumArgs(args_to_array(arguments), 1);
+	assertNumArgs(args_to_array(arguments), 1, "all");
     assertArgType(list, "list", "all");
 	return and.apply(null, listToArray(list, true));
 }
@@ -84,7 +84,7 @@ function or() {
 }
 
 function not(x) {
-	assertNumArgs(args_to_array(arguments), 1);
+	assertNumArgs(args_to_array(arguments), 1, "not");
 	return !x;
 }
 
@@ -119,7 +119,7 @@ function eq() {
 }
 
 function is_null(x) {
-	assertNumArgs(args_to_array(arguments), 1)
+	assertNumArgs(args_to_array(arguments), 1, "null?")
 	return x == the_empty_list || (Array.isArray(x) && x.length == 0);
 }
 
@@ -133,7 +133,7 @@ function list() {
 }
 
 function is_list(list) {
-	assertNumArgs(args_to_array(arguments), 1);
+	assertNumArgs(args_to_array(arguments), 1, "list?");
   var lst = list;
   while (true) {
 	  if (!Array.isArray(lst)) {
@@ -148,17 +148,17 @@ function is_list(list) {
 }
 
 function pair(a, b) {
-	assertNumArgs(args_to_array(arguments), 2)
+	assertNumArgs(args_to_array(arguments), 2, "pair")
 	return [a, b];
 }
 
 function is_pair(x) {
-	assertNumArgs(args_to_array(arguments), 1);
+	assertNumArgs(args_to_array(arguments), 1, "pair?");
 	return x.length == 2;
 }
 
 function first(x) {
-	assertNumArgs(args_to_array(arguments), 1);
+	assertNumArgs(args_to_array(arguments), 1, "first");
 	if (x.length != 2) {
 		throw new Error(util.format_result(x) + " does not have required pair structure");
 	} else {
@@ -335,7 +335,7 @@ function map() {
 //function sample(fn) {return fn()}
 
 function rest(x) {
-	assertNumArgs(args_to_array(arguments), 1);
+	assertNumArgs(args_to_array(arguments), 1, "rest");
 	if (x.length != 2) {
 		throw new Error("Argument does not have required pair structure");
 	} else {
@@ -344,7 +344,7 @@ function rest(x) {
 }
 
 function length(x) {
-	assertNumArgs(args_to_array(arguments), 1);
+	assertNumArgs(args_to_array(arguments), 1, "length");
     assertArgType(x, "list", "length")
 	var len = 0;
 	while (x.length != 0) {
@@ -362,7 +362,7 @@ function length(x) {
 // not so complicated as recursive merge
 // http://jsperf.com/best-init-array/3
 function make_list(n, x) {
-	assertNumArgs(args_to_array(arguments), 2);
+	assertNumArgs(args_to_array(arguments), 2, "make-list");
 	assertArgType(n, "integer", "make-list");
 	if (n == 0) return the_empty_list;
 	var results = new Array(n);
@@ -374,12 +374,12 @@ function make_list(n, x) {
 }
 
 function is_eq(x, y) {
-	assertNumArgs(args_to_array(arguments), 2);
+	assertNumArgs(args_to_array(arguments), 2, "eq?");
 	return typeof(x) == typeof(y) && x == y;
 }
 
 function is_equal(x, y) {
-	assertNumArgs(args_to_array(arguments), 2);
+	assertNumArgs(args_to_array(arguments), 2, "equal?");
 	if (typeof(x) == typeof(y)) {
 		if (Array.isArray(x)) {
 			if (x.length == y.length) {
@@ -407,7 +407,7 @@ function member_base(x, list, eq_fn) {
 }
 
 function member(x, list) {
-	assertNumArgs(args_to_array(arguments), 2);
+	assertNumArgs(args_to_array(arguments), 2, "member");
 	return member_base(x, list, is_equal);
 }
 
@@ -417,18 +417,18 @@ function apply(fn, list) {
 	return fn.apply(null, listToArray(list, false));
 }
 
-function wrapped_uniform_draw(items) {
+function wrapped_uniform_draw(items, isStructural, conditionedValue) {
 	assertArgType(items,"list","uniform-draw");
-	return uniformDraw(listToArray(items, false), false);
+	return uniformDraw(listToArray(items, false), isStructural, conditionedValue);
 }
 
-function wrapped_multinomial(items, probs) {
+function wrapped_multinomial(items, probs, isStructural, conditionedValue) {
 	assertArgType(items,"list","multinomial");
 	assertArgType(probs,"list","multinomial");
 	if (items.length != probs.length) {
 		throw new Error("Lists of items and probabilities must be of equal length");
 	}
-	return multinomialDraw(listToArray(items, false), listToArray(probs), null);
+	return multinomialDraw(listToArray(items, false), listToArray(probs), isStructural, conditionedValue);
 }
 
 function wrapped_flip(p, isStructural, conditionedValue) {
@@ -436,45 +436,45 @@ function wrapped_flip(p, isStructural, conditionedValue) {
 }
 
 function wrapped_uniform(a, b, isStructural, conditionedValue) {
-	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
+	assertNumArgsMulti(args_to_array(arguments), [2, 4], "uniform");
 	assertArgType(a, "number", "uniform");
 	assertArgType(b, "number", "uniform");
 	return uniform(a, b, isStructural, conditionedValue);
 }
 
-function wrapped_random_integer(n) {
-	assertNumArgs(args_to_array(arguments), 1);
+function wrapped_random_integer(n,isStructural, conditionedValue) {
+	assertNumArgsMulti(args_to_array(arguments), [1,3], "random-integer");
 	assertArgType(n, "number", "random integer");
-	return Math.floor(uniform(0, 1, false, null) * n); //FIXME: this results in a continuous ERP when it should be discrete. use multinomial or uniformDraw...
+	return Math.floor(uniform(0, 1, isStructural, conditionedValue) * n); //FIXME: this results in a continuous ERP when it should be discrete. use multinomial or uniformDraw...
 }
 
 function wrapped_gaussian(mu, sigma, isStructural, conditionedValue) {
-	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
+	assertNumArgsMulti(args_to_array(arguments), [2, 4],"gaussian");
 	assertArgType(mu, "number", "gaussian");
 	assertArgType(sigma, "number", "gaussian");
 	return gaussian(mu, sigma, isStructural, conditionedValue);
 }
 
 function wrapped_gamma(a, b, isStructural, conditionedValue) {
-	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
+	assertNumArgsMulti(args_to_array(arguments), [2, 4],"gamma");
 	assertArgType(a, "number", "gamma");
 	assertArgType(b, "number", "gamma");
 	return gamma(a, b, isStructural, conditionedValue);
 }
 
 function wrapped_beta(a, b, isStructural, conditionedValue) {
-	assertNumArgsMulti(args_to_array(arguments), [2, 4]);
+	assertNumArgsMulti(args_to_array(arguments), [2, 4],"beta");
 	assertArgType(a, "number", "beta");
 	assertArgType(b, "number", "beta");
 	return beta(a, b, isStructural, conditionedValue);
 }
 
-function wrapped_dirichlet(alpha) {
-	assertNumArgs(args_to_array(arguments), 1);
+function wrapped_dirichlet(alpha, isStructural, conditionedValue) {
+	assertNumArgsMulti(args_to_array(arguments), [1,3],"dirichlet");
 	assertArgType(alpha, "list", "dirichlet");
 	assertAllType(alpha, "number", "dirichlet");
 	alpha = listToArray(alpha, true);
-	return arrayToList(dirichlet(alpha, false, null));
+	return arrayToList(dirichlet(alpha, isStructural, conditionedValue));
 }
 
 function wrapped_traceMH(comp, samples, lag) {
@@ -571,15 +571,15 @@ function assertAllType(list, type, argTo) {
 	}
 }
 
-function assertNumArgs(args, n) {
+function assertNumArgs(args, n, argTo) {
 	if (args.length != n) {
-		throw new Error("Wrong number of arguments, expected " + n + ", got " + args.length);
+		throw new Error("Wrong number of arguments to "+ argTo +", expected " + n + ", got " + args.length);
 	}
 }
 
-function assertNumArgsMulti(args, choices) {
+function assertNumArgsMulti(args, choices, argTo) {
 	if (choices.indexOf(args.length) < 0) {
-		throw new Error("Wrong number of arguments, expected " + choices.join(" or ") + ", got " + args.length);
+		throw new Error("Wrong number of arguments to "+ argTo +", expected " + choices.join(" or ") + ", got " + args.length);
 	}
 }
 
