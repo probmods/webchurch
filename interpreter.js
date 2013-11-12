@@ -27,13 +27,15 @@ pr.openModule(pr)//make probjs fns available.
 
 /*
  -prepend the static analysis preamble (pure church versions of higher-order fns and wrapped ERPs)
- -trace out (to max depth), including tracing thunks (hence the computation of queries).
+ -trace out (to max depth), including tracing closures (hence the computation of queries).
  -propagate conditions.
  
  FIXME: 
-   -need to add standard precompile environment.
-   -need to leave fn definitions in place as well as adding to env, so that untraced code has what it needs..?
+   -need to add standard precompile environment for higher order fns.
+   -when max-depth reach, generated code isn't going to have symbols defined.. need to add wrapper that asisgns all names in interpreter environment when code is generated.
  */
+
+
 
 //the ERPs that have to be intercepted from church_builtins:
 //copy builtins since we'll be overloading some:
@@ -475,6 +477,17 @@ function backTrace(ast, cond) {
                                         cond.add(argname,argval)
                                         cond.remove(name)//have handled the cond on this var.
                                     }
+                                }
+                                break
+                                
+                            case "and":
+                                if(varcond == true) {
+                                    //add condition for each argument:
+                                    for(var a in init.arguments) {
+                                        var argname = init.arguments[a].name
+                                        cond.add(argname,true)
+                                    }
+                                    cond.remove(name)//have handled the cond on this var.
                                 }
                                 break
                         }
