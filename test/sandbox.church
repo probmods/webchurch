@@ -1,1 +1,19 @@
-'lambda
+(define (random-arithmetic-expression)
+  (if (flip 0.7)
+      (if (flip) 'x (sample-integer 10))
+      (list (uniform-draw '(+ -)) (random-arithmetic-expression) (random-arithmetic-expression))))
+
+(define (procedure-from-expression expr)
+  (eval (list 'lambda '(x) expr)))
+
+(define (sample)
+(rejection-query
+ 
+ (define my-expr (random-arithmetic-expression))
+ (define my-proc (procedure-from-expression my-expr))
+ 
+ my-expr
+ 
+ (= (my-proc 1) 3)))
+ 
+(sample)

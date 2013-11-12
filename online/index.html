@@ -90,12 +90,16 @@
       function __runCode()
       {
         var church_code = editor.getValue()
-      store.set('code', church_code);
+        store.set('code', church_code);
         // var js_code = church_to_js(church_code)
         // __updateJSOutput(js_code)
         try
         {
-          __updateExecOutput(format_result(evaluate(church_code)))
+             var d1 = new Date()
+             var res = evaluate(church_code)
+             var d2 = new Date()
+             console.log("Run time: " + (d2.getTime() - d1.getTime()) / 1000)
+          __updateExecOutput(format_result(res))
         }
         catch (e)
         {

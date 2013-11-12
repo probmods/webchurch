@@ -50,11 +50,11 @@ function church_astify(tokens) {
 		return ast;
 	}
 
-	function traverse(ast, fn) {
-		if (!util.is_leaf(ast) && ast.children.length > 0) {
+	function traverse(ast, fn, stopfn) {
+		if (!util.is_leaf(ast) && ast.children.length > 0 && (!stopfn || !stopfn(ast))) {
 			ast = fn(ast);
 			for (var i = 0; i < ast.children.length; i++) {
-				ast.children[i] = traverse(ast.children[i], fn);
+				ast.children[i] = traverse(ast.children[i], fn, stopfn);
 			}
 		}
 		return ast;
@@ -333,15 +333,17 @@ function church_astify(tokens) {
 	}
  
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [validate_leaves, dsgr_quote, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if];
+	var desugar_fns = [validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if];
 
 	var ast = astify(tokens);
 	// Special top-level check
 	for (var i = 0; i < ast.children.length; i++) {
 		assert_not_special_form(ast.children[i]);
 	}
+    ast = traverse(ast, dsgr_quote);
+    var isquote = function(ast){return ast.children && ast.children[0].text && ast.children[0].text=="quote"}
 	for (var i = 0; i < desugar_fns.length; i++) {
-		ast = traverse(ast, desugar_fns[i]);
+		ast = traverse(ast, desugar_fns[i], isquote);
 	}
 
 	return ast;
