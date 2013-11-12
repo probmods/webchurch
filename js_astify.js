@@ -521,8 +521,20 @@ function church_tree_to_esprima_ast(church_tree) {
 	function make_leaf_expression(church_leaf) {
 		var expression = deep_copy(expression_node);
 		if (!util.is_leaf(church_leaf) && church_leaf.children.length == 0) {
-			expression["type"] = "Identifier";
-			expression["name"] = "church_builtins.the_empty_list";
+            expression =  {
+            type: "MemberExpression",
+            computed: false,
+            object: {
+            type: "Identifier",
+            name: "church_builtins"
+            },
+            property: {
+            type: "Identifier",
+            name: "the_empty_list"
+            }
+            }
+            //			expression["type"] = "Identifier";
+//			expression["name"] = "church_builtins.the_empty_list";
 		} else if (util.boolean_aliases[church_leaf.text] != undefined) {
 			expression["type"] = "Literal";
 			expression["value"] = util.boolean_aliases[church_leaf.text];

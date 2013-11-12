@@ -15,6 +15,8 @@ if a Statement, if call list is not empty, replace with Block statement which is
 */
 
 
+//FIXME: this doesn't keep locations needed for debugging.
+
 function templateReplace(template, replacenode) {
     var replacer =
 	{

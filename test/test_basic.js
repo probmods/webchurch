@@ -170,6 +170,7 @@ for (var i = 0; i < tests.length; i++) {
       result;
 	
 	try {
+//        console.log("running: ", churchCode)
 		result = format_result(evaluate(tests[i][0]));
 	} catch(err) {
 		result = err.message;

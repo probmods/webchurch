@@ -1,6 +1,6 @@
 #!/bin/sh
 
-if { git status -b --porcelain | grep "## master" }
+if [[{ git status -b --porcelain | grep "## master" }]]
 then
  
   node test/test_basic.js

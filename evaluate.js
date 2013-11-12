@@ -1,15 +1,17 @@
 var escodegen = require('escodegen');
+var esprima = require('esprima');
 var source_map = require('source-map');
 var church_builtins = require('./church_builtins');
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
+var precompile = require('./interpreter.js').precompile;
 var util = require('./util.js');
 
 
 var pr = require('./probabilistic/index.js')
 //var transform = require("./probabilistic/transform")
-var transform = require("./wctransform")
+var transform = require('./wctransform')
 
 
 // Note: escodegen zero-indexes columns, while JS evaluators and the Church
@@ -51,14 +53,24 @@ function get_sites_from_stack(split_stack) {
 	return sites;
 }
 
-function evaluate(church_codestring) {
-    //    var evaluate = this
-	var tokens = tokenize(church_codestring);
-	var church_ast = church_astify(tokens);
-	var js_ast = js_astify(church_ast);
+function evaluate(church_codestring,precomp) {
+    var tokens = tokenize(church_codestring);
+
+    precomp = true //FIXME
+    if(precomp) {
+        church_codestring = church_codestring.replace(/\(flip\)/g,'(flip 0.5)') //FIXME: kludge works around vararg interaction with direct conditioning....
+        var js_precompiled = precompile(church_codestring)
+        js_precompiled = "var random=function(f,p,c){return f.apply(this,p.concat(false).concat(c))};\n"+js_precompiled //FIXME: kludge...
+        var js_ast = esprima.parse(js_precompiled)
+//        console.log(escodegen.generate(js_ast))
+    } else {
+        var church_ast = church_astify(tokens);
+        var js_ast = js_astify(church_ast);
+    }
+    
 	js_ast = transform.probTransformAST(js_ast);
 	var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
-    //   console.log(code_and_source_map.code);
+//    console.log(code_and_source_map.code);
     
 	var result;
     
