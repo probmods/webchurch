@@ -45,6 +45,7 @@ var tests = [
 	["((lambda (x y) (+ x y)) 1 2)", 3],
 	["((lambda () (define foo 1) foo) 1)", 1],
 	["((lambda x (sum x)) 1 2 3)", 6],
+    ["(and ((lambda () true)) ((lambda () true)))", "#t"],
 
 	["(let ((x 1) (y 2)) (+ x y))", 3],
 

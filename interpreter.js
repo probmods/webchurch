@@ -5,7 +5,17 @@
  A_i  :=   var abi = primfn(ab,..)
  I    :=   if(ab1){S;A_i} else {S;A_i}
  Note that the assigned variable in A_i in both if branches is the same. Otherwise variables are assigned only once.
+ 
+ 
+ -prepend the static analysis preamble (pure church versions of higher-order fns and wrapped ERPs)
+ -trace out (to max depth), including tracing closures (hence the computation of queries).
+ -propagate conditions.
+ 
+ FIXME:
+ -need to add standard precompile environment for higher order fns.
+ -when max-depth reach, generated code isn't going to have symbols defined.. need to add wrapper that asisgns all names in interpreter environment when code is generated.
  */
+
 
 var escodegen = require('escodegen');
 var esprima = require('esprima');
@@ -25,24 +35,14 @@ pr.openModule(pr)//make probjs fns available.
 
 
 
-/*
- -prepend the static analysis preamble (pure church versions of higher-order fns and wrapped ERPs)
- -trace out (to max depth), including tracing closures (hence the computation of queries).
- -propagate conditions.
- 
- FIXME: 
-   -need to add standard precompile environment for higher order fns.
-   -when max-depth reach, generated code isn't going to have symbols defined.. need to add wrapper that asisgns all names in interpreter environment when code is generated.
- */
-
 
 
 //the ERPs that have to be intercepted from church_builtins:
 //copy builtins since we'll be overloading some:
 var church_builtins = {}
 for (var b in builtins) {church_builtins[b] = builtins[b];}
+//add abstract objects for the ERPs to the church_builtins:
 var erps = ["wrapped_uniform_draw", "wrapped_multinomial", "wrapped_flip", "wrapped_uniform", "wrapped_random_integer", "wrapped_gaussian", "wrapped_gamma", "wrapped_beta", "wrapped_dirichlet"]
-//add abstract objects for the ERPs to the base environment:
 for (var p in erps) {
     var e = erps[p]
     church_builtins[e] = function(x) {return function() {
@@ -52,6 +52,9 @@ for (var p in erps) {
         return ret
     }}(e)
 }
+//now we're going to add some compiled HOFs to the church_builtins:
+//compile a def to js_ast, extract that closure from the env, bind it to a church_builtins
+//church_builtins.repeat = js_astify(church_astify(tokenize()))
 
 
 function precompile(church_codestring) {
@@ -60,6 +63,8 @@ function precompile(church_codestring) {
     //stdEnv_code = require('fs').readFileSync("./precompile_stdenv.church", "utf8");
     var preamble = "" //FIXME: (most of?) the higher-order functions we want to overload are in church_builtins
     church_codestring = preamble + church_codestring
+    //FIXME: kludge works around vararg interaction with direct conditioning....
+    church_codestring = church_codestring.replace(/\(flip\)/g,'(flip 0.5)')
     var tokens = tokenize(church_codestring)
     var church_ast = church_astify(tokens)
     var js_ast = js_astify(church_ast)
@@ -162,7 +167,8 @@ function valString(ob) {
         return ob.id
     }
     if (isClosure(ob)) {
-        return escodegen.generate(ob) //FIXME: doesn't capture closure variables.
+        throw new Error("Tracer valString received closure object. That makes it sad.")
+//        return escodegen.generate(ob) //FIXME: doesn't capture closure variables.
     }
     if (typeof ob === "boolean"
         || typeof ob === "number") {
@@ -280,6 +286,7 @@ function tracer(ast, env) {
                     //depth maxed out, don't trace branches, just generate code for this call:
                     var ret = new Abstract()
                     global_trace.push("var "+ret.id +" = "+escodegen.generate(ast))
+                    console.log("Tracer warning: max_trace_depth reached, generating original code. (This might be broken.)")
                     return ret
                 }
                 var callenv = new Environment(fn.env)
@@ -521,8 +528,6 @@ function backTrace(ast, cond) {
 }
 
 
-
-
 /*
  Take a set of conditions computed by backTrace, and the code string, and insert condition or conditioned erp statements as needed.
  */
@@ -557,6 +562,7 @@ function addConditions(string, cond) {
     return newlines.join("\n")
 }
             
+
 
             
 

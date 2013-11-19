@@ -9,6 +9,7 @@
 
 
 var escodegen = require("escodegen");
+var estraverse = require("escodegen/node_modules/estraverse")
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var util = require('./util.js');
@@ -31,6 +32,7 @@ var church_builtins_map = {
 	"or": "or",
 	"not": "not",
 
+    "the_empty_list": "the_empty_list",
 	"null?": "is_null",
 	"list": "list",
 	"list?": "is_list",
@@ -65,6 +67,8 @@ var church_builtins_map = {
     
     "eval": "wrapped_evaluate", //from webchurch
     
+    "args_to_list": "args_to_list",
+    
     "fold": "fold",
     "map": "map",
     "repeat": "repeat",
@@ -95,7 +99,9 @@ var js_builtins_map = {
 	"abs": "Math.abs",
     "exp": "Math.exp",
     "log": "Math.log",
-    "pow": "Math.pow"
+    "pow": "Math.pow",
+    "arguments": "arguments",
+    "undefined": "undefined"
 }
 
 var query_builtins_map = {
@@ -223,6 +229,7 @@ var block_statement_node = {
 //	],
 //	"kind": "var"
 //}
+//"var <x> = args_to_list(arguments)"
 var variadic_header = {
 	"type": "VariableDeclaration",
 	"declarations": [
@@ -234,9 +241,10 @@ var variadic_header = {
                      },
                      "init": {
                      "type": "CallExpression",
-                     "callee": {
+                     "callee":
+                     {
                      "type": "Identifier",
-                     "name": "church_builtins.args_to_list"
+                     "name": "args_to_list"
                      },
                      "arguments": [
                                    {
@@ -291,14 +299,6 @@ function make_location(node) {
 	}
 }
 
-function rename_unmapped(s) { return identifier_prefix + format_identifier(s);}
-
-function rename(s) {
-	return (church_builtins_map[s] || //higher_order_builtins_map[s] ||
-			probjs_builtins_map[s] || js_builtins_map[s] || query_builtins_map[s] ||
-			rename_unmapped(s));
-}
-
 function validate_variable(church_tree) {
 	if (!(util.is_leaf(church_tree) && util.is_identifier(church_tree.text))) {
 		throw util.make_church_error("SyntaxError", church_tree.start, church_tree.end, "Invalid variable name");
@@ -320,7 +320,7 @@ function church_tree_to_esprima_ast(church_tree) {
 		validate_variable(church_tree.children[1]);
 
 		var node = deep_copy(declaration_node);
-		node["declarations"][0]["id"]["name"] = rename(church_tree.children[1].text);
+		node["declarations"][0]["id"]["name"] = church_tree.children[1].text;
 		node["declarations"][0]["init"] = make_expression(church_tree.children[2]);
 		return node;
 	}
@@ -358,7 +358,7 @@ function church_tree_to_esprima_ast(church_tree) {
 		} else {
 			validate_variable(lambda_args);
 			var variadic = deep_copy(variadic_header);
-			variadic["declarations"][0]["id"]["name"] = rename(lambda_args.text);
+			variadic["declarations"][0]["id"]["name"] = lambda_args.text;
 			func_expression["body"]["body"].unshift(variadic);
 		}
 		return func_expression;
@@ -412,9 +412,7 @@ function church_tree_to_esprima_ast(church_tree) {
         if(church_tree.children[3]) {
             conditional_expression.alternate = make_expression(church_tree.children[3])
         } else {
-            conditional_expression.alternate = deep_copy(expression_node)
-            conditional_expression.alternate.type = "Identifier"
-            conditional_expression.alternate.name = "undefined"
+            conditional_expression.alternate = {type: "Identifier", name: "undefined"}
         }
             
 		return conditional_expression;
@@ -458,58 +456,13 @@ function church_tree_to_esprima_ast(church_tree) {
 		}
 	}
 
-	function make_identifier_expression(church_leaf) {
-		var expression;
-
-		if (church_leaf.text in church_builtins_map) {
-			expression = deep_copy(member_expression_node);
-			expression["object"]["name"] = "church_builtins"
-			expression["property"]["name"] = church_builtins_map[church_leaf.text];
-			expression["property"]["loc"] = make_location(church_leaf);
-		} else if (church_leaf.text in probjs_builtins_map) {
-			expression = deep_copy(expression_node);
-			expression["type"] = "Identifier";
-			expression["name"] = probjs_builtins_map[church_leaf.text];
-		} else if (church_leaf.text in js_builtins_map) {
-			expression = deep_copy(expression_node);
-			expression["type"] = "Identifier";
-			expression["name"] = js_builtins_map[church_leaf.text];
-		} else if (church_leaf.text in query_builtins_map) {
-			expression = deep_copy(expression_node);
-			expression["type"] = "Identifier";
-			expression["name"] = query_builtins_map[church_leaf.text];
-		}
-//        else if (church_leaf in higher_order_builtins_map) {
-//			expression = deep_copy(expression_node);
-//			expression["type"] = "Identifier";
-//			expression["name"] = higher_order_builtins_map[church_leaf];
-//			if (!(church_leaf in higher_order_builtins_parsed)) {
-//				higher_order_builtins_to_parse[church_leaf] = null;
-//			}
-//		}
-        else {
-			expression = deep_copy(expression_node);
-			expression["type"] = "Identifier";
-			expression["name"] = rename_unmapped(church_leaf.text);
-		}
-		return expression;
-	}
-
 	function make_leaf_expression(church_leaf) {
 		var expression = deep_copy(expression_node);
 		if (!util.is_leaf(church_leaf) && church_leaf.children.length == 0) {
 			expression =  {
-				type: "MemberExpression",
-				computed: false,
-				object: {
-					type: "Identifier",
-					name: "church_builtins"
-				},
-				property: {
-					type: "Identifier",
-					name: "the_empty_list"
-				}
-			}
+	            type: "Identifier",
+	            name: "the_empty_list"
+            }
 		} else if (church_leaf.text == undefined) {
 			expression["type"] = "Identifier";
 			expression["name"] = "undefined";
@@ -517,7 +470,8 @@ function church_tree_to_esprima_ast(church_tree) {
 			expression["type"] = "Literal";
 			expression["value"] = util.boolean_aliases[church_leaf.text];
 		} else if (util.is_identifier(church_leaf.text)) {
-			expression = make_identifier_expression(church_leaf);
+            expression = {type: 'Identifier', name: church_leaf.text}
+//			expression = make_identifier_expression(church_leaf);
 		} else {
 			var value = get_value_of_string_or_number(church_leaf.text);
 			if (value < 0) {
@@ -575,7 +529,42 @@ function church_tree_to_esprima_ast(church_tree) {
 //	}
 
 	ast["body"] = body;
+    ast = estraverse.replace(ast, renameIdentifiers)
 	return ast;
+}
+
+
+function rename_unmapped(s) { return identifier_prefix + format_identifier(s);}
+
+function rename(s) {
+	return (church_builtins_map[s] || //higher_order_builtins_map[s] ||
+			probjs_builtins_map[s] || js_builtins_map[s] || query_builtins_map[s] ||
+			rename_unmapped(s));
+}
+
+
+renameIdentifiers = {
+leave: function(node) {
+    if(node.type == 'Identifier') {
+            if (node.name in church_builtins_map) {
+                var expression = deep_copy(member_expression_node);
+                expression["object"]["name"] = "church_builtins"
+                expression["property"]["name"] = church_builtins_map[node.name];
+                expression.property.loc = node.loc;
+                return expression
+            } else if (node.name in probjs_builtins_map) {
+                node.name = probjs_builtins_map[node.name]
+            } else if (node.name in js_builtins_map) {
+                node.name = js_builtins_map[node.name]
+            } else if (node.name in query_builtins_map) {
+                node.name = query_builtins_map[node.name]
+            } else {
+                node.name = rename_unmapped(node.name)
+            }
+        }
+//        node.name = rename(node.name)
+    return node
+}
 }
 
 
