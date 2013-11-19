@@ -90,7 +90,7 @@ function evaluate(church_codestring,precomp) {
         
 		var js_sites = get_sites_from_stack(stack.slice(1));
 //        console.log("js source ",code_and_source_map.code)
-        console.log("error stack ", msg)
+//        console.log("error stack ", msg)
 //        console.log("error site ",js_sites)
 //        console.log("js to church site map ", js_to_church_site_map)
 //        console.log("church sites ot tokens ", church_sites_to_tokens_map)
@@ -147,6 +147,7 @@ function evaluate(church_codestring,precomp) {
                                        }).join(",");
             
             e.stackarray = church_sites.map(function(x) {return church_sites_to_tokens_map[x]})
+                        
  			throw e;
  		}
 	}
