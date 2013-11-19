@@ -1,5 +1,6 @@
 var escodegen = require('escodegen');
 var esprima = require('esprima');
+var estraverse = require('escodegen/node_modules/estraverse')
 var source_map = require('source-map');
 var church_builtins = require('./church_builtins');
 var tokenize = require('./tokenize.js').tokenize;
@@ -58,14 +59,12 @@ function evaluate(church_codestring,precomp) {
 
     //flag for precompilation pass:
     if(precomp) {
-        //FIXME: kludge works around vararg interaction with direct conditioning....
-        church_codestring = church_codestring.replace(/\(flip\)/g,'(flip 0.5)')
         var js_precompiled = precompile(church_codestring)
         //FIXME: kludge to call ERPs...
-        js_precompiled = "var random=function(f,p,c){return f.apply(this,p.concat(false).concat(c))};\n"+js_precompiled
+        js_precompiled = "var random=function(f,p,c){return f.apply(this,p.concat(true).concat(c))};\n"+js_precompiled
         var js_ast = esprima.parse(js_precompiled)
         js_ast = wctransform.probTransformAST(js_ast); //new wc transform
-        console.log("did pre-compilation, final code: ",escodegen.generate(js_ast))
+//        console.log("did pre-compilation, final code: ",escodegen.generate(js_ast))
     } else {
         var church_ast = church_astify(tokens);
         var js_ast = js_astify(church_ast);
