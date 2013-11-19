@@ -572,7 +572,7 @@ leave: function(node) {
                 var expression = deep_copy(member_expression_node);
                 expression["object"]["name"] = "church_builtins"
                 expression["property"]["name"] = church_builtins_map[node.name];
-                expression["property"]["loc"] = make_location(node);
+                expression.property.loc = node.loc;
                 return expression
             } else if (node.name in probjs_builtins_map) {
                 node.name = probjs_builtins_map[node.name]

@@ -84,7 +84,7 @@ leave: function(node)
             var id = nextid++
             var idNode = {type: "Identifier", name: "call"+id}
             var newCallBlock = templateReplace("{enterfn("+id+"); var call"+id+"=__REPLACEME__; leavefn();}",node)
-            newCallBlock.body[1].loc = node.loc //original location of new assignment is set to original call. might be slightly off?
+            newCallBlock.body[1].loc = node.loc //original location of new assignment is set to original call. needed because error stack inside eval doesn't give character, only line.
             callsToMove.push(newCallBlock)
             idNode.callsToMove = callsToMove
             return idNode

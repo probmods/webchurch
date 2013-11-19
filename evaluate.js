@@ -47,6 +47,7 @@ function get_sites_from_stack(split_stack) {
 		if (split_stack[i].match("<anonymous>")) {
 			var site = split_stack[i].match(/(\d+:\d+)[^:]*$/)[1].split(":");
 			sites.push([site[0], parseInt(site[1]-1)]);
+//            sites.push([site[0], parseInt(site[1])]);
 		} else if (sites.length > 0) {
 			break;
 		}
@@ -79,6 +80,7 @@ function evaluate(church_codestring,precomp) {
     
 	try {
 		result = eval(code_and_source_map.code);
+//        result = Function(code_and_source_map.code)()
 	} catch (err) {
 		var js_to_church_site_map = get_js_to_church_site_map(code_and_source_map.map);
         var churchLines = church_codestring.split("\n");
@@ -87,6 +89,11 @@ function evaluate(church_codestring,precomp) {
 		var msg = stack[0].split(":");
         
 		var js_sites = get_sites_from_stack(stack.slice(1));
+//        console.log("js source ",code_and_source_map.code)
+        console.log("error stack ", msg)
+//        console.log("error site ",js_sites)
+//        console.log("js to church site map ", js_to_church_site_map)
+//        console.log("church sites ot tokens ", church_sites_to_tokens_map)
 		var church_sites = [];
 		for (var i = 0; i < js_sites.length; i++) {
 			var js_site = js_sites[i];
@@ -95,36 +102,38 @@ function evaluate(church_codestring,precomp) {
 			church_sites.push(church_site);
 		}
         
- 		church_sites = church_sites.filter(function (x) {return x});
+// 		church_sites = church_sites.filter(function (x) {return x});
  		if (church_sites.length == 0) {
  			throw err;
  		} else {
 			var token = church_sites_to_tokens_map[church_sites[0]],
             displayedMessage = err.message;
             
-            if (msg[0] == "ReferenceError") {
-                displayedMessage = token.text + " is not defined";
+            // error sometimes matches on starting paren rather than the function name
+            // so seek to next token, which willbe the function name
+            var fntoken
+            if (token.text == "(") {
+                var tokStart = token.start,
+                tokEnd = token.end,
+                tokeNum;
+                
+                for(var j = 0, jj = tokens.length; j < jj; j++) {
+                    if (tokens[j].start == tokStart && tokens[j].end == tokEnd) {
+                        tokeNum = j;
+                    }
+                }
+                fntoken = tokens[tokeNum + 1];
             }
             
-            if ( msg[1].match(/is not a function/)  ) {
-                // error sometimes matches on starting paren rather than the function name
-                // so seek to next token, which is the function name
-                if (token.text == "(") {
-                    var tokStart = token.start,
-                    tokEnd = token.end,
-                    tokeNum;
-                    
-                    for(var j = 0, jj = tokens.length; j < jj; j++) {
-                        if (tokens[j].start == tokStart && tokens[j].end == tokEnd) {
-                            tokeNum = j;
-                        }
-                    }
-                    token = tokens[tokeNum + 1];
-                }
+            if (msg[0] == "ReferenceError") {
+                token = fntoken?fntoken:token
+                displayedMessage = token.text + " is not defined";
                 
-                var nonFunction = token.text;
-                
-                displayedMessage = nonFunction + " is not a function";
+            }
+            
+            if (msg[0] == "TypeError") {
+                token = fntoken?fntoken:token
+                displayedMessage = token.text + " is not a function";
                 
             };
             
