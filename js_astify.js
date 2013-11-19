@@ -104,8 +104,6 @@ var query_builtins_map = {
 	"enumeration-query": "church_builtins.wrapped_enumerate"
 }
 
-var equals_conditionable_erps = ["flip", "uniform", "gaussian"];
-
 //var higher_order_builtins_map = {};
 //for (key in higher_order_builtins) {
 //	higher_order_builtins_map[key] = key;
@@ -367,31 +365,10 @@ function church_tree_to_esprima_ast(church_tree) {
 	}
 
 	function make_call_expression(church_tree) {
-		function is_equals_conditionable_erp(church_tree) {
-			return !util.is_leaf(church_tree) && equals_conditionable_erps.indexOf(church_tree.children[0].text) >= 0
-		}
-
 		var call_expression = deep_copy(call_expression_node);
 		var callee = church_tree.children[0];
 		var args = church_tree.children.slice(1);
 
-		if (callee.text == "condition" && args.length > 0 && !util.is_leaf(args[0]) && args[0].children[0].text == "=") {
-			var erp_call;
-			var conditioned_value;
-			if (is_equals_conditionable_erp(args[0].children[1])) {
-				erp_call = args[0].children[1];
-				conditioned_value = args[0].children[2];
-			} else if (is_equals_conditionable_erp(args[0].children[2])) {
-				erp_call = args[0].children[2];
-				conditioned_value = args[0].children[1];
-			}
-			if (erp_call) {
-				call_expression["callee"] = make_expression(erp_call.children[0]);
-				call_expression["arguments"] = make_expression_list(erp_call.children.slice(1)).concat(
-					{"type": "Literal", "value": false}, make_expression(conditioned_value));
-				return call_expression;
-			}
-		} 
 		call_expression["callee"] = make_expression(callee);
 		call_expression["arguments"] = make_expression_list(args);
 		call_expression["loc"] = make_location(church_tree);
@@ -521,20 +498,21 @@ function church_tree_to_esprima_ast(church_tree) {
 	function make_leaf_expression(church_leaf) {
 		var expression = deep_copy(expression_node);
 		if (!util.is_leaf(church_leaf) && church_leaf.children.length == 0) {
-            expression =  {
-            type: "MemberExpression",
-            computed: false,
-            object: {
-            type: "Identifier",
-            name: "church_builtins"
-            },
-            property: {
-            type: "Identifier",
-            name: "the_empty_list"
-            }
-            }
-            //			expression["type"] = "Identifier";
-//			expression["name"] = "church_builtins.the_empty_list";
+			expression =  {
+				type: "MemberExpression",
+				computed: false,
+				object: {
+					type: "Identifier",
+					name: "church_builtins"
+				},
+				property: {
+					type: "Identifier",
+					name: "the_empty_list"
+				}
+			}
+		} else if (church_leaf.text == undefined) {
+			expression["type"] = "Identifier";
+			expression["name"] = "undefined";
 		} else if (util.boolean_aliases[church_leaf.text] != undefined) {
 			expression["type"] = "Literal";
 			expression["value"] = util.boolean_aliases[church_leaf.text];

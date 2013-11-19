@@ -332,8 +332,66 @@ function church_astify(tokens) {
 		return ast;
 	}
  
+	function transform_equals_condition(ast) {
+		function is_equals_conditionable(ast) {
+			var equals_conditionable_erps = ["flip", "uniform", "gaussian"];
+			return !util.is_leaf(ast) && ast.children[4] == undefined && equals_conditionable_erps.indexOf(ast.children[0].text) != -1;
+		}
+
+		function transform_erp(erp, conditioned_value) {
+			[1,2,3].map(function(x) {erp.children[x] = erp.children[x] || {}});
+			erp.children[4] = conditioned_value;
+		}
+
+		function try_transform(left, right) {
+			if (left == undefined) return false;
+			if (is_equals_conditionable(left)) {
+				transform_erp(left, right);
+				lambda_children.splice(i, 1, left);
+				return true;
+			} else if (util.is_leaf(left) && define_table[left.text]) {
+				var left_entry = define_table[left.text];
+				if (!util.is_identifier(right.text) || (
+						define_table[right.text] && left_entry.index > define_table[right.text].index)) {
+					transform_erp(left_entry.def, right);
+					lambda_children.splice(i, 1);
+					return true;
+				}
+			}
+			return false;
+		}
+
+		var transformed;
+		if (["rejection-query", "enumeration-query", "mh-query"].indexOf(ast.children[0].text) != -1) {			
+			var define_table = {};
+			// Assumes preprocessing through dsgr_query
+			var lambda_children = ast.children[1].children
+			var i = 0;
+			for (var i = 2; i < lambda_children.length; i++) {
+				if (!util.is_leaf(lambda_children[i])) {
+					if (lambda_children[i].children[0].text == "define") {
+						define_table[lambda_children[i].children[1].text] = {
+							index: i,
+							def: lambda_children[i].children[2]
+						};
+					} else if (lambda_children[i].children[0].text == "condition") {
+						var condition = lambda_children[i].children[1];
+						if (!util.is_leaf(condition) && condition.children[0].text == "=") {
+							var left = condition.children[1];
+							var right = condition.children[2];
+							if (!try_transform(left, right)) try_transform(right, left);
+						}
+					}
+					
+				}
+			}
+
+		}
+		return ast;
+	}
+
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if];
+	var desugar_fns = [validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if, transform_equals_condition];
 
 	var ast = astify(tokens);
 	// Special top-level check
