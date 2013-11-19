@@ -22,7 +22,7 @@ function is_identifier(s) { return !(boolean_aliases[s]!=undefined || is_string(
 // ******************************
 
 function make_church_error(name, start, end, msg) {
-	return {name: "Church" + name, message: start + "-" + end + ": " + msg};
+	return {name: "Church" + name, message: start + "-" + end + ": " + msg, start: start, end: end};
 }
 
 function format_result(obj) {
