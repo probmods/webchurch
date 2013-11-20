@@ -200,35 +200,6 @@ var block_statement_node = {
 
 
 // This line must be the first line of any variadic Church function.
-// It retrieves the caller's arguments, not its own arguments because of the
-// way that probabilistic-js transforms function calls.
-// Very likely to break if the transform changes.
-//var variadic_header = {
-//	"type": "VariableDeclaration",
-//	"declarations": [
-//		{
-//			"type": "VariableDeclarator",
-//			"id": {
-//				"type": "Identifier",
-//				"name": null
-//			},
-//			"init": {
-//				"type": "CallExpression",
-//				"callee": {
-//					"type": "Identifier",
-//					"name": "church_builtins.args_to_list"
-//				},
-//				"arguments": [
-//					{
-//						"type": "Identifier",
-//						"name": "arguments.callee.caller.arguments"
-//					}
-//				]
-//			}
-//		}
-//	],
-//	"kind": "var"
-//}
 //"var <x> = args_to_list(arguments)"
 var variadic_header = {
 	"type": "VariableDeclaration",

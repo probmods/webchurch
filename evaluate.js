@@ -62,7 +62,7 @@ function evaluate(church_codestring,precomp) {
         console.log("pre-compiling...")
         var js_precompiled = precompile(church_codestring)
         //FIXME: kludge to call ERPs...
-        js_precompiled = "var random=function(f,p,c){return f.apply(this,p.concat(true).concat(c))};\n"+js_precompiled
+        js_precompiled = "var random=function(f,p,c){return c?f.apply(this,p.concat(true).concat(c)):f.apply(this,p)};\n"+js_precompiled
         var js_ast = esprima.parse(js_precompiled)
         js_ast = wctransform.probTransformAST(js_ast); //new wc transform
     } else {
@@ -71,8 +71,8 @@ function evaluate(church_codestring,precomp) {
         js_ast = wctransform.probTransformAST(js_ast); //new wc transform
     }
     
-	
 	var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
+    
 //    console.log(code_and_source_map.code);
     
 	var result;
@@ -88,18 +88,21 @@ function evaluate(church_codestring,precomp) {
 		var msg = stack[0].split(":");
         
 		var js_sites = get_sites_from_stack(stack.slice(1));
-//        console.log("js source ",code_and_source_map.code)
-//        console.log("error stack ", msg)
-//        console.log("error site ",js_sites)
-//        console.log("js to church site map ", js_to_church_site_map)
-//        console.log("church sites ot tokens ", church_sites_to_tokens_map)
 		var church_sites = [];
 		for (var i = 0; i < js_sites.length; i++) {
 			var js_site = js_sites[i];
 			var church_site = js_to_church_site_map[js_site[0]] && js_to_church_site_map[js_site[0]][js_site[1]];
             
-			church_sites.push(church_site);
+			if(church_site){church_sites.push(church_site)};
 		}
+        
+//        console.log("js source ",code_and_source_map.code)
+//        console.log("error stack ", msg)
+//        console.log("js_sites ",js_sites)
+//        console.log("source map ", code_and_source_map.map)
+//        console.log("js to church site map ", js_to_church_site_map)
+//        console.log("church sites ot tokens ", church_sites_to_tokens_map)
+//        console.log("church_sites ", church_sites)
         
 // 		church_sites = church_sites.filter(function (x) {return x});
  		if (church_sites.length == 0) {

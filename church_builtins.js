@@ -588,7 +588,7 @@ function assertNumArgs(args, n, argTo) {
 
 function assertNumArgsMulti(args, choices, argTo) {
 	if (choices.indexOf(args.length) < 0) {
-		throw new Error("Wrong number of arguments to "+ argTo +", expected " + choices.join(" or ") + ", got " + args.length);
+		throw new Error("Wrong number of arguments to "+ argTo +", expected " + choices.join(" or ") + ", got " + args.length +": "+args);
 	}
 }
 
