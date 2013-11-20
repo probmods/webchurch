@@ -11,10 +11,10 @@ if a ConditionalExpression replace any non-imediate subexpression (ie not identi
 -on leave:
 if a CallExpression (an not skip marked) replace with a fresh identifier, add to  list of calls to move.
 if a Statement, if call list is not empty, replace with Block statement which is variable declaration for each call, wrapped in enterfn/leavefn, then original statement.
+ 
+Note: could be more efficient by not wrapping deterministic primitive calls....
 */
 
-
-//FIXME: this doesn't keep locations needed for debugging.
 
 function templateReplace(template, replacenode) {
     var replacer =

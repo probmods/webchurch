@@ -8,6 +8,13 @@ function args_to_array(args) { return Array.prototype.slice.call(args, 0 ); }
 
 function args_to_list(args) { return arrayToList(args_to_array(args)); }
 
+
+//function plus(x,y){return x+y}
+//function minus(x,y){return x-y}
+//function mult(x,y){return x*y}
+//function div(x,y){return x/y}
+
+
 function plus() {
 	var args = args_to_array(arguments);
 	var sum = 0;
@@ -16,12 +23,6 @@ function plus() {
 		sum = sum + args[i];
 	}
 	return sum;
-}
-
-function sum(list) {
-	assertNumArgs(args_to_array(arguments), 1, "sum");
-    assertArgType(list, "list", "sum");
-	return plus.apply(null, listToArray(list, true));
 }
 
 function minus() {
@@ -55,6 +56,14 @@ function div() {
 		return args[0] / mult.apply(null, args.slice(1)); //FIXME: going to give wrong argTo for divisors...
 	}
 }
+
+function sum(list) {
+	assertNumArgs(args_to_array(arguments), 1, "sum");
+    assertArgType(list, "list", "sum");
+	return plus.apply(null, listToArray(list, true));
+}
+
+
 
 function and() {
 	var args = args_to_array(arguments);
@@ -650,6 +659,7 @@ module.exports = {
 	wrapped_uniform: wrapped_uniform,
 	wrapped_random_integer: wrapped_random_integer,
 	wrapped_gaussian: wrapped_gaussian,
+    wrapped_gamma: wrapped_gamma,   
     wrapped_beta: wrapped_beta,
 	wrapped_dirichlet: wrapped_dirichlet,
 	wrapped_traceMH: wrapped_traceMH,

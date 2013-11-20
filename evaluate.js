@@ -46,8 +46,7 @@ function get_sites_from_stack(split_stack) {
 		// stack frames containing "<anonymous>" belong to the generated code
 		if (split_stack[i].match("<anonymous>")) {
 			var site = split_stack[i].match(/(\d+:\d+)[^:]*$/)[1].split(":");
-			sites.push([site[0], parseInt(site[1]-1)]);
-//            sites.push([site[0], parseInt(site[1])]);
+			sites.push([site[0], parseInt(site[1]-1)]); //See above note on indexing.
 		} else if (sites.length > 0) {
 			break;
 		}
@@ -60,12 +59,12 @@ function evaluate(church_codestring,precomp) {
 
     //flag for precompilation pass:
     if(precomp) {
+        console.log("pre-compiling...")
         var js_precompiled = precompile(church_codestring)
         //FIXME: kludge to call ERPs...
         js_precompiled = "var random=function(f,p,c){return f.apply(this,p.concat(true).concat(c))};\n"+js_precompiled
         var js_ast = esprima.parse(js_precompiled)
         js_ast = wctransform.probTransformAST(js_ast); //new wc transform
-//        console.log("did pre-compilation, final code: ",escodegen.generate(js_ast))
     } else {
         var church_ast = church_astify(tokens);
         var js_ast = js_astify(church_ast);
@@ -137,17 +136,13 @@ function evaluate(church_codestring,precomp) {
                 
             };
             
-            
-            
 			var e = util.make_church_error(msg[0], token.start, token.end, displayedMessage);
-            
 			e.stack = church_sites.map(function(x) {
                                        var tok = church_sites_to_tokens_map[x];
                                        return tok.start + "-" + tok.end;
                                        }).join(",");
-            
             e.stackarray = church_sites.map(function(x) {return church_sites_to_tokens_map[x]})
-                        
+            
  			throw e;
  		}
 	}

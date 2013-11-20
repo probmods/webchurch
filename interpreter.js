@@ -193,7 +193,7 @@ function valString(ob) {
 }
 
 
-var max_trace_depth = 100
+var max_trace_depth = 1000
 global_trace=[]
 
 //an abstract interpreter / tracer.

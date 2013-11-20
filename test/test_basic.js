@@ -7,6 +7,10 @@ var log = function() {
   }); 
 };
 
+var pc = process.argv.some(function(x){return x.match(/-pc/)})
+
+//console.log("pc",pc)
+
 log("Webchurch basic tests");
 
 // make a string appear red in terminal
@@ -172,7 +176,7 @@ for (var i = 0; i < tests.length; i++) {
 	
 	try {
 //        console.log("running: ", churchCode)
-		result = format_result(evaluate(tests[i][0]));
+		result = format_result(evaluate(tests[i][0],pc));
 	} catch(err) {
 		result = err.message;
 	}
