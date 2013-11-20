@@ -13,7 +13,7 @@ var boolean_aliases = {
 	"false": false
 }
 
-function is_string(s) { return s[0] == "\""; }
+function is_string(s) { return s != undefined && s[0] == "\""; }
 function is_number(s) { return !isNaN(parseFloat(s)); }
 function is_identifier(s) { return !(boolean_aliases[s]!=undefined || is_string(s) || is_number(s)); }
 

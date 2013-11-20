@@ -79,6 +79,10 @@ var tests = [
   ["(fold and #t '(#t #t #f))", "#f"],
   ["(fold pair '() '(1 2 3))", "(3 2 1)"],
   ["(fold + 0 '(1 2 3) '(2 4 6))", 18],
+  // equals conditioning
+  ["(rejection-query (define x 0) x (condition (= (gaussian 0 1) x)))", 0],
+  ["(rejection-query (define x (gaussian 0 1)) x (condition (= 0 x)))", 0],
+  ["(rejection-query (define y 0) (define x (gaussian 0 1)) x (condition (= x y)))", 0],
   // flip a coin 1000 times, make sure it comes up heads fewer than 600
   ["(< (apply + (map (lambda (x) (if x 1 0)) (repeat 1000 flip))) 600)", "#t"],
   ["(> (* (gaussian 0 1) (gaussian 0 1) ) -1000)", "#t"],
