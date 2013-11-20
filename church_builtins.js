@@ -254,6 +254,7 @@ function expt(a, b) {
 }
 
 function mean(lst) {
+    assertArgType(lst,"list","mean");
 	var vals = listToArray(lst),
       sum = 0,
       n = vals.length;
