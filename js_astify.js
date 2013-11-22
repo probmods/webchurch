@@ -86,30 +86,40 @@ var church_builtins_map = {
 	"dirichlet": "wrapped_dirichlet"
 };
 
-var probjs_builtins_map = {
+var passthrough_map = {
 	"condition": "condition",
     "factor": "factor",
 	"mem": "mem",
 	"marginalize": "marginalize",
-    "baseval":"evaluate"
-}
-
-var js_builtins_map = {
-	"round": "Math.round",
+    "baseval":"evaluate",
+    "round": "Math.round",
 	"abs": "Math.abs",
     "exp": "Math.exp",
     "log": "Math.log",
     "pow": "Math.pow",
     "arguments": "arguments",
-    "undefined": "undefined"
-}
-
-var query_builtins_map = {
-	"mh-query": "church_builtins.wrapped_traceMH",
+    "undefined": "undefined",
+    "mh-query": "church_builtins.wrapped_traceMH",
 	"rejection-query": "rejectionSample",
 	"enumeration-query": "church_builtins.wrapped_enumerate"
 }
 
+//var js_builtins_map = {
+//	"round": "Math.round",
+//	"abs": "Math.abs",
+//    "exp": "Math.exp",
+//    "log": "Math.log",
+//    "pow": "Math.pow",
+//    "arguments": "arguments",
+//    "undefined": "undefined"
+//}
+//
+//var query_builtins_map = {
+//	"mh-query": "church_builtins.wrapped_traceMH",
+//	"rejection-query": "rejectionSample",
+//	"enumeration-query": "church_builtins.wrapped_enumerate"
+//}
+//
 //var higher_order_builtins_map = {};
 //for (key in higher_order_builtins) {
 //	higher_order_builtins_map[key] = key;
@@ -523,12 +533,8 @@ leave: function(node) {
                 expression["property"]["name"] = church_builtins_map[node.name];
                 expression.property.loc = node.loc;
                 return expression
-            } else if (node.name in probjs_builtins_map) {
-                node.name = probjs_builtins_map[node.name]
-            } else if (node.name in js_builtins_map) {
-                node.name = js_builtins_map[node.name]
-            } else if (node.name in query_builtins_map) {
-                node.name = query_builtins_map[node.name]
+            } else if (node.name in passthrough_map) {
+                node.name = passthrough_map[node.name]
             } else {
                 node.name = rename_unmapped(node.name)
             }

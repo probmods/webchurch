@@ -110,7 +110,6 @@ function trace_and_backtrace(ast,env) {
     var cond = backTrace(new_ast)
     var new_trace = addConditions(global_trace.join("\n"),cond)
     new_trace = new_trace + ret
-    
     global_trace = old_trace
     return new_trace
 }
@@ -125,8 +124,11 @@ function trace_closure(body, params, env) {
         newparams.push(ab)
         closureenv.bind(params[p].name,ab)
     }
+//    ab_arguments = new Abstract()
+//    closureenv.bind("arguments",ab_arguments) //make arguments keyword bound to new abstract
     var trace = trace_and_backtrace(body,closureenv)
     return "function("+newparams.map(valString).join(",")+"){"+trace+"}"
+//    return "function("+newparams.map(valString).join(",")+"){"+valString(ab_arguments)+"=arguments;"+trace+"}"
 }
 
 
@@ -174,7 +176,8 @@ function valString(ob) {
         return ob.id
     }
     if (isClosure(ob)) {
-        throw new Error("Tracer valString received closure object. That makes it sad.")
+//        throw new Error("Tracer valString received closure object. That makes it sad.")
+        return escodegen.generate(ob) //FIXME: doesn't capture env variables.
     }
     if (typeof ob === "boolean"
         || typeof ob === "number") {

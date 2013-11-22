@@ -55,8 +55,11 @@ function get_sites_from_stack(split_stack) {
 }
 
 function evaluate(church_codestring,precomp) {
+    
+	var result;
+    
     var tokens = tokenize(church_codestring);
-
+    
     //flag for precompilation pass:
     if(precomp) {
         console.log("pre-compiling...")
@@ -71,15 +74,17 @@ function evaluate(church_codestring,precomp) {
         js_ast = wctransform.probTransformAST(js_ast); //new wc transform
     }
     
-	var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
+    var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
     
-//    console.log(code_and_source_map.code);
-    
-	var result;
+    //    console.log(code_and_source_map.code);
+
     
 	try {
-		result = eval(code_and_source_map.code);
-//        result = Function(code_and_source_map.code)()
+//            var d1 = new Date()
+        result = eval(code_and_source_map.code);
+//            var d2 = new Date()
+//            console.log("transformed source run time: ", (d2.getTime() - d1.getTime()) / 1000)
+        
 	} catch (err) {
 		var js_to_church_site_map = get_js_to_church_site_map(code_and_source_map.map);
         var churchLines = church_codestring.split("\n");
