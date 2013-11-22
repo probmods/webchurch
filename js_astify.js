@@ -406,8 +406,15 @@ function church_tree_to_esprima_ast(church_tree) {
 					return make_leaf_expression(quoted);
 				} else {
 					var array = deep_copy(array_node);
-					array["elements"] = [quote_helper(quoted.children[0]), quote_helper({
-						children: quoted.children.slice(1)})];
+					if (quoted.children.length > 1 &&  quoted.children[1].text == ".") {
+						if (quoted.children.length != 3) {
+							throw util.make_church_error("SyntaxError", quoted.children[1].start, quoted.children[1].end, "Invalid dot");
+						}
+						array["elements"] = [quote_helper(quoted.children[0]), quote_helper(quoted.children[2])];
+					} else {
+						array["elements"] = [quote_helper(quoted.children[0]), quote_helper({
+							children: quoted.children.slice(1)})];
+					}
 					return array;
 				}
 			} else {
@@ -444,6 +451,8 @@ function church_tree_to_esprima_ast(church_tree) {
 	            type: "Identifier",
 	            name: "the_empty_list"
             }
+        } else if (church_leaf.text == ".") {
+			throw util.make_church_error("SyntaxError", church_leaf.start, church_leaf.end, "Invalid dot");
 		} else if (church_leaf.text == undefined) {
 			expression["type"] = "Identifier";
 			expression["name"] = "undefined";
