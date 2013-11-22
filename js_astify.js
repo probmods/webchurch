@@ -143,6 +143,18 @@ var declaration_node = {
 	],
 	"kind": "var"
 }
+var assignment_node = {
+	"type": "ExpressionStatement",
+	"expression": {
+		"type": "AssignmentExpression",
+		"operator": "=",
+		"left": {
+			"type": "Identifier",
+			"name": null
+		},
+		"right": null
+	}
+}
 var function_expression_node = {
 	"type": "FunctionExpression",
 	"id": null,
@@ -300,9 +312,17 @@ function church_tree_to_esprima_ast(church_tree) {
 	function make_declaration(church_tree) {
 		validate_variable(church_tree.children[1]);
 
-		var node = deep_copy(declaration_node);
-		node["declarations"][0]["id"]["name"] = church_tree.children[1].text;
-		node["declarations"][0]["init"] = make_expression(church_tree.children[2]);
+		var name = church_tree.children[1].text;
+		var val = make_expression(church_tree.children[2]);
+		if (name in church_builtins_map || name in passthrough_map) {
+			var node = deep_copy(assignment_node);
+			node["expression"]["left"]["name"] = name;
+			node["expression"]["right"] = val;
+		} else {
+			var node = deep_copy(declaration_node);
+			node["declarations"][0]["id"]["name"] = name;
+			node["declarations"][0]["init"] = val;
+		}
 		return node;
 	}
 
