@@ -455,7 +455,9 @@ function wrapped_uniform(a, b, isStructural, conditionedValue) {
 function wrapped_random_integer(n,isStructural, conditionedValue) {
 	assertNumArgsMulti(args_to_array(arguments), [1,3], "random-integer");
 	assertArgType(n, "number", "random integer");
-	return Math.floor(uniform(0, 1, isStructural, conditionedValue) * n); //FIXME: this results in a continuous ERP when it should be discrete. use multinomial or uniformDraw...
+    var probs = [], p = 1/n
+	for (var i = 0; i < n; i++){probs[i] = p}
+    return multinomial(probs,isStructural, conditionedValue)
 }
 
 function wrapped_gaussian(mu, sigma, isStructural, conditionedValue) {
