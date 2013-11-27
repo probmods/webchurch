@@ -2,7 +2,9 @@ var escodegen = require('escodegen');
 var esprima = require('esprima');
 var estraverse = require('escodegen/node_modules/estraverse')
 var source_map = require('source-map');
-var church_builtins = require('./church_builtins');
+
+
+//var church_builtins = require('./church_builtins');
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
@@ -10,7 +12,7 @@ var precompile = require('./interpreter.js').precompile;
 var util = require('./util.js');
 
 
-var pr = require('./probabilistic/index.js')
+//var pr = require('./probabilistic/index.js')
 var transform = require("./probabilistic/transform")
 var wctransform = require('./wctransform')
 
@@ -76,7 +78,7 @@ function evaluate(church_codestring,precomp) {
     
     var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
     
-    //    console.log(code_and_source_map.code);
+//    console.log(code_and_source_map.code);
 
     
 	try {

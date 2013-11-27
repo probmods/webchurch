@@ -15,8 +15,9 @@ var pc = process.argv.some(function(x){return x.match(/-pc/)})
 code = require('fs').readFileSync(srcfile, "utf8");
 
 try {
-	result = format_result(evaluate(code));
+	result = format_result(evaluate(code,pc));
 	console.log(result);
 } catch (e) {
 	console.log(e.message)
+    throw e
 }

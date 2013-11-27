@@ -429,7 +429,8 @@ function apply(fn, list) {
 
 function wrapped_uniform_draw(items, isStructural, conditionedValue) {
 	assertArgType(items,"list","uniform-draw");
-	return uniformDraw(listToArray(items, false), isStructural, conditionedValue);
+    var u = uniformDraw(listToArray(items, false), isStructural, conditionedValue)
+	return u //uniformDraw(listToArray(items, false), isStructural, conditionedValue);
 }
 
 function wrapped_multinomial(items, probs, isStructural, conditionedValue) {

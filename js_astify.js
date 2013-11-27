@@ -14,11 +14,8 @@ var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var util = require('./util.js');
 
-var identifier_prefix = "_";
-
-var church_builtins_map = {
-	"+": "plus",
-	"sum": "sum",
+var rename_map = {
+    "+": "plus",
 	"-": "minus",
 	"*": "mult",
 	"/": "div",
@@ -27,53 +24,18 @@ var church_builtins_map = {
 	">=": "geq",
 	"<=": "leq",
 	"=": "eq",
-	"and": "and",
-    "all": "all", 
-	"or": "or",
-	"not": "not",
-
-    "the_empty_list": "the_empty_list",
+    
 	"null?": "is_null",
-	"list": "list",
 	"list?": "is_list",
-	"pair": "pair",
 	"pair?": "is_pair",
-	"first": "first",
-	"second": "second",
-    "third": "third",
-    "fourth": "fourth",
-    "fifth": "fifth",
-    "sixth": "sixth",
-    "seventh": "seventh",
-    "max": "max",
-    "min": "min",
-    "expt": "expt",
-    "mean": "mean",
-    "append": "append",
-    "flatten": "flatten",
-	"rest": "rest",
-	"length": "length",
 	"make-list": "make_list",
-  "list-ref": "list_ref",
-  "list-elt": "list_elt",
-    "take": "take",
-    "drop": "drop",
+    "list-ref": "list_ref",
+    "list-elt": "list_elt",
 	"eq?": "is_eq",
 	"equal?": "is_equal",
-	"member": "member",
-
-
-	"apply": "apply",
     
-    "eval": "wrapped_evaluate", //from webchurch
+    "eval": "wrapped_evaluate",
     
-    "args_to_list": "args_to_list",
-    
-    "fold": "fold",
-    "map": "map",
-    "repeat": "repeat",
-    // "sample": "sample",
-
 	"uniform-draw": "wrapped_uniform_draw",
 	"multinomial": "wrapped_multinomial",
 	"flip": "wrapped_flip",
@@ -83,47 +45,19 @@ var church_builtins_map = {
 	"gaussian": "wrapped_gaussian",
 	"gamma": "wrapped_gamma",
 	"beta": "wrapped_beta",
-	"dirichlet": "wrapped_dirichlet"
-};
-
-var passthrough_map = {
-	"condition": "condition",
-    "factor": "factor",
-	"mem": "mem",
-	"marginalize": "marginalize",
+	"dirichlet": "wrapped_dirichlet",
+    
     "baseval":"evaluate",
     "round": "Math.round",
 	"abs": "Math.abs",
     "exp": "Math.exp",
     "log": "Math.log",
     "pow": "Math.pow",
-    "arguments": "arguments",
-    "undefined": "undefined",
-    "mh-query": "church_builtins.wrapped_traceMH",
+    "mh-query": "wrapped_traceMH",
 	"rejection-query": "rejectionSample",
-	"enumeration-query": "church_builtins.wrapped_enumerate"
+	"enumeration-query": "wrapped_enumerate"
 }
 
-//var js_builtins_map = {
-//	"round": "Math.round",
-//	"abs": "Math.abs",
-//    "exp": "Math.exp",
-//    "log": "Math.log",
-//    "pow": "Math.pow",
-//    "arguments": "arguments",
-//    "undefined": "undefined"
-//}
-//
-//var query_builtins_map = {
-//	"mh-query": "church_builtins.wrapped_traceMH",
-//	"rejection-query": "rejectionSample",
-//	"enumeration-query": "church_builtins.wrapped_enumerate"
-//}
-//
-//var higher_order_builtins_map = {};
-//for (key in higher_order_builtins) {
-//	higher_order_builtins_map[key] = key;
-//}
 
 var program_node = {
 	"type": "Program",
@@ -260,27 +194,6 @@ function get_value_of_string_or_number(s) {
 	}
 }
 
-function convert_char(c) { return ("_" + c.charCodeAt(0)); }
-
-// Any identifier that doesn't match the form [a-zA-Z_$][0-9a-zA-Z_$]* isn't
-// okay in JS, so we need to rename them.
-function format_identifier(id) {
-	var new_id;
-	if (id[0].match("[a-zA-Z_$]")) {
-		new_id = id[0];
-	} else {
-		new_id = convert_char(id[0]);
-	}
-	for (var j = 1; j < id.length; j++) {
-		if (id[j].match("[0-9a-zA-Z_$]")) {
-			new_id = new_id + id[j];
-		} else {
-			new_id = new_id + convert_char(id[j]);
-		}
-	}
-	return new_id;
-}
-
 function make_location(node) {
 	if (node && node.start && node.end) {
 		var start_coords = node.start.split(":");
@@ -314,15 +227,15 @@ function church_tree_to_esprima_ast(church_tree) {
 
 		var name = church_tree.children[1].text;
 		var val = make_expression(church_tree.children[2]);
-		if (name in church_builtins_map || name in passthrough_map) {
-			var node = deep_copy(assignment_node);
-			node["expression"]["left"]["name"] = name;
-			node["expression"]["right"] = val;
-		} else {
+//		if (name in church_builtins_map || name in passthrough_map) {
+//			var node = deep_copy(assignment_node);
+//			node["expression"]["left"]["name"] = name;
+//			node["expression"]["right"] = val;
+//		} else {
 			var node = deep_copy(declaration_node);
 			node["declarations"][0]["id"]["name"] = name;
 			node["declarations"][0]["init"] = val;
-		}
+//		}
 		return node;
 	}
 
@@ -544,31 +457,36 @@ function church_tree_to_esprima_ast(church_tree) {
 }
 
 
-function rename_unmapped(s) { return identifier_prefix + format_identifier(s);}
+function convert_char(c) { return ("_" + c.charCodeAt(0)); }
 
-function rename(s) {
-	return (church_builtins_map[s] || //higher_order_builtins_map[s] ||
-			probjs_builtins_map[s] || js_builtins_map[s] || query_builtins_map[s] ||
-			rename_unmapped(s));
+// Any identifier that doesn't match the form [a-zA-Z_$][0-9a-zA-Z_$]* isn't
+// okay in JS, so we need to rename them.
+function format_identifier(id) {
+	var new_id;
+	if (id[0].match("[a-zA-Z_$]")) {
+		new_id = id[0];
+	} else {
+		new_id = convert_char(id[0]);
+	}
+	for (var j = 1; j < id.length; j++) {
+		if (id[j].match("[0-9a-zA-Z_$]")) {
+			new_id = new_id + id[j];
+		} else {
+			new_id = new_id + convert_char(id[j]);
+		}
+	}
+	return new_id;
 }
-
 
 renameIdentifiers = {
 leave: function(node) {
     if(node.type == 'Identifier') {
-            if (node.name in church_builtins_map) {
-                var expression = deep_copy(member_expression_node);
-                expression["object"]["name"] = "church_builtins"
-                expression["property"]["name"] = church_builtins_map[node.name];
-                expression.property.loc = node.loc;
-                return expression
-            } else if (node.name in passthrough_map) {
-                node.name = passthrough_map[node.name]
-            } else {
-                node.name = rename_unmapped(node.name)
-            }
+        if(node.name in rename_map) {
+            node.name = rename_map[node.name]
+        } else {
+            node.name = format_identifier(node.name)
         }
-//        node.name = rename(node.name)
+    }
     return node
 }
 }
