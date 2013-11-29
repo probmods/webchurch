@@ -670,9 +670,10 @@ module.exports = {
 	wrapped_enumerate: wrapped_enumerate,
 	
 
-	// Utility functions, not exposed to Church
-	args_to_array: args_to_array,
+	// Utility functions,
+    args_to_array: args_to_array,
 	args_to_list: args_to_list,
 	arrayToList: arrayToList,
-	hist: hist
+    listToArray: listToArray
+	//hist: hist
 }

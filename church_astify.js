@@ -8,6 +8,8 @@ function make_generic_node(head, children) {
 
 function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
 
+function isquote(ast){return ast.children && ast.children[0].text && ast.children[0].text=="quote"}
+
 // TODO: add all kinds of error-checking.
 function church_astify(tokens) {
 	// astify changes the opening bracket tokens so the end site is the matching closing bracket
@@ -399,7 +401,6 @@ function church_astify(tokens) {
 		assert_not_special_form(ast.children[i]);
 	}
     ast = traverse(ast, dsgr_quote);
-    var isquote = function(ast){return ast.children && ast.children[0].text && ast.children[0].text=="quote"}
 	for (var i = 0; i < desugar_fns.length; i++) {
 		ast = traverse(ast, desugar_fns[i], isquote);
 	}
@@ -407,5 +408,12 @@ function church_astify(tokens) {
 	return ast;
 }
 
+function church_shallow_preconditions(ast) {
+    return traverse(ast, transform_equals_condition, isquote)
+}
 
-exports.church_astify = church_astify;
+module.exports =
+{
+    church_astify: church_astify,
+    church_shallow_preconditions: church_shallow_preconditions
+}

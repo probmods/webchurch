@@ -8,10 +8,8 @@
 */
 
 
-var escodegen = require("escodegen");
+//var escodegen = require("escodegen");
 var estraverse = require("escodegen/node_modules/estraverse")
-var tokenize = require('./tokenize.js').tokenize;
-var church_astify = require('./church_astify.js').church_astify;
 var util = require('./util.js');
 
 var rename_map = {
@@ -115,18 +113,18 @@ var expression_node = {
 	"name": null,
 	"value": null
 }
-var member_expression_node = {
-	"type": "MemberExpression",
-	"computed": false,
-	"object": {
-		"type": "Identifier",
-		"name": null
-	},
-	"property": {
-		"type": "Identifier",
-		"name": null
-	}
-}
+//var member_expression_node = {
+//	"type": "MemberExpression",
+//	"computed": false,
+//	"object": {
+//		"type": "Identifier",
+//		"name": null
+//	},
+//	"property": {
+//		"type": "Identifier",
+//		"name": null
+//	}
+//}
 
 var return_statement_node = {
 	"type": "ReturnStatement",
@@ -217,7 +215,6 @@ function deep_copy(obj) { return JSON.parse(JSON.stringify(obj)); }
 function church_tree_to_esprima_ast(church_tree) {
 	var heads_to_helpers = {
 		"lambda": make_function_expression,
-		// "query": make_query_expression,
 		"if": make_if_expression,
 		"quote": make_quoted_expression
 	}
@@ -227,15 +224,10 @@ function church_tree_to_esprima_ast(church_tree) {
 
 		var name = church_tree.children[1].text;
 		var val = make_expression(church_tree.children[2]);
-//		if (name in church_builtins_map || name in passthrough_map) {
-//			var node = deep_copy(assignment_node);
-//			node["expression"]["left"]["name"] = name;
-//			node["expression"]["right"] = val;
-//		} else {
-			var node = deep_copy(declaration_node);
-			node["declarations"][0]["id"]["name"] = name;
-			node["declarations"][0]["init"] = val;
-//		}
+        
+        var node = deep_copy(declaration_node);
+        node["declarations"][0]["id"]["name"] = name;
+        node["declarations"][0]["init"] = val;
 		return node;
 	}
 
@@ -295,30 +287,7 @@ function church_tree_to_esprima_ast(church_tree) {
 		return return_statement;
 	}
 
-//	function make_if_expression(church_tree) {
-//		function helper(test, consequent, alternate) {
-//			var if_statement = deep_copy(if_statement_node);
-//			if_statement["test"] = make_expression(test);
-//			if_statement["consequent"] = deep_copy(block_statement_node);
-//			if_statement["consequent"]["body"].push(make_return_statement(consequent));
-//
-//			if (alternate != undefined) {
-//				// Detect basic nested ifs. This results in else ifs.
-//				if (!util.is_leaf(alternate) && alternate.children[0] == "if") {
-//					if_statement["alternate"] = helper.apply(null, alternate.children.slice(1));
-//				} else {
-//					if_statement["alternate"] = deep_copy(block_statement_node);
-//					if_statement["alternate"]["body"].push(make_return_statement(alternate));
-//				}
-//			}
-//			return if_statement;
-//		}
-//		var if_expression = deep_copy(call_expression_node);
-//		var callee = deep_copy(function_expression_node);
-//		callee["body"]["body"] = [helper.apply(null, church_tree.children.slice(1))];
-//		if_expression["callee"] = callee;
-//		return if_expression;
-//	}
+
     function make_if_expression(church_tree) {
         var conditional_expression = deep_copy(conditional_expression_node)
         conditional_expression.test = make_expression(church_tree.children[1])
@@ -394,7 +363,6 @@ function church_tree_to_esprima_ast(church_tree) {
 			expression["value"] = util.boolean_aliases[church_leaf.text];
 		} else if (util.is_identifier(church_leaf.text)) {
             expression = {type: 'Identifier', name: church_leaf.text}
-//			expression = make_identifier_expression(church_leaf);
 		} else {
 			var value = get_value_of_string_or_number(church_leaf.text);
 			if (value < 0) {
@@ -439,17 +407,7 @@ function church_tree_to_esprima_ast(church_tree) {
 
 
 	var ast = deep_copy(program_node);
-	// Filled by make_leaf_expression while parsing the tree
-//	var higher_order_builtins_parsed = {};
-//	var higher_order_builtins_to_parse = {};
 	var body = make_expression_statement_list(church_tree.children);
-//	// This captures any dependencies that the functions themselves might have.
-//	while (Object.keys(higher_order_builtins_to_parse).length > 0) {
-//		var fn = Object.keys(higher_order_builtins_to_parse)[0];
-//		delete(higher_order_builtins_to_parse[fn]);
-//		higher_order_builtins_parsed[fn] = null;
-//		body.unshift(make_expression_statement(church_astify(tokenize(higher_order_builtins[fn]))[0]));
-//	}
 
 	ast["body"] = body;
     ast = estraverse.replace(ast, renameIdentifiers)

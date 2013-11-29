@@ -3,18 +3,14 @@ var esprima = require('esprima');
 var estraverse = require('escodegen/node_modules/estraverse')
 var source_map = require('source-map');
 
-
-//var church_builtins = require('./church_builtins');
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
-var precompile = require('./interpreter.js').precompile;
+var precompile = require('./precompile.js').precompile;
+var transform = require('./probabilistic/transform')
+var wctransform = require('./wctransform')
 var util = require('./util.js');
 
-
-//var pr = require('./probabilistic/index.js')
-var transform = require("./probabilistic/transform")
-var wctransform = require('./wctransform')
 
 
 // Note: escodegen zero-indexes columns, while JS evaluators and the Church
@@ -66,8 +62,6 @@ function evaluate(church_codestring,precomp) {
     if(precomp) {
         console.log("pre-compiling...")
         var js_precompiled = precompile(church_codestring)
-        //FIXME: kludge to call ERPs...
-        js_precompiled = "var random=function(f,p,c){return c?f.apply(this,p.concat(true).concat(c)):f.apply(this,p)};\n"+js_precompiled
         var js_ast = esprima.parse(js_precompiled)
         js_ast = wctransform.probTransformAST(js_ast); //new wc transform
     } else {

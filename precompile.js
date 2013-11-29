@@ -34,57 +34,44 @@
 
 var escodegen = require('escodegen');
 var esprima = require('esprima');
+var estraverse = require('escodegen/node_modules/estraverse')
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
 var builtins = require('./church_builtins');
-var erp = require('./probabilistic/erp.js')
+//var erp = require('./probabilistic/erp.js')
 var pr = require('./probabilistic/index.js')
+
 pr.openModule(pr)//make probjs fns available.
-
-////// make erp exports directly avaialable (gnarly use of eval to get in scope):
-//for (var prop in erp) {
-//    eval(prop + "= erp."+prop)
-//}
+openModule(builtins)//make church builtins available.
 
 
+//preamble is an array of strings defining church functions for the precompile pass. these all overload built in functions from the church or probjs runtime.
+var preamble = []
 
-
-
-
-//the ERPs that have to be intercepted from church_builtins:
-//copy builtins since we'll be overloading some:
-var church_builtins = {}
-for (var b in builtins) {church_builtins[b] = builtins[b];}
-//add abstract objects for the ERPs to the church_builtins:
+//ERPs have to be intercepted and overloaded with a form that calls "random" to make an abstract value.
+//var erps = ["uniform-draw", "multinomial", "flip", "uniform", "random_integer", "gaussian", "gamma", "beta", "dirichlet"]
 var erps = ["wrapped_uniform_draw", "wrapped_multinomial", "wrapped_flip", "wrapped_uniform", "wrapped_random_integer", "wrapped_gaussian", "wrapped_gamma", "wrapped_beta", "wrapped_dirichlet"]
 for (var p in erps) {
-    var e = erps[p]
-    church_builtins[e] = function(x) {return function() {
-        var args = Array.prototype.slice.call(arguments)
-        var ret = new Abstract()
-        global_trace.push("var "+valString(ret)+" = random(church_builtins." + x +", "+ valString(args) +");")
-        return ret
-    }}(e)
+    preamble.push("(define "+ erps[p] +" (lambda args (random '"+ erps[p] +" args)))")
 }
-//now we're going to add some compiled HOFs to the church_builtins:
-//compile a def to js_ast, extract that closure from the env, bind it to a church_builtins
-//church_builtins.repeat = js_astify(church_astify(tokenize()))
+
+//next include some higher order functions in preamble to allow tracing thrugh them... (TODO)
 
 
 function precompile(church_codestring) {
     
     //prepend the standard preamble:
     //stdEnv_code = require('fs').readFileSync("./precompile_stdenv.church", "utf8");
-    var preamble = "" //FIXME: (most of?) the higher-order functions we want to overload are in church_builtins
-    church_codestring = preamble + church_codestring
+    church_codestring = preamble.join("\n")+ "\n" + church_codestring
     //FIXME: kludge works around vararg interaction with direct conditioning....
     church_codestring = church_codestring.replace(/\(flip\)/g,'(flip 0.5)')
     var tokens = tokenize(church_codestring)
     var church_ast = church_astify(tokens)
     var js_ast = js_astify(church_ast)
-    
-    return trace_and_backtrace(js_ast)
+    var tracedcode = trace_and_backtrace(js_ast)
+//        console.log("final precompiled:\n",tracedcode,"\n")
+    return tracedcode
 }
 
 
@@ -92,7 +79,7 @@ function precompile(church_codestring) {
 function trace_and_backtrace(ast,env) {
     var old_trace = global_trace
     global_trace = []
-    
+//        console.log("ast ",escodegen.generate(ast),"\n")
     //trace through the ast, if we escape return a value, make a return statement, otherwise add value as final statement:
     var ret = ""
     try {
@@ -107,9 +94,13 @@ function trace_and_backtrace(ast,env) {
     }
     
     var new_ast = esprima.parse(global_trace.join("\n"))
+//        console.log("new_ast ",escodegen.generate(new_ast),"\n")
     var cond = backTrace(new_ast)
-    var new_trace = addConditions(global_trace.join("\n"),cond)
-    new_trace = new_trace + ret
+//        console.log("cond ", cond)
+    new_ast = estraverse.replace( esprima.parse(global_trace.join("\n")),
+                                  makeConditionReplacer(cond))
+    var new_trace = escodegen.generate(new_ast) + ret
+//        console.log("new_trace ",new_trace,"\n")
     global_trace = old_trace
     return new_trace
 }
@@ -124,11 +115,11 @@ function trace_closure(body, params, env) {
         newparams.push(ab)
         closureenv.bind(params[p].name,ab)
     }
-//    ab_arguments = new Abstract()
-//    closureenv.bind("arguments",ab_arguments) //make arguments keyword bound to new abstract
+    ab_arguments = new Abstract()
+    closureenv.bind("arguments",ab_arguments) //make arguments keyword bound to new abstract
     var trace = trace_and_backtrace(body,closureenv)
-    return "function("+newparams.map(valString).join(",")+"){"+trace+"}"
-//    return "function("+newparams.map(valString).join(",")+"){"+valString(ab_arguments)+"=arguments;"+trace+"}"
+//    return "function("+newparams.map(valString).join(",")+"){"+trace+"}"
+    return "function("+newparams.map(valString).join(",")+"){var "+valString(ab_arguments)+"=arguments;"+trace+"}"
 }
 
 
@@ -161,6 +152,17 @@ function Abstract() {
 
 function isAbstract(a) {return a instanceof Abstract}
 function isClosure(fn) {return fn && fn.type && (fn.type == 'FunctionExpression')}
+
+////a generic "random call" function that returns an abstract value instead of sampling.
+////also add a random call indicator to the trace.
+//function random(erpname, args){
+//    var ret = new Abstract()
+//        console.log("random ", erpname, "\n", args)
+//    extendTrace("var "+valString(ret)+" = random('" + erpname +"', "+ valString(listToArray(args)) +");")
+//    return ret
+//}
+
+function random(){}
 
 //convert a computed value to a string to put in a trace:
 function valString(ob) {
@@ -204,6 +206,10 @@ function valString(ob) {
 
 var max_trace_depth = 1000
 global_trace=[]
+function extendTrace(line){
+//    console.log("extending trace with ", line)
+    global_trace.push(line)
+}
 
 //an abstract interpreter / tracer.
 //a normal interpreter except for certain cases where there is an abstract value. then emit a statement into the trace.
@@ -236,7 +242,7 @@ function tracer(ast, env) {
             //                var alt = tracer(ast.alternate, env)
             //                alt = (alt instanceof Abstract)? alt.id : alt
             //                var tracestring = "var "+ret.id+" = "+test.id+"?"+cons+":"+alt+";"
-            //                global_trace.push(tracestring)
+            //                extendTrace(tracestring)
             //
             //                return ret
             //            }
@@ -272,7 +278,7 @@ function tracer(ast, env) {
         case 'UnaryExpression':
             var op
             switch (ast.operator) {
-                case "-": op = "church_builtins.minus"; break;
+                case "-": op = "minus"; break;
                 default: throw new Error("Tracer doesn't know how to handle Unary Operator: ",ast.operator)
             }
             ast.callee = {type: 'Identifier', name: op}
@@ -287,11 +293,13 @@ function tracer(ast, env) {
             }
             var fn = tracer(ast.callee,env)
             
+//            console.log("tracer call: ", fn, "\n",args,"\n",abstract_args )
+            
             if(isClosure(fn)) {
                 if(env.depth==max_trace_depth) {
                     //depth maxed out, don't trace branches, just generate code for this call:
                     var ret = new Abstract()
-                    global_trace.push("var "+ret.id +" = "+escodegen.generate(ast))
+                    extendTrace("var "+ret.id +" = "+escodegen.generate(ast))
                     console.log("Tracer warning: max_trace_depth reached, generating original code. (This might be broken.)")
                     return ret
                 }
@@ -311,10 +319,12 @@ function tracer(ast, env) {
             
             //if callee isn't a closure and operator or any args are abstract, emit new assignment into trace.
             //if the fn is list or pair, go ahead and do it, even with abstract args to ennable allocation removal. NOTE: could abstracts in lists screw up other things?
-            var isadtcons = (fn == church_builtins.list) || (fn == church_builtins.pair)
-            if(isAbstract(fn) || (abstract_args && !isadtcons)) {
+            var isadtcons = (fn == list) || (fn == pair)
+            var fnisrandom = (fn == random)
+            if(fnisrandom || isAbstract(fn) || (abstract_args && !isadtcons)) {
                 var ret = new Abstract()
-                if(isAbstract(fn)){var fnstring = valString(fn)} else {var fnstring = escodegen.generate(ast.callee)}
+//                if(isAbstract(fn)){var fnstring = valString(fn)} else {var fnstring = escodegen.generate(ast.callee)}
+                var fnstring = isAbstract(fn) ? valString(fn) : escodegen.generate(ast.callee)
                 var argstrings = []
                 for(var a in args){
 //                    argstrings.push(valString(args[a]))
@@ -326,7 +336,7 @@ function tracer(ast, env) {
                         argstrings.push(valString(args[a]))
                     }
                 }
-                global_trace.push("var "+ret.id+" = "+fnstring+"("+argstrings.join(",")+");")
+                extendTrace("var "+ret.id+" = "+fnstring+"("+argstrings.join(",")+");")
                 return ret
             }
             //otherwise just do the fn:
@@ -337,12 +347,12 @@ function tracer(ast, env) {
             var test = tracer(ast.test,env)
             if(isAbstract(test)) {
                 var ret = new Abstract()
-                global_trace.push("if("+valString(test)+") {")
+                extendTrace("if("+valString(test)+") {")
                 var cons = valString(tracer(ast.consequent,env))
-                global_trace.push("var "+ret.id+" = "+cons +";}")
-                global_trace.push(" else {")
+                extendTrace("var "+ret.id+" = "+cons +";}")
+                extendTrace(" else {")
                 var alt = valString(tracer(ast.alternate, env))
-                global_trace.push("var "+ret.id+" = "+alt +";}")
+                extendTrace("var "+ret.id+" = "+alt +";}")
                 return ret
             }
             return test?tracer(ast.consequent,env):tracer(ast.alternate, env)
@@ -385,10 +395,13 @@ function tracer(ast, env) {
 function Condition(cond) {
     this.conditions = {}
     this.erpvals = {}
+    this.removed = {}
     var oldconds = cond?cond.conditions:{}
     for (v in oldconds) {this.conditions[v] = oldconds[v]}
     var olderpvals = cond?cond.erpvals:{}
     for (v in olderpvals) {this.erpvals[v] = olderpvals[v]}
+    var oldremoved = cond?cond.removed:{}
+    for (v in oldremoved) {this.removed[v] = oldremoved[v]}
 }
 
 Condition.prototype.add = function add(v,c) {
@@ -438,10 +451,12 @@ function backTrace(ast, cond) {
                init.callee.name=="condition") {
                 //assume form is "var ab1 = condition(ab2)"
                 cond.add(init.arguments[0].name, true)
+                cond.removed[name]=true
                 return cond
             }
             
-            if(varcond==undefined){return cond} else {
+            if(varcond==undefined){return cond}
+            else {
                 switch (init.type) {
                     case "Literal":
                         //if variable is assigned a value, check if that's consistent with cond:
@@ -452,6 +467,7 @@ function backTrace(ast, cond) {
                         return cond
                         
                     case "Identifier":
+                        console.log("backtrace id: ",name, init.name, varcond)
                         //if variable is assigned a variable, propogate condition:
                         cond.add(init.name,varcond)
                         cond.remove(name)//have handled the cond on this var.
@@ -461,10 +477,8 @@ function backTrace(ast, cond) {
                     case "CallExpression":
                         if(init.callee.type=="Identifier"){
                             var opname = init.callee.name
-                        } else if (init.callee.type == "MemberExpression") {
-                            //FIXME: just deal with church_builtins
-                            var opname = init.callee.property.name
-                        } else {
+                        }
+                        else {
                             var opname = undefined
                         }
                         switch (opname) {
@@ -473,7 +487,6 @@ function backTrace(ast, cond) {
                                     cond.remove(name)//have handled the cond on this var.
                                     cond.erpvals[name] = varcond
                                 }
-//                                    console.log("Random choice at "+name+" should be conditioned to value "+varcond)}
                                 break
                                 
                             case "eq":
@@ -509,8 +522,8 @@ function backTrace(ast, cond) {
                 }}
             
         case 'IfStatement':
-            // "if(ab1){SC} else {SA}"
-            //push condition through each branch of 'if', we want condition a1?cond(SC):cond(SA), but we don't want to handle arbirary terms, so: if either branch undition is unsatisfiable add a1 = true/false to and return that branch condition. otherwise return original condition (ie don't push conditions into this 'if').
+            // "if(a1){SC} else {SA}"
+            //push condition through each branch of 'if', we want condition a1?cond(SC):cond(SA), but we don't want to handle arbirary terms, so: if either branch conndition is unsatisfiable add a1 = true/false to cond and return that branch condition. otherwise return join of conditions (which don't interfere because variables are assigned only once, excepts the final one in a branch).
             var testvar = ast.test.name
             //            console.log("consequent");console.log(ast.consequent)
             var condC = backTrace(ast.consequent,new Condition(cond))
@@ -522,7 +535,10 @@ function backTrace(ast, cond) {
                 condC.add(testvar, true)
                 return condC
             }
-            return cond
+            for (var attrname in condC.conditions) { condA.conditions[attrname] = condC.conditions[attrname]; }
+            for (var attrname in condC.erpvals) { condA.erpvals[attrname] = condC.erpvals[attrname]; }
+            //FIXME: cond.removed
+            return condA
             
             //        case 'ArrayExpression':
             
@@ -537,37 +553,123 @@ function backTrace(ast, cond) {
 
 /*
  Take a set of conditions computed by backTrace, and the code string, and insert condition or conditioned erp statements as needed.
+ Also convert erp wrapper calls to actual erp calls.
  */
-function addConditions(string, cond) {
-    var lines = string.split("\n")
-    //first remove old conditions:
-    lines.filter(function(l){!l.match(/condition\(/)})
-    
-    newlines = []
-    for(l in lines) {
-                 
-        var m = lines[l].match(/var (.+) = (.+)/)
+var undefined_node = { type: 'Identifier', name: 'undefined' }
 
-        if (m && m[2].match(/condition\(/)) {
-            // remove old conditions by not doing anything with this line.
-            
-        } else if(m && m[1] in cond.conditions) {
+function makeConditionReplacer(cond) {
+    return {
+    leave: function(ast) {
+        //check if variable is conditioned or ERP cal:
+        if(ast.type == 'VariableDeclaration') {
+            var name = ast.declarations[0].id.name
+            var init = ast.declarations[0].init
             // add conditions that didn't make it all the way to erps:
-            newlines.push(lines[l])
-            var condval = cond.conditions[m[1]]
-            newlines.push("condition("+m[1]+"=="+condval+");")
-        } else if(m && m[1] in cond.erpvals) {
-            //then add conditioned erp calls:
-            var name = m[1], init = m[2]
-            var k = init.match(/random\((.+)\)/)
-//            newlines.push("condition("+m[1]+"=="+cond.erpvals[m[1]]+");")
-            newlines.push("var "+name+" = random("+k[1]+", "+cond.erpvals[m[1]]+");")
-        } else {
-            newlines.push(lines[l])
+            if(name in cond.conditions) {
+                var condval = cond.conditions[name]
+                var conditioncall = esprima.parse("condition("+name+"=="+condval+");").body[0]
+                var block = {type:'BlockStatement', body:[ast, conditioncall]}
+                return block
+            }
+            // convert random() calls into the erp call:
+            if(init.type == 'CallExpression' && init.callee.type == 'Identifier' && init.callee.name == 'random') {
+                var erpname = init.arguments[0].value, params = init.arguments[1]
+                if(params.type == 'ArrayExpression') {
+                    var erpargs = []
+                    //flatten the list into an array of args for the erp call:
+                    while(params.elements.length>0) {
+                        erpargs.push(params.elements[0])
+                        params = params.elements[1]
+                    }
+                    if(cond.erpvals[name]){erpargs.push(undefined_node); erpargs.push(esprima.parse(cond.erpvals[name]).body[0].expression);}
+                    var erpcall = {type:'CallExpression', callee: { type: 'Identifier', name: erpname }, arguments: erpargs}
+                } else {
+                    if(cond.erpvals[name]){throw new Error("Have not handled abstract ERP args with condition in makeConditionReplacer.")}
+                    var erpcall = esprima.parse(erpname+".apply(this,"+ params.name +")").body[0].expression
+                }
+                ast.declarations[0].init = erpcall
+                return ast
+            }
+            //remove original condition lines:
+            if(name in cond.removed) {
+                ast.declarations[0].init = { type: 'Identifier', name:'undefined' }
+                return ast
+            }
         }
+        return ast
     }
-    return newlines.join("\n")
+    }
 }
+
+
+//function addConditions(string, cond) {
+//    
+//    //take a list represented as a string and convert into the array of elements.
+//    function unlist(L) {
+//        console.log(L)
+//        var ast = esprima.parse(L).body[0].expression
+//        var vals = []
+//        while(ast.elements.length>0){
+//            vals.push(escodegen.generate(ast.elements[0]))
+//            ast = ast.elements[1]
+//        }
+//        return vals
+//    }
+//    
+//    var lines = string.split("\n")
+//    //first remove old conditions:
+//    lines.filter(function(l){!l.match(/condition\(/)}) //FIXME:redundant?
+//    
+//    newlines = []
+//    for(l in lines) {
+//                 
+//        var m = lines[l].match(/var ([a-zA-Z_$][0-9a-zA-Z_$]*) = (.+)/);
+//        if (m) {
+//                 var name = m[1], init = m[2]
+//                 console.log("addConditions ",name," ... ", init)
+//                 if(name in cond.conditions) {
+//                 // add conditions that didn't make it all the way to erps:
+//                 newlines.push(lines[l])
+//                 var condval = cond.conditions[name]
+//                 newlines.push("condition("+name+"=="+condval+");")
+//                 continue
+//                 }
+//                 
+//                 
+//                 var initparse = init.match(/(.+)\((.+)\)/)
+//                 if(initparse) {
+//                    var op = initparse[1], args = initparse[2]
+//                 
+//                    if (op == "condition") {
+//                    // remove old conditions by not doing anything with this line.
+//                        continue
+//                    }
+//                    if (op == "random") {
+//                        var erpname = args.split(",")[0] //first argument is erpname string
+//                        erpname = erpname.slice(1,erpname.length-1) //trim off the quotes around erpname
+//                        var paramslist = args.split(",").slice(1).join(",")
+//                 
+//                 
+//                 if(paramslist[0] == "[") {
+//                        var params = unlist(paramslist).join(",")
+//                        var constraintargs = cond.erpvals[name]?",undefined,"+cond.erpvals[name]:""
+//                        newlines.push("var "+name+" = "+erpname+"("+params+constraintargs+");")
+//                 } else { //params is abstract, will be list, so need to use apply..
+//                        var constraintargs = cond.erpvals[name]?  ", list(undefined,"+cond.erpvals[name]+")" : ""
+//                        newlines.push("var "+name+" = "+erpname+".apply(this,append("+paramslist+constraintargs+" ));")
+//                 }
+//                        continue
+//                    }
+//                 }
+//                 
+//        }
+//        //if we didn't already handle the line, then keep it:
+//        newlines.push(lines[l])
+//    }
+//    return newlines.join("\n")
+//}
+//                 
+
             
 
 
@@ -580,7 +682,7 @@ module.exports =
 tracer: tracer,
 global_trace: global_trace,
 backTrace: backTrace,
-addConditions: addConditions,
+//addConditions: addConditions,
             trace_and_backtrace: trace_and_backtrace,
             precompile: precompile
 }
