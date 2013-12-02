@@ -4,114 +4,36 @@
     <meta charset="utf-8">
     <title>Church to JavaScript demo!</title>
     <link rel="stylesheet" href="codemirror/codemirror.css">
-    <script src="codemirror/codemirror.js"></script>
-    <script src="codemirror/scheme.js"></script>
-    <script src="codemirror/matchbrackets.js"></script>
+    <!-- <script src="codemirror/codemirror.js"></script> -->
+    <!-- <script src="codemirror/scheme.js"></script> -->
+    <!-- <script src="codemirror/matchbrackets.js"></script> -->
     <script src="store.js"></script>
+    <script src="jquery.js"></script>
     <script src="webchurch.js"></script>
     <!-- <link rel="stylesheet" href="codemirror/docs.css"> -->
-    <style type="text/css">.CodeMirror {border-top: 1px solid black; border-bottom: 1px solid black;}</style>
+    <style>
+      .CodeMirror {
+      border: 1px solid #dfdfdf;
+      border-radius: 3px
+      }
+      
+    </style>
+    
   </head>
   <body>
     <h1>Church to JavaScript demo!</h1>
 
-<div><textarea id="code" name="code">
-(define lq
-  (lambda-query
-   (x y)
-   (and (flip x) (flip y))
-   #t))
+<!-- <div><textarea id="code" name="code"> -->
+<!-- (define lq -->
+<!--   (lambda-query -->
+<!--    (x y) -->
+<!--    (and (flip x) (flip y)) -->
+<!--    #t)) -->
 
-(lq 0.5 0.5)</textarea></div>
+<!-- (lq 0.5 0.5)</textarea></div> -->
 
-    <script>
-      var editor = CodeMirror.fromTextArea(document.getElementById("code"), {
-        lineNumbers: true,
-        matchBrackets: true,
-        continueComments: "Enter"
-      });
+<pre id="codebox"><code>(+ 1 1)</code></pre>
 
-      var savedCode = store.get('code');
-      if (savedCode) {
-      editor.setValue(savedCode);
-      }
-      
-      var js_outmirror = null
-      var exec_outmirror = null
-
-      var pr = require("./probabilistic/index")
-      var util = require("./probabilistic/util")
-      var format_result = require("./evaluate").format_result
-      var transform = require("./probabilistic/transform")
-      util.openModule(pr)
-
-      // var church_to_js = function(church) {
-      //   return require("escodegen").generate(
-      //     require("./js_astify").church_tree_to_esprima_ast(
-      //       require("./church_astify").church_astify(
-      //         require("./tokenize").tokenize(church))))
-      // }
-      var evaluate = require("./evaluate").evaluate
-      var church_builtins = require("./church_builtins")
-
-      function __updateJSOutput(str)
-      {
-        if (!js_outmirror)
-        {
-          js_outmirror = CodeMirror(document.getElementById("js_output"))
-          js_outmirror.readonly = true
-        }
-        js_outmirror.setValue(str)
-
-        document.getElementById("clearBtn").style.display = "inline"
-      }
-
-      function __updateExecOutput(str)
-      {
-        if (!exec_outmirror)
-        {
-          exec_outmirror = CodeMirror(document.getElementById("exec_output"))
-          exec_outmirror.readonly = true
-        }
-        exec_outmirror.setValue(str)
-
-        document.getElementById("clearBtn").style.display = "inline"
-      }
-
-
-      function __clearOutput()
-      {
-        var outelem = document.getElementById("output")
-        outelem.removeChild(outelem.childNodes[0])
-        outmirror = null
-        document.getElementById("clearBtn").style.display = "none"
-      }
-
-      function __runCode()
-      {
-        var church_code = editor.getValue()
-        store.set('code', church_code);
-//        var js_code = church_to_js(church_code)
-        // __updateJSOutput(js_code)
-        try
-        {
-             var d1 = new Date()
-             var res = evaluate(church_code)
-             var d2 = new Date()
-             console.log("Run time: " + (d2.getTime() - d1.getTime()) / 1000)
-          __updateExecOutput(format_result(res))
-        }
-        catch (e)
-        {
-          __updateExecOutput(JSON.stringify(e.message))
-        }
-      }
-      
-    </script>
-
-    <button style="margin-top: 10px; font-size: 14pt" onclick="__runCode()">
-      Run
-    </button>
 
     <div>
       <br/>
@@ -124,4 +46,7 @@
     </div>
 
   </body>
+  <script>
+    require('./editor').injector( $("#codebox")[0], {text: "foo", engine: "webchurch"} )
+  </script>
 </html>
