@@ -31,7 +31,6 @@
  
  */
 
-
 var escodegen = require('escodegen');
 var esprima = require('esprima');
 var estraverse = require('escodegen/node_modules/estraverse')
@@ -40,7 +39,7 @@ var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
 var builtins = require('./church_builtins');
 //var erp = require('./probabilistic/erp.js')
-var pr = require('./probabilistic/index.js')
+var pr = require('./probabilistic-js');
 
 pr.openModule(pr)//make probjs fns available.
 openModule(builtins)//make church builtins available.

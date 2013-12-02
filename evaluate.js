@@ -1,3 +1,5 @@
+var probjs = require('./probabilistic-js');
+
 var escodegen = require('escodegen');
 var esprima = require('esprima');
 var estraverse = require('escodegen/node_modules/estraverse')
@@ -7,11 +9,11 @@ var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
 var precompile = require('./precompile.js').precompile;
-var transform = require('./probabilistic/transform')
+
+var transform = probjs.transform
+
 var wctransform = require('./wctransform')
 var util = require('./util.js');
-
-
 
 // Note: escodegen zero-indexes columns, while JS evaluators and the Church
 // tokenizer uses 1-indexed columns.

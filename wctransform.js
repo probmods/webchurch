@@ -140,8 +140,11 @@ leave: function(node){
 }
 
 //preamble that forwards the functions needed at runtime:
-var preamble = "var __pr = null\ntry {\n\t__pr = require('probabilistic/index')\n} catch (e) {\n\t__pr = require('./probabilistic/index')\n}\n__pr.openModule(__pr);\n \
-var __ch = null\ntry {\n\t__ch = require('church_builtins')\n} catch (e) {\n\t__ch = require('./church_builtins')\n}\n openModule(__ch);\n"
+var preamble = "\
+var __pr = require('./probabilistic-js');\
+__pr.openModule(__pr);\
+var __ch = require('./church_builtins');\
+openModule(__ch);";
 
 //function probTransform(codeString)
 //{
