@@ -16,6 +16,11 @@
       border: 1px solid #dfdfdf;
       border-radius: 3px
       }
+
+      .CodeMirrorError {
+      background-color: #FFA500;
+      font-weight: bold
+      }
       
     </style>
     
@@ -33,17 +38,6 @@
 <!-- (lq 0.5 0.5)</textarea></div> -->
 
 <pre id="codebox"><code>(+ 1 1)</code></pre>
-
-
-    <div>
-      <br/>
-    <h3>Output:</h3>
-    <div id="js_output"></div>
-    <div id="exec_output"></div>
-    <button id="clearBtn" style="margin-top: 10px; font-size: 14pt; display: none" onclick="__clearOutput()">
-      Clear
-    </button>
-    </div>
 
   </body>
   <script>

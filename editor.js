@@ -3,7 +3,15 @@
 var evaluate = require('./evaluate').evaluate,
     format_result = require('./evaluate').format_result;
 
-require("codemirror"); // this doesn't export anything but instead sets window.CodeMirror 
+require("codemirror"); // this doesn't export anything but instead sets window.CodeMirror
+require("./cm-church");
+require("./cm-brackets");
+require("./cm-comments");
+var folding = require("./cm-folding");
+
+CodeMirror.keyMap.default["Tab"] = "indentAuto";
+CodeMirror.keyMap.default["Cmd-;"] = "toggleComment";
+CodeMirror.keyMap.default["Cmd-."] = function(cm){cm.foldCode(cm.getCursor(), folding.myRangeFinder); };
 
 var _ = require('underscore');
 _.templateSettings = {
@@ -29,25 +37,19 @@ var runners = {};
 runners['webchurch'] = makewebchurchrunner();
 runners['webchurch-opt'] = makewebchurchrunner(true);
 
+// TODO: add
 function makewebchurchrunner(evalparams){
   return function(editor) {
     var code = editor.getValue(),
         exerciseName = editor.exerciseName,
-        $results = editor.$results,
-        resultData = {'exercise_id': editor.exerciseName,
-                      //'csrfmiddlewaretoken': Cookies.get('csrftoken')
-                     };
+        $results = editor.$results;
 
     $results.show();
-    if (editor.errormark != undefined){editor.errormark.clear()}
-    try {
-      //      var jsCode = church_to_js(code);
-      //      jsCode = transform.probTransform(jsCode);
-      //      var runResult = eval(jsCode),
+    if (editor.errormark != undefined){editor.errormark.clear(); }
+    try {      
+      var runResult = evaluate(code,evalparams);
       
-      var runResult = evaluate(code,evalparams)
-      
-      var underlyingData
+      var underlyingData;
       
       if (typeof runResult == "function") {
         // otherwise, call the function with the current div as an argument
@@ -60,9 +62,7 @@ function makewebchurchrunner(evalparams){
         underlyingData = runResult;
         runResult = format_result(runResult);
         $results.removeClass("error").text(runResult);
-      } 
-
-      resultData['forest_results'] =  JSON.stringify(underlyingData); 
+      }
       
     } catch (e) {
       
@@ -74,20 +74,18 @@ function makewebchurchrunner(evalparams){
         
         //        var errorlocation = e.stackarray[0]
         //        var start=errorlocation.start.split(":"), end=errorlocation.end.split(":")
-        var start=e.start.split(":"), end=e.end.split(":")
+        var start=e.start.split(":"), end=e.end.split(":");
         editor.errormark = editor.markText({line: Number(start[0])-1, ch: Number(start[1])-1},
                                            {line: Number(end[0])-1, ch: Number(end[1])},
-                                           {className: "CodeMirrorError", clearOnEnter: true})
+                                           {className: "CodeMirrorError", clearOnEnter: true});
         //        mark.clear()
       }
 
-      resultData['forest_errors'] = error;
     }
 
-    // start trying to submit results
-    // submitResult(resultData, editor);
 
-  }};
+  };
+};
 
 var inject = function(domEl, options) {
   var attributes = getAttributes(domEl),
@@ -114,12 +112,12 @@ var inject = function(domEl, options) {
   _(editor).extend(options);
   
   //fold ";;;fold:" parts:
-  // var lastLine = editor.lastLine();
-  // for(var i=0;i<=lastLine;i++) {
-  //   var txt = editor.getLine(i),
-  //       pos = txt.indexOf(";;;fold:");
-  //   if (pos==0) {editor.foldCode(CodeMirror.Pos(i,pos),trippleCommentRangeFinder);}
-  // }
+  var lastLine = editor.lastLine();
+  for(var i=0;i<=lastLine;i++) {
+    var txt = editor.getLine(i),
+        pos = txt.indexOf(";;;fold:");
+    if (pos==0) {editor.foldCode(CodeMirror.Pos(i,pos),folding.tripleCommentRangeFinder);}
+  }
   
   // results div
   var $results = $("<pre class='results'>");
@@ -189,6 +187,10 @@ var inject = function(domEl, options) {
                           }, 15);
   });
 
+  $runButton.css({'padding-top': '5px',
+                  'padding-bottom': '5px'
+                 });
+
   var $codeControls = $("<div class='code-controls'>");
   // HT http://somerandomdude.com/work/open-iconic/#
 
@@ -198,10 +200,11 @@ var inject = function(domEl, options) {
     $resetButton[0]
   );
 
-  $(editor.display.wrapper).after($codeControls);
+  // add code controls and results divs after codemirror
+  $(editor.display.wrapper).after($codeControls, $results);
 
-  // add non-codemirror bits after codemirror
-  $(editor.display.wrapper).attr("id", "ex-"+ exerciseName).after( $results );
+
+  $(editor.display.wrapper).attr("id", "ex-"+ exerciseName);
   
   editor.$runButton = $runButton;
   editor.$engineSelector = $engineSelector;
@@ -209,59 +212,6 @@ var inject = function(domEl, options) {
   editor.$results = $results;
   
 };
-
-// $(document).ready(function() {
-//   $("pre:not(.norun)").map(function(index, item) {
-//     var rawExerciseName = $(item).attr("data-exercise"),
-//         defaultEngine = $(item).attr("data-engine") || 'webchurch',
-//         defaultText = $(item).text(),
-//         exerciseName;
-
-//     if (typeof rawExerciseName == "undefined") {
-//       exerciseName = [chapterName, index, md5(defaultEngine + defaultText)].join(".");
-//     } else {
-//       exerciseName = [chapterName, rawExerciseName].join(".");
-//     }
-    
-
-//     // default options which get over-ridden
-//     // if this box has an exerciseName
-//     var editorOptions = {
-//       exerciseName: exerciseName,
-//       defaultText: defaultText,
-//       boxNum: index,
-//       text: defaultText,
-//       defaultEngine: defaultEngine,
-//       engine: defaultEngine
-//     };
-    
-//     if (!loggedIn || !rawExerciseName) {
-//       injectEditor(item, editorOptions); 
-//     } else {
-      
-//       $.ajax({
-//         url: "/code/" + exerciseName,
-//         success: function(json) {
-//           // overwrite defaults
-//           _(editorOptions).extend({
-//             text: json.code,
-//             engine: json.engine
-//           });
-
-//           injectEditor(item, editorOptions);
-//         },
-//         error: function() {
-//           console.log("failure loading exercise " + exerciseName + ", using default");
-//           injectEditor(item, editorOptions);
-//         }
-//       });
-
-      
-//     }
-//   });
-// });
-
-
 
 module.exports = {
   injector: inject
