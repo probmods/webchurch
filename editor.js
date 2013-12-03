@@ -7,6 +7,8 @@ require("codemirror"); // this doesn't export anything but instead sets window.C
 require("./cm-church");
 require("./cm-brackets");
 require("./cm-comments");
+require("./viz");
+
 var folding = require("./cm-folding");
 
 CodeMirror.keyMap.default["Tab"] = "indentAuto";
