@@ -11,7 +11,8 @@ then
 fi
 
 echo "- Browserifying"
-node node_modules/browserify/bin/cmd.js \
+# HT many responses on http://stackoverflow.com/q/16275325/351392
+node node_modules/browserify/bin/cmd.js --fast \
   -r ./church_builtins \
   -r ./evaluate \
   -r ./editor \
