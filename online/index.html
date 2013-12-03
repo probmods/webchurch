@@ -2,15 +2,11 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Church to JavaScript demo!</title>
+    <title>WebChurch</title>
     <link rel="stylesheet" href="codemirror/codemirror.css">
-    <!-- <script src="codemirror/codemirror.js"></script> -->
-    <!-- <script src="codemirror/scheme.js"></script> -->
-    <!-- <script src="codemirror/matchbrackets.js"></script> -->
     <script src="store.js"></script>
     <script src="jquery.js"></script>
     <script src="webchurch.js"></script>
-    <!-- <link rel="stylesheet" href="codemirror/docs.css"> -->
     <style>
       body {
       font-family: Helvetica;
@@ -40,20 +36,11 @@
   </head>
   <body>
     <h1>WebChurch</h1>
-
-<!-- <div><textarea id="code" name="code"> -->
-<!-- (define lq -->
-<!--   (lambda-query -->
-<!--    (x y) -->
-<!--    (and (flip x) (flip y)) -->
-<!--    #t)) -->
-
-<!-- (lq 0.5 0.5)</textarea></div> -->
-
-<pre id="codebox"><code>(+ 1 1)</code></pre>
+    
+    <pre id="codebox"><code>(+ 1 1)</code></pre>
 
   </body>
   <script>
-    require('./editor').injector( $("#codebox")[0], {text: "foo", engine: "webchurch"} )
+    require('./editor').injector( $("#codebox")[0], {text: $("#codebox > code").text(), engine: "webchurch"} )
   </script>
 </html>
