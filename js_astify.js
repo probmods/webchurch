@@ -32,6 +32,10 @@ var rename_map = {
 	"eq?": "is_eq",
 	"equal?": "is_equal",
     
+	"regexp-split": "regexp_split",
+	"string->number": "string_to_number",
+	"number->string": "number_to_string",
+
     "eval": "wrapped_evaluate",
     
 	"uniform-draw": "wrapped_uniform_draw",

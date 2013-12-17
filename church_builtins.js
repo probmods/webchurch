@@ -428,6 +428,22 @@ function apply(fn, list) {
 	return fn.apply(null, listToArray(list, false));
 }
 
+function regexp_split(str, regex) {
+	assertArgType(str,"string","regexp_split");
+	assertArgType(regex,"string","regexp_split");
+	return arrayToList(str.split(regex));
+}
+
+function string_to_number(str) {
+	assertArgType(str,"string","string_to_number");
+	return parseFloat(str) || false;
+}
+
+function number_to_string(num) {
+	assertArgType(num,"number","number_to_string");
+	return num.toString;
+}
+
 function wrapped_uniform_draw(items, isStructural, conditionedValue) {
 	assertArgType(items,"list","uniform-draw");
     var u = uniformDraw(listToArray(items, false), isStructural, conditionedValue)
@@ -656,6 +672,10 @@ module.exports = {
     take: take,
     drop: drop,
 	apply: apply,
+
+	regexp_split: regexp_split,
+	string_to_number: string_to_number,
+	number_to_string: number_to_string,
 	
 	fold: fold,
 	repeat: repeat,
