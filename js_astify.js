@@ -53,7 +53,9 @@ var rename_map = {
     "pow": "Math.pow",
     "mh-query": "wrapped_traceMH",
 	"rejection-query": "rejectionSample",
-	"enumeration-query": "wrapped_enumerate"
+	"enumeration-query": "wrapped_enumerate",
+
+	"read-file": "read_file"
 }
 
 

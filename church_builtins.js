@@ -1,4 +1,5 @@
 var util = require('./util.js');
+var fs = require('fs');
 
 var the_empty_list = [];
 
@@ -515,6 +516,11 @@ function wrapped_evaluate(code) {
     return evaluate(code)
 }
 
+function read_file(fileName) {
+	assertArgType(fileName, "string", "read-file");
+	return fs.readFileSync(fileName, "utf8");
+}
+
 //dummy hist for testing
 function hist(x) {
 	return x;
@@ -669,6 +675,8 @@ module.exports = {
 	wrapped_traceMH: wrapped_traceMH,
 	wrapped_enumerate: wrapped_enumerate,
 	
+	read_file: read_file,
+
 
 	// Utility functions,
     args_to_array: args_to_array,
