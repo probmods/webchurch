@@ -428,6 +428,18 @@ function apply(fn, list) {
 	return fn.apply(null, listToArray(list, false));
 }
 
+function assoc(obj, alist) {
+	assertArgType(alist, "list", assoc);
+	alist = listToArray(alist);
+	for (var i=0; i<alist.length; i++) {
+		assertArgType(alist[i], "pair", assoc);
+		if (is_equal(alist[i][0], obj)) {
+			return alist[i];
+		}
+	}
+	return false;
+}
+
 function regexp_split(str, regex) {
 	assertArgType(str,"string","regexp_split");
 	assertArgType(regex,"string","regexp_split");
@@ -542,6 +554,10 @@ function hist(x) {
 	return x;
 }
 
+function display(str) {
+	console.log(str);
+}
+
 function listToArray(list, recurse) {
 	var array = [];
 	while (list.length > 0) {
@@ -592,6 +608,11 @@ function assertArgType(x, type, argTo) {
             if (!is_list(x)) {
                 throw new Error('argument "' + util.format_result(x) + argTo  + ' is not a list');}
             break;
+
+        case "pair":
+        	if (!is_pair(x)) {
+                throw new Error('argument "' + util.format_result(x) + argTo  + ' is not a pair');}
+        	break;
             
         default:
             if (typeof(x) != type) {
@@ -672,6 +693,7 @@ module.exports = {
     take: take,
     drop: drop,
 	apply: apply,
+	assoc: assoc,
 
 	regexp_split: regexp_split,
 	string_to_number: string_to_number,
@@ -696,7 +718,7 @@ module.exports = {
 	wrapped_enumerate: wrapped_enumerate,
 	
 	read_file: read_file,
-
+	display: display,
 
 	// Utility functions,
     args_to_array: args_to_array,

@@ -75,6 +75,9 @@ var tests = [
 	["(cond (#t 1))", 1],
 	["(cond (#f 1) (#t 2))", 2],
 	["(cond (#f 1) (#f 2) (else 3))", 3],
+
+  ["(assoc 'a '((1 2) (a b c)))", "(a b c)"],
+  ["(assoc 'b '((a b c)))", "#f"],
   // variadic
   ["(define (f . x) x) (f 1 2 3)", "(1 2 3)"],
   ["(apply + (repeat 123 (lambda () (apply + (repeat 1000 (lambda () 1))))))", 123000],
