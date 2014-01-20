@@ -16,7 +16,8 @@
 	"dependencies": {
 		"escodegen": "0.0.26",
 		"esprima": "1.0.4",
-		"source-map": "0.1.30"
+		"source-map": "0.1.30",
+    "browserify": "2.36.0"
 	},
 	"author" : {
 		"name" : "Julius Cheng",
