@@ -453,7 +453,7 @@ function string_to_number(str) {
 
 function number_to_string(num) {
 	assertArgType(num,"number","number_to_string");
-	return num.toString;
+	return num.toString();
 }
 
 function wrapped_uniform_draw(items, isStructural, conditionedValue) {
