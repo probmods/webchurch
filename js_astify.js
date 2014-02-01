@@ -59,7 +59,9 @@ var rename_map = {
 	"rejection-query": "rejectionSample",
 	"enumeration-query": "wrapped_enumerate",
 
-	"read-file": "read_file"
+	"read-file": "read_file",
+  "string-append": "string_append",
+  "symbol->string": "symbol_to_string"
 }
 
 

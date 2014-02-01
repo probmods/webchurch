@@ -724,9 +724,26 @@ module.exports = {
 	display: display,
 
 	// Utility functions,
-    args_to_array: args_to_array,
+  args_to_array: args_to_array,
 	args_to_list: args_to_list,
 	arrayToList: arrayToList,
-    listToArray: listToArray
+  listToArray: listToArray
 	//hist: hist
-}
+};
+
+module.exports.string_append = function() {
+  var args = args_to_array(arguments);
+  return args.join(""); 
+};
+
+module.exports.symbol_to_string = function(sym) {
+  return sym;
+};
+
+module.exports.iota = function(n) {
+  var r = [];
+  for(var k = 0; k < n; k++) {
+    r.push(k);
+  }
+  return arrayToList(r);
+};
