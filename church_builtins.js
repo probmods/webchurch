@@ -621,7 +621,9 @@ var read_file = $x.read_file = function(fileName) {
 };
 
 var display = $x.display = function(str) {
-  console.log(str);
+  var args = args_to_array(arguments);
+  var strs = args.map(util.format_result);
+  console.log(strs.join(" "));
 };
 
 
