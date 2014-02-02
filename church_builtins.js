@@ -1,3 +1,5 @@
+/* global require, module */
+
 var util = require('./util.js');
 var fs = require('fs');
 
@@ -9,12 +11,10 @@ function args_to_array(args) { return Array.prototype.slice.call(args, 0 ); }
 
 function args_to_list(args) { return arrayToList(args_to_array(args)); }
 
-
 //function plus(x,y){return x+y}
 //function minus(x,y){return x-y}
 //function mult(x,y){return x*y}
 //function div(x,y){return x/y}
-
 
 function plus() {
 	var args = args_to_array(arguments);
@@ -585,7 +585,7 @@ function arrayToList(arr) {
 ///FIXME: if we turn these off, does code go much faster?
 
 function assertArgType(x, type, argTo) {
-    argTo = (argTo == 'undefined')? '"' : '" to ' + argTo
+    argTo = (argTo == 'undefined')? '"' : '" to ' + argTo;
     switch(type) {
         case "function":
             if (typeof(x) != 'function') {
@@ -594,8 +594,8 @@ function assertArgType(x, type, argTo) {
             break;
             
         case "integer":
-            if (typeof(x) != "number" && parseInt(n) != n) {
-                throw new Error('"' + util.format_result(n) + argTo + '" is not an integer');
+            if (typeof(x) != "number" && parseInt(x) != x) {
+                throw new Error('"' + util.format_result(x) + argTo + '" is not an integer');
             }
             break;
             
