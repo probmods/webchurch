@@ -122,9 +122,11 @@ function church_astify(tokens) {
 	}
 
 	function dsgr_let(ast) {
-		if (ast.children[0].text=="let") {
+		var let_varieties = ["let", "let*"];
+
+		if (let_varieties.indexOf(ast.children[0].text)!=-1) {
 			if (ast.children.length < 3) {
-				throw util.make_church_error("SyntaxError", ast.start, ast.end, "let has no body");
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has no body");
 			}
 			var bindings = ast.children[1];
 			var valid_bindings = true;
@@ -139,22 +141,53 @@ function church_astify(tokens) {
 				}
 			}
 			if (!valid_bindings) {
-				throw util.make_church_error_range("SyntaxError", bindings.start, bindings.end, "let has invalid bindings");
+				throw util.make_church_error_range("SyntaxError", bindings.start, bindings.end, ast.children[0].text + " has invalid bindings");
 			}
 
-			return {
-				children: [
-					{
+			switch (ast.children[0].text) {
+				case "let":
+					return {
 						children: [
-							{text: "lambda"},
-							{children: bindings.children.map(function(x) {return x.children[0]})},
-							ast.children[2]
+							{
+								children: [
+									{text: "lambda"},
+									{children: bindings.children.map(function(x) {return x.children[0]})},
+									ast.children[2]
+								]
+							}
+						].concat(bindings.children.map(function(x) {return x.children[1]}))
+					};
+				case "let*":
+					var new_ast = {
+						children: [
+							{
+								children: [
+									{text: "lambda"},
+									{children: []},
+									ast.children[2]
+								]
+							}
 						]
 					}
-				].concat(bindings.children.map(function(x) {return x.children[1]}))
+					for (var i = bindings.children.length-1; i >= 0; i--) {
+						console.log(JSON.stringify(bindings.children[i].children[0],undefined,2))
+						new_ast = {
+							children: [
+								{
+									children: [
+										{text: "lambda"},
+										{children: [bindings.children[i].children[0]]},
+										new_ast,
+									]
+								},
+								bindings.children[i].children[1]
+							],
+						}
+					}
+					return new_ast;
 			}
 
-			;
+
 		} else {
 			return ast;
 		}
