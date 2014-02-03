@@ -171,6 +171,7 @@ var pair = $x.pair = function(a, b) {
 	assert.NumArgs(args_to_array(arguments), 2, "pair");
 	return [a, b];
 };
+$x.cons = pair;
 
 var is_pair = $x.is_pair = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "pair?");
@@ -185,6 +186,7 @@ var first = $x.first = function(x) {
 		return x[0];
 	}
 };
+$x.car = first;
 
 var second = $x.second = function(x) {
 	return first(rest.apply(null, arguments));
@@ -360,6 +362,7 @@ var rest = $x.rest = function(x) {
 		return x[1];
 	}
 };
+$x.cdr = rest;
 
 var length = $x.length = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "length");
