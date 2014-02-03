@@ -18,7 +18,7 @@ then
 fi
 
 echo "- Browserifying"
-browserify \
+node node_modules/browserify/bin/cmd.js \
   -r ./church_builtins \
   -r ./evaluate \
   -r ./probabilistic/index \
