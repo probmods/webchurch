@@ -354,6 +354,32 @@ var map = $x.map = function() {
 	return arrayToList(arr);
 };
 
+var filter = $x.filter = function(pred, list) {
+  assert.ArgType(pred, "function", "filter");
+  assert.ArgType(list, "list", "filter");
+
+  var ret = [], last = ret, newLast;
+  while (list.length > 0) {
+		var x = list[0]; 
+		if (pred(x)) {
+      last.push(x,[]);
+      last = last[1];
+    }
+		list = list[1];
+	}
+  return ret; 
+}
+
+var reverse = $x.reverse = function(list) {
+  var r = [];
+  while (list.length > 0) {
+		var x = list[0];
+    r = [x, r]; 
+    list = list[1];
+	}
+  return r;
+}
+
 var rest = $x.rest = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "rest");
 	if (x.length != 2) {
@@ -361,7 +387,7 @@ var rest = $x.rest = function(x) {
 	} else {
 		return x[1];
 	}
-};
+}; 
 $x.cdr = rest;
 
 var length = $x.length = function(x) {
@@ -564,7 +590,7 @@ var display = $x.display = function(str) {
   var strs = args.map(util.format_result);
   console.log(strs.join(" "));
 };
-
+$x.pn = display;
 
 var listToArray = $x.listToArray = function(list, recurse) {
 	var array = [];
