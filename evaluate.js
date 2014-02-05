@@ -70,7 +70,7 @@ function evaluate(church_codestring,precomp) {
         js_ast = wctransform.probTransformAST(js_ast); //new wc transform
     }
     
-    var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true});
+    var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true, "format": {"compact" : true}});
     
 //    console.log(code_and_source_map.code);
 
