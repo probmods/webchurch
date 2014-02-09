@@ -95,6 +95,12 @@ var all = $x.all = function(list) {
 	return and.apply(null, listToArray(list, true));
 };
 
+var none = $x.none = function(list) {
+	assert.NumArgs(args_to_array(arguments), 1, "all");
+  assert.ArgType(list, "list", "all");
+	return or.apply(null, listToArray(list, true));
+}; 
+
 var or = $x.or = function() {
 	var args = args_to_array(arguments);
 	for (var i = 0; i < args.length; i++) {
@@ -330,6 +336,17 @@ var repeat = $x.repeat = function(n,fn) {
   }
   return lst;
 };
+
+var for_each = $x.for_each = function(fn,lst) {
+  assert.ArgType(fn, "function", "for-each");
+  assert.ArgType(lst, "list", "for-each");
+
+  while (lst.length > 0) {
+    fn(lst[0]);
+		lst = lst[1];
+	}
+  return;
+}; 
 
 var map = $x.map = function() {
   var args = args_to_array(arguments),

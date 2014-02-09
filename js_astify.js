@@ -29,6 +29,7 @@ var rename_map = {
 	"make-list": "make_list",
     "list-ref": "list_ref",
     "list-elt": "list_elt",
+  "for-each": "for_each",
 	"eq?": "is_eq",
 	"equal?": "is_equal",
     
