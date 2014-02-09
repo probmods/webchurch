@@ -170,18 +170,18 @@ function church_astify(tokens) {
 						]
 					}
 					for (var i = bindings.children.length-1; i >= 0; i--) {
-						console.log(JSON.stringify(bindings.children[i].children[0],undefined,2))
+						// console.log(JSON.stringify(bindings.children[i].children[0],undefined,2))
 						new_ast = {
 							children: [
 								{
 									children: [
 										{text: "lambda"},
 										{children: [bindings.children[i].children[0]]},
-										new_ast,
+										new_ast
 									]
 								},
 								bindings.children[i].children[1]
-							],
+							]
 						}
 					}
 					return new_ast;
