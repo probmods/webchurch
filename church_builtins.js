@@ -324,9 +324,11 @@ var fold = $x.fold = function(fn, initialValue, list) {
 var repeat = $x.repeat = function(n,fn) {
   assert.ArgType(fn, "function", "repeat");
   assert.ArgType(n, "number", "repeat");
-	var ret = [];
-	for(var i=0;i<n;i++) {ret[i] = fn();}
-	return arrayToList(ret);
+	var lst = [];
+	for(var i=0;i<n;i++) {
+    lst = [fn(), lst];
+  }
+  return lst;
 };
 
 var map = $x.map = function() {
