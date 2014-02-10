@@ -89,18 +89,6 @@ var and = $x.and = function() {
 	return true;
 };
 
-var all = $x.all = function(list) {
-	assert.NumArgs(args_to_array(arguments), 1, "all");
-  assert.ArgType(list, "list", "all");
-	return and.apply(null, listToArray(list, true));
-};
-
-var none = $x.none = function(list) {
-	assert.NumArgs(args_to_array(arguments), 1, "all");
-  assert.ArgType(list, "list", "all");
-	return or.apply(null, listToArray(list, true));
-}; 
-
 var or = $x.or = function() {
 	var args = args_to_array(arguments);
 	for (var i = 0; i < args.length; i++) {
@@ -115,6 +103,18 @@ var not = $x.not = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "not");
 	return !x;
 };
+
+var all = $x.all = function(list) {
+	assert.NumArgs(args_to_array(arguments), 1, "all");
+  assert.ArgType(list, "list", "all");
+	return and.apply(null, listToArray(list, true));
+};
+
+var none = $x.none = function(list) {
+	assert.NumArgs(args_to_array(arguments), 1, "all");
+  assert.ArgType(list, "list", "all");
+	return !or.apply(null, listToArray(list, true));
+}; 
 
 function cmp_nums(cmp_fn, args) {
 	assert.AtLeastNumArgs(args, 2);
