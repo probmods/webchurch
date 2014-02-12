@@ -27,18 +27,18 @@ function make_church_error(name, start, end, msg) {
 
 function format_result(obj) {
 	function format_result_in_list_helper(obj) {
-		if (obj.length == 2) {
-			return " " + format_result(obj[0]) + format_result_in_list_helper(obj[1]);
-		} else if (obj.length == 0) {
+		if (obj[0] == null) {
 			return ")";
+		} else if (obj.length == 1) {
+			return " . " + format_result(obj[0]) + ")";
 		} else {
-			return " . " + format_result(obj) + ")";
+			return " " + format_result(obj[0]) + format_result_in_list_helper(obj.slice(1));
 		}
 	}
 
 	if (Array.isArray(obj)) {
-		if (obj.length == 2) {
-			return "(" + format_result(obj[0]) + format_result_in_list_helper(obj[1]);
+		if (obj.length >= 2) {
+			return "(" + format_result(obj[0]) + format_result_in_list_helper(obj.slice(1));
 		} else {
 			return "()";
 		}

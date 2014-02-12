@@ -22,20 +22,11 @@ var format_result = require('./util.js').format_result;
 var $x = {};
 
 var is_pair = function(x) {
-  return x.length == 2;
+  return Array.isArray(x);
 };
 
 var is_list = function(x) {
-  while (true) {
-	  if (!Array.isArray(x)) {
-      return false;
-    }
-	  if (x.length == 0) {
-		  return true;
-	  } else {
-		  x = x[1];
-	  }
-  }
+  return x[x.length-1] == null;
 };
 
 var NumArgs = $x.NumArgs = function(args, n, argTo) {
@@ -82,7 +73,7 @@ var ArgType = $x.ArgType = function(x, type, argTo) {
     break;
 
   case "pair":
-    if (x.length != 2) {
+    if (!is_pair(x)) {
       throw new Error('argument "' + format_result(x) + argTo  + ' is not a pair');}
     break;
     

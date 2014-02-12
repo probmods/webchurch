@@ -147,46 +147,33 @@ var eq = $x.eq = function() {
 
 var is_null = $x.is_null = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "null?");
-	return x == the_empty_list || (Array.isArray(x) && x.length == 0);
+	return Array.isArray(x) && x[0] == null;
 };
 
 var list = $x.list = function() {
 	var args = args_to_array(arguments);
-	var result = the_empty_list;
-	for (var i = args.length-1; i >= 0; i--) {
-		result = [args[i], result];
-	}
-	return result;
+	return arrayToList(args);
 };
 
 var is_list = $x.is_list = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "list?");
-  while (true) {
-	  if (!Array.isArray(x)) {
-      return false;
-    }
-	  if (x.length == 0) {
-		  return true;
-	  } else {
-		  x = x[1];
-	  }
-  }
+	return x[x.length-1] == null;
 };
 
 var pair = $x.pair = function(a, b) {
 	assert.NumArgs(args_to_array(arguments), 2, "pair");
-	return [a, b];
+	return [a].concat(b);
 };
 $x.cons = pair;
 
-var is_pair = $x.is_pair = function(x) {
+var is_pair = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "pair?");
-	return x.length == 2;
+	return Array.isArray(x);
 };
 
 var first = $x.first = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "first");
-	if (x.length != 2) {
+	if (!Array.isArray(x) || x.length < 2) {
 		throw new Error(util.format_result(x) + " does not have required pair structure");
 	} else {
 		return x[0];
@@ -224,25 +211,17 @@ var seventh = $x.seventh = function(x) {
 };
 
 var list_ref = $x.list_ref = function(lst, n) {
-  assert.ArgType(lst, "list", "list lookup");
-  assert.ArgType(n, "number", "list lookup");
-  if (n < 0) {
-    throw new Error("Can't have negative list index");
-  }
-  
-  var res = lst, error = false;
-  for(var i = 0; i < n; i++) {
-    if (res.length < 2) {
-      error = true;
-      break;
-    }
-    res = res[1];
-  }
-  if (res.length == 0) {
-    throw new Error("list index too big: asked for item #" + (n+1) + " but list only contains " + i + " items");
-  }
-
-  return res[0]; 
+	assert.ArgType(lst, "list", "list lookup");
+	assert.ArgType(n, "number", "list lookup");
+	if (n < 0) {
+		throw new Error("Can't have negative list index");
+	}
+	var array = listToArray(lst);
+	if (lst.length >= n - 1) {
+	    throw new Error("list index too big: asked for item #" + (n+1) + " but list only contains " + i + " items");
+	} else {
+		return array[n-1];
+	}
 };
 
 var list_elt = $x.list_elt = function(lst, n) {
@@ -328,13 +307,14 @@ var fold = $x.fold = function(fn, initialValue, list) {
 };
 
 var repeat = $x.repeat = function(n,fn) {
-  assert.ArgType(fn, "function", "repeat");
-  assert.ArgType(n, "number", "repeat");
+	assert.ArgType(fn, "function", "repeat");
+	assert.ArgType(n, "number", "repeat");
 	var lst = [];
 	for(var i=0;i<n;i++) {
-    lst = [fn(), lst];
-  }
-  return lst;
+		lst.push(fn());
+	}
+	lst.push(null);
+	return lst;
 };
 
 var for_each = $x.for_each = function(fn,lst) {
@@ -377,41 +357,35 @@ var filter = $x.filter = function(pred, list) {
   assert.ArgType(pred, "function", "filter");
   assert.ArgType(list, "list", "filter");
 
-  var ret = [], last = ret, newLast;
-  while (list.length > 0) {
-		var x = list[0]; 
-		if (pred(x)) {
-      last.push(x,[]);
-      last = last[1];
-    }
-		list = list[1];
-	}
-  return ret; 
+  var arr = listToArray(list).filter(pred);
+  arr.push(null);
+  return arr;
 }
 
 var reverse = $x.reverse = function(list) {
-  var r = [];
-  while (list.length > 0) {
-		var x = list[0];
-    r = [x, r]; 
-    list = list[1];
-	}
-  return r;
+	assert.ArgType(list, "list", "reverse");
+	var arr = listToArray(list).reverse();
+	arr.push(null);
+	return arr;
 }
 
 var rest = $x.rest = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "rest");
-	if (x.length != 2) {
-		throw new Error("Argument does not have required pair structure");
+	if (!Array.isArray(x) || x.length < 2) {
+		throw new Error(util.format_result(x) + " does not have required pair structure");
 	} else {
-		return x[1];
+		if (x.length == 2 && x[1] != null) {
+			return x[1];
+		} else {
+			return x.slice(1);
+		}
 	}
 }; 
 $x.cdr = rest;
 
 var length = $x.length = function(x) {
 	assert.NumArgs(args_to_array(arguments), 1, "length");
-  assert.ArgType(x, "list", "length");
+	assert.ArgType(x, "list", "length");
 	var len = 0;
 	while (x.length != 0) {
 		if (x.length != 2) {
@@ -463,13 +437,12 @@ var is_equal = $x.is_equal = function(x, y) {
 
 var member_base = $x.member_base = function(x, list, eq_fn) {
 	assert.ArgType(list,"list","member");
-	if (list.length == 0) {
-		return false;
-	} else if (eq_fn(x, list[0])) {
-		return list;
-	} else {
-		return member_base(x, list[1], eq_fn);
+	for (var i = 0; i < list.length-1; i++) {
+		if (eq_fn(x, list[i])) {
+			return list;
+		}
 	}
+	return false;
 };
 
 var member = $x.member = function(x, list) {
@@ -612,25 +585,15 @@ var display = $x.display = function(str) {
 $x.pn = display;
 
 var listToArray = $x.listToArray = function(list, recurse) {
-	var array = [];
-	while (list.length > 0) {
-		var left = list[0];
-		array.push((Array.isArray(left) && recurse) ? listToArray(left) : left);
-		list = list[1];
+	if (recurse) {
+		return list.slice(0, -1).map(function (x) {return Array.isArray(x) ? listToArray(x) : x})
+	} else {
+		return list.slice(0, -1);
 	}
-	return array;
 };
 
 var arrayToList = $x.arrayToList = function(arr) {
-	if (arr.length == 0) {
-		return the_empty_list;
-	} else {
-	  var i = arr.length, r = [];
-	  while (i--) {
-	    r = [arr[i], r];
-	  }
-	  return r;
-	}
+	return arr.concat(null);
 };
 
 var string_append = $x.string_append = function() {
