@@ -84,10 +84,10 @@ var ArgType = $x.ArgType = function(x, type, argTo) {
 };
 
 var AllType = $x.AllType = function(list, type, argTo) {
-	if (list.length != 0) {
-		ArgType(list[0], type, argTo);
-		AllType(list[1], type, argTo);
-	}
+  var n = list.length - 1;
+  for(var i = 0; i < n; i++) {
+    ArgType(list[i], type, argTo);
+  }
 };
 
 module.exports = $x;
