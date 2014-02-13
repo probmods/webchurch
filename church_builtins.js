@@ -330,10 +330,8 @@ var for_each = $x.for_each = function(fn,lst) {
   assert.ArgType(fn, "function", "for-each");
   assert.ArgType(lst, "list", "for-each");
 
-  while (lst.length > 0) {
-    fn(lst[0]);
-		lst = lst[1];
-	}
+  var arr = listToArray(lst); 
+  arr.forEach(fn); 
   return;
 }; 
 
