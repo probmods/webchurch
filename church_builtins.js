@@ -392,19 +392,10 @@ var rest = $x.rest = function(x) {
 }; 
 $x.cdr = rest;
 
-var length = $x.length = function(x) {
+var length = $x.length = function(lst) {
 	assert.NumArgs(args_to_array(arguments), 1, "length");
-	assert.ArgType(x, "list", "length");
-	var len = 0;
-	while (x.length != 0) {
-		if (x.length != 2) {
-			throw new Error("Argument is not a proper list");
-		} else {
-			x = x[1];
-			len++;
-		}
-	}
-	return len;
+	assert.ArgType(lst, "list", "length");
+  return listToArray(lst).length;
 };
 
 // predefine the length, decently quick and
@@ -595,7 +586,7 @@ $x.pn = display;
 
 var listToArray = $x.listToArray = function(list, recurse) {
 	if (recurse) {
-		return list.slice(0, -1).map(function (x) {return Array.isArray(x) ? listToArray(x) : x})
+		return list.slice(0, -1).map(function (x) {return Array.isArray(x) ? listToArray(x) : x});
 	} else {
 		return list.slice(0, -1);
 	}
