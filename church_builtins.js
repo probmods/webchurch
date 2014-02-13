@@ -226,10 +226,10 @@ var list_ref = $x.list_ref = function(lst, n) {
 		throw new Error("Can't have negative list index");
 	}
 	var array = listToArray(lst);
-	if (lst.length >= n - 1) {
-	    throw new Error("list index too big: asked for item #" + (n+1) + " but list only contains " + i + " items");
+	if (array.length < n) {
+	    throw new Error("list index too big: asked for item #" + (n+1) + " but list only contains " + n + " items");
 	} else {
-		return array[n-1];
+		return array[n];
 	}
 };
 
