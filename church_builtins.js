@@ -10,6 +10,8 @@
 // Declaring the function as both a global and a member of $x makes writing
 // recursive builtins easier
 
+// OPTIMIZE: args_to_array calls inside calls to assert functions
+
 var util = require('./util.js');
 var fs = require('fs');
 var assert = require('./assert.js');
@@ -76,6 +78,13 @@ var sum = $x.sum = function(list) {
 	assert.NumArgs(args_to_array(arguments), 1, "sum");
   assert.ArgType(list, "list", "sum");
 	return plus.apply(null, listToArray(list, true));
+};
+
+// check whether xhat \in (x - tol, x + tol)
+var soft_equal = $x.soft_equal = function(xhat, x, tol) {
+	//assert.NumArgs(args_to_array(arguments), 3, "soft-equal");
+  // FIXME: //assert upper > lower
+  return (xhat > x - tol && x < x + tol);
 };
 
 var and = $x.and = function() {

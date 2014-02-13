@@ -17,6 +17,7 @@ var rename_map = {
 	"-": "minus",
 	"*": "mult",
 	"/": "div",
+  "soft-equal": "soft_equal",
 	">": "greater",
 	"<": "less",
 	">=": "geq",
@@ -61,8 +62,9 @@ var rename_map = {
 	"enumeration-query": "wrapped_enumerate",
 
 	"read-file": "read_file",
-	"string-append": "string_append",
-	"symbol->string": "symbol_to_string"
+  "string-append": "string_append",
+  "symbol->string": "symbol_to_string",
+  "get-time": "Date.now"
 }
 
 
