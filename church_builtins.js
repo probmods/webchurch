@@ -421,7 +421,14 @@ var is_equal = $x.is_equal = function(x, y) {
 	if (typeof(x) == typeof(y)) {
 		if (Array.isArray(x)) {
 			if (x.length == y.length) {
-				return is_equal(x[0], y[0]) && is_equal(x[1], y[1]);
+        for(var i = 0, ii = x.length; i < ii; i++) {
+          if (x[i] != y[i]) {
+            return false;
+          }
+        };
+        return true;
+        
+				// return is_equal(x[0], y[0]) && is_equal(x[1], y[1]);
 			} else {
 				return false;
 			}
@@ -435,8 +442,10 @@ var is_equal = $x.is_equal = function(x, y) {
 
 var member_base = $x.member_base = function(x, list, eq_fn) {
 	assert.ArgType(list,"list","member");
-	for (var i = 0; i < list.length-1; i++) {
-		if (eq_fn(x, list[i])) {
+  var array = listToArray(list);
+  
+	for (var i = 0, ii = array.length; i < ii; i++) {
+		if (eq_fn(x, array[i])) {
 			return list;
 		}
 	}
