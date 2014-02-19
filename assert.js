@@ -55,7 +55,13 @@ var ArgType = $x.ArgType = function(x, type, argTo) {
       //doesn't say "is not a function" to avoid special purpose code in evaluate.js
       throw new Error('argument "' + format_result(x) + argTo  + ' not a function');}
     break;
-    
+  
+  case "string":
+    if (typeof(x) != "string") {
+      throw new Error('"' + format_result(x) + argTo + '" is not a string');
+    }
+    break;
+
   case "integer":
     if (typeof(x) != "number" && parseInt(x) != x) {
       throw new Error('"' + format_result(x) + argTo + '" is not an integer');

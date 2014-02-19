@@ -577,12 +577,38 @@ var read_file = $x.read_file = function(fileName) {
 	return fs.readFileSync(fileName, "utf8");
 };
 
+var read_csv = $x.read_csv = function(fileName, sep) {
+	// TODO: rewrite as FSM instead of simple splits
+	assert.ArgType(fileName, "string", "read-csv");
+	sep = sep || ",";
+	assert.ArgType(sep, "string", "read-csv");
+	var data = fs.readFileSync(fileName, "utf8").split(
+		"\n").map(function(x) {x=x.split(sep);return arrayToList(x,true);})
+	return arrayToList(data, true);
+}
+
 var display = $x.display = function(str) {
   var args = args_to_array(arguments);
   var strs = args.map(util.format_result);
   console.log(strs.join(" "));
 };
 $x.pn = display;
+
+var bootstrap = $x.bootstrap = function(fn, fileName, n) {
+	assert.ArgType(fn, "function", "bootstrap");
+	assert.ArgType(fileName, "string", "bootstrap");
+	assert.ArgType(n, "integer", "bootstrap");
+	var data = read_csv(fileName);
+	var results = [null];
+	for (var i=0;i<n;i++) {
+		var sampled_data = [null];
+		for (var j=0;j<data.length-1;j++) {
+			sampled_data.unshift(data[Math.floor(Math.random()*(data.length-1))]);
+		}
+		results.unshift(fn(sampled_data));
+	}
+	return results;
+}
 
 var listToArray = $x.listToArray = function(list, recurse) {
 	if (recurse) {
@@ -592,8 +618,13 @@ var listToArray = $x.listToArray = function(list, recurse) {
 	}
 };
 
-var arrayToList = $x.arrayToList = function(arr) {
-	return arr.concat(null);
+var arrayToList = $x.arrayToList = function(arr, mutate) {
+	if (mutate) {
+		arr.push(null);	
+	} else {
+		arr = arr.concat(null);
+	}
+	return arr;
 };
 
 var string_append = $x.string_append = function() {

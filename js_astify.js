@@ -62,6 +62,7 @@ var rename_map = {
 	"enumeration-query": "wrapped_enumerate",
 
 	"read-file": "read_file",
+	"read-csv": "read_csv",
   "string-append": "string_append",
   "symbol->string": "symbol_to_string",
   "get-time": "Date.now"
