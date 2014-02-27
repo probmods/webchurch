@@ -6,9 +6,9 @@
 	"bin": {
 		"webchurch": "./compile.sh"
 	},
-  "scripts": {
-    "test": "node test/test_basic.js"
-  },
+	"scripts": {
+	"test": "node test/test_basic.js"
+	},
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/probmods/webchurch.git"
@@ -17,7 +17,8 @@
 		"escodegen": "0.0.26",
 		"esprima": "1.0.4",
 		"source-map": "0.1.30",
-    "browserify": "2.36.0"
+		"browserify": "2.36.0",
+		"optparse": "1.0.5"
 	},
 	"author" : {
 		"name" : "Julius Cheng",

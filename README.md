@@ -15,4 +15,4 @@ Usage
 =====
 
 - Local online demo: Point your browser to `./online/index.html`
-- Command line: from the webchurch directory, run `node test/run_sandbox.js`, which executes the contents of `test/sandbox.church`, or pass in a file name as an argument.
+- Command line: from the webchurch directory, run `./church test/run_sandbox.js`, which executes the contents of `test/sandbox.church`, or pass in a file name as an argument.

@@ -1,0 +1,45 @@
+#!/usr/bin/env node
+
+var sys = require('sys');
+var optparse = require('optparse');
+
+function abort(msg) {
+	console.log(msg)
+	process.exit(0);
+}
+
+global["evaluate"] = require('./evaluate.js').evaluate
+var format_result = require("./evaluate.js").format_result;
+
+var srcfile = process.argv.length > 2 ? process.argv[process.argv.length-1] : abort("Usage: church [OPTIONS]... [FILE]");
+process.argv = process.argv.slice(0, -1);
+var argstring;
+var pc;
+
+var switches = [
+    ['-pc', '--precompile', 'Turn on pre-compilation'],
+    ['-a', '--program-args [MESSAGE]', 'Turn on pre-compilation'],
+];
+
+var parser = new optparse.OptionParser(switches);
+
+parser.on('pc', function(x) {
+	pc = true;
+});
+
+parser.on("program-args", function(opt, value) {
+	argstring = value;
+});
+
+
+parser.parse(process.argv);
+
+code = require('fs').readFileSync(srcfile, "utf8");
+
+try {
+	result = format_result(evaluate(code, pc, argstring));
+	console.log(result);
+} catch (e) {
+	console.log(e.message)
+    throw e
+}

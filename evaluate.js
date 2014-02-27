@@ -52,7 +52,7 @@ function get_sites_from_stack(split_stack) {
 	return sites;
 }
 
-function evaluate(church_codestring,precomp) {
+function evaluate(church_codestring,precomp,argstring) {
     
 	var result;
     
