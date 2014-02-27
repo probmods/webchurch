@@ -422,7 +422,7 @@ var is_equal = $x.is_equal = function(x, y) {
 		if (Array.isArray(x)) {
 			if (x.length == y.length) {
         for(var i = 0, ii = x.length; i < ii; i++) {
-          if (x[i] != y[i]) {
+          if (!is_equal(x[i], y[i])) {
             return false;
           }
         };
