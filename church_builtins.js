@@ -413,7 +413,7 @@ var make_list = $x.make_list = function(n, x) {
 
 var is_eq = $x.is_eq = function(x, y) {
 	assert.NumArgs(args_to_array(arguments), 2, "eq?");
-	return typeof(x) == typeof(y) && x == y;
+	return x === y;
 };
 
 var is_equal = $x.is_equal = function(x, y) {
