@@ -643,9 +643,16 @@ var symbol_to_string = $x.symbol_to_string = function(sym) {
   return sym;
 };
 
-var iota = $x.iota = function(n) {
+var iota = $x.iota = function(n, start, step) {
+  if (typeof start == 'undefined') {
+    start = 0;
+  }
+  if (typeof step == 'undefined') {
+    step = 1;
+  } 
+  
   var r = [];
-  for(var k = 0; k < n; k++) {
+  for(var k = start, i = 0; i < n; i++, k += step) {
     r.push(k);
   }
   return arrayToList(r);
