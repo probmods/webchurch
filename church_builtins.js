@@ -643,7 +643,7 @@ var symbol_to_string = $x.symbol_to_string = function(sym) {
   return sym;
 };
 
-var iota = $x.iota = function(n, start, step) {
+var iota = $x.iota = function(count, start, step) {
   if (typeof start == 'undefined') {
     start = 0;
   }
@@ -652,7 +652,9 @@ var iota = $x.iota = function(n, start, step) {
   } 
   
   var r = [];
-  for(var k = start, i = 0; i < n; i++, k += step) {
+  for(var k = start, i = 0;
+      i < count;
+      i++, k += step) {
     r.push(k);
   }
   return arrayToList(r);
