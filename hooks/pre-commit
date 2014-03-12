@@ -1,6 +1,7 @@
 #!/bin/sh
 
-node test/test_basic.js
+cd test
+node runner.js basic.church
 # get return code
 # HT http://stackoverflow.com/a/90435/351392
 rc=$?
