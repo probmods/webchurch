@@ -7,7 +7,7 @@
 		"webchurch": "./compile.sh"
 	},
 	"scripts": {
-	"test": "node test/test_basic.js"
+	"test": "node test/runner.js test/basic.church"
 	},
 	"repository": {
 		"type": "git",
