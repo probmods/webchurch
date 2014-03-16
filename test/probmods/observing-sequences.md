@@ -244,7 +244,7 @@
                   (multinomial
                    (list (list V AP) 
                          (list V NP))
-                   (list (/ 1 2) (/ 1 2)))))).
+                   (list (/ 1 2) (/ 1 2))))))
 ~~~~
 
 ~~~~ {test_id="14"}

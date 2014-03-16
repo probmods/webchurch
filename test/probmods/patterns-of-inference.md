@@ -342,7 +342,7 @@ A
   (hist (map second samples) "Exam Fair"))
 ~~~~
 
-~~~~ {test_id="19"}
+~~~~ {.norun test_id="19"}
 (and (not (pass? 'bill 'exam1)) (not (pass? 'bill 'exam2)))
 
 (and (not (pass? 'bill 'exam1))
