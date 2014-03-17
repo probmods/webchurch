@@ -382,7 +382,7 @@ function church_tree_to_esprima_ast(church_tree) {
 			expression = {type: 'Identifier', name: church_leaf.text}
 		} else {
 			var value = get_value_of_string_or_number(church_leaf.text);
-			if (value < 0) {
+			if (typeof value == "number" && value < 0) {
 				expression["type"] = "UnaryExpression";
 				expression["operator"] = "-"
 				expression["argument"] = {"type": "Literal", "value": -value}
