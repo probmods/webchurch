@@ -7,7 +7,7 @@
     "webchurch": "./compile.sh"
   },
   "scripts": {
-    "test": "node test/test_basic.js"
+    "test": "node test/runner.js test/basic.church"
   },
   "repository": {
     "type": "git",
@@ -17,8 +17,9 @@
     "escodegen": "0.0.26",
     "esprima": "1.0.4",
     "source-map": "0.1.30",
-    "browserify": "~2.36.0",
-    "underscore": "~1.5.2",
+    "browserify": "2.36.0",
+    "optparse": "1.0.5",
+    "underscore": "~1.6.0",
     "codemirror": "~3.20.0",
     "d3": "~3.3.11"
   },

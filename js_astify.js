@@ -1,3 +1,5 @@
+/* global require */
+
 /*
  This takes an AST for desugarred Church and turns it into a js AST.
  
@@ -9,53 +11,55 @@
 
 
 //var escodegen = require("escodegen");
-var estraverse = require("escodegen/node_modules/estraverse")
+var estraverse = require("escodegen/node_modules/estraverse");
 var util = require('./util.js');
+var builtins = require('./church_builtins.js');
+var builtinAnnotations = builtins.__annotations__;
+
+/*
+ construct rename_map using builtinAnnotations
+ using anything declared in the 'alias' key.
+ if nothing is declared there, default to applying
+ these substitutions to construct the alias:
+ 
+  wrapped_foo => foo
+  is_foo      => foo?
+  foo_to_bar  => foo->bar
+  _ => -
+
+ */
 
 var rename_map = {
-    "+": "plus",
-	"-": "minus",
-	"*": "mult",
-	"/": "div",
-	">": "greater",
-	"<": "less",
-	">=": "geq",
-	"<=": "leq",
-	"=": "eq",
-    
-	"null?": "is_null",
-	"list?": "is_list",
-	"pair?": "is_pair",
-	"make-list": "make_list",
-    "list-ref": "list_ref",
-    "list-elt": "list_elt",
-	"eq?": "is_eq",
-	"equal?": "is_equal",
-    
-    "eval": "wrapped_evaluate",
-    
-	"uniform-draw": "wrapped_uniform_draw",
-	"multinomial": "wrapped_multinomial",
-	"flip": "wrapped_flip",
-	"uniform": "wrapped_uniform",
-	"sample-integer": "wrapped_random_integer",
-	"random-integer": "wrapped_random_integer",
-	"gaussian": "wrapped_gaussian",
-	"gamma": "wrapped_gamma",
-	"beta": "wrapped_beta",
-	"dirichlet": "wrapped_dirichlet",
-    
-    "baseval":"evaluate",
-    "round": "Math.round",
-	"abs": "Math.abs",
-    "exp": "Math.exp",
-    "log": "Math.log",
-    "pow": "Math.pow",
-    "mh-query": "wrapped_traceMH",
-	"rejection-query": "rejectionSample",
-	"enumeration-query": "wrapped_enumerate"
-}
+  baseval: 'evaluate'
+};
 
+Object.keys(builtinAnnotations).forEach(function(name) {
+  var annotation = builtinAnnotations[name];
+  var alias;
+
+  // if the annotation contains an explicit alias
+  // or array of aliases, set those
+  if (annotation.alias) {
+    alias = annotation.alias;
+    if (typeof alias == 'string') {
+      rename_map[alias] = name;
+    }
+    if (Array.isArray(alias)) {
+      alias.forEach(function(a) {
+        rename_map[a] = name;
+      });
+    }
+    
+  } else {
+    alias = name
+      .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
+      .replace(/is_(.+)/, function(m, p1) { return p1 + "?"})
+      .replace('_to_', '->')
+      .replace('_', '-');
+    
+    rename_map[alias] = name;
+  }
+});
 
 var program_node = {
 	"type": "Program",
@@ -158,28 +162,27 @@ var block_statement_node = {
 var variadic_header = {
 	"type": "VariableDeclaration",
 	"declarations": [
-                     {
-                     "type": "VariableDeclarator",
-                     "id": {
-                     "type": "Identifier",
-                     "name": null
-                     },
-                     "init": {
-                     "type": "CallExpression",
-                     "callee":
-                     {
-                     "type": "Identifier",
-                     "name": "args_to_list"
-                     },
-                     "arguments": [
-                                   {
-                                   "type": "Identifier",
-                                   "name": "arguments"
-                                   }
-                                   ]
-                     }
-                     }
-                     ],
+		{
+			"type": "VariableDeclarator",
+			"id": {
+				"type": "Identifier",
+				"name": null
+			},
+			"init": {
+				"type": "CallExpression",
+				"callee": {
+					"type": "Identifier",
+					"name": "args_to_list"
+				},
+				"arguments": [
+					{
+						"type": "Identifier",
+						"name": "arguments"
+					}
+				]
+			}
+		}
+	],
 	"kind": "var"
 }
 
@@ -224,10 +227,10 @@ function church_tree_to_esprima_ast(church_tree) {
 
 		var name = church_tree.children[1].text;
 		var val = make_expression(church_tree.children[2]);
-        
-        var node = deep_copy(declaration_node);
-        node["declarations"][0]["id"]["name"] = name;
-        node["declarations"][0]["init"] = val;
+
+		var node = deep_copy(declaration_node);
+		node["declarations"][0]["id"]["name"] = name;
+		node["declarations"][0]["init"] = val;
 		return node;
 	}
 
@@ -308,14 +311,20 @@ function church_tree_to_esprima_ast(church_tree) {
 					return make_leaf_expression(quoted);
 				} else {
 					var array = deep_copy(array_node);
-					if (quoted.children.length > 1 &&  quoted.children[1].text == ".") {
-						if (quoted.children.length != 3) {
-							throw util.make_church_error("SyntaxError", quoted.children[1].start, quoted.children[1].end, "Invalid dot");
+					var proper_list = true;
+					for (var i = 0; i < quoted.children.length; i++) {
+						if (quoted.children[i].text == ".") {
+							if (i != quoted.children.length - 2) {
+								throw util.make_church_error("SyntaxError", quoted.children[i].start, quoted.children[i].end, "Invalid dot");
+							} else {
+								proper_list = false;
+							}
+						} else {
+							array["elements"].push(quote_helper(quoted.children[i]));
 						}
-						array["elements"] = [quote_helper(quoted.children[0]), quote_helper(quoted.children[2])];
-					} else {
-						array["elements"] = [quote_helper(quoted.children[0]), quote_helper({
-							children: quoted.children.slice(1)})];
+					}
+					if (proper_list) {
+						array["elements"].push({"type": "Literal", "name": null, "value": null});
 					}
 					return array;
 				}
@@ -350,10 +359,10 @@ function church_tree_to_esprima_ast(church_tree) {
 		var expression = deep_copy(expression_node);
 		if (!util.is_leaf(church_leaf) && church_leaf.children.length == 0) {
 			expression =  {
-	            type: "Identifier",
-	            name: "the_empty_list"
-            }
-        } else if (church_leaf.text == ".") {
+				type: "ArrayExpression",
+				elements: [{"type": "Literal", "name": null, "value": null}]
+			}
+		} else if (church_leaf.text == ".") {
 			throw util.make_church_error("SyntaxError", church_leaf.start, church_leaf.end, "Invalid dot");
 		} else if (church_leaf.text == undefined) {
 			expression["type"] = "Identifier";
@@ -362,10 +371,10 @@ function church_tree_to_esprima_ast(church_tree) {
 			expression["type"] = "Literal";
 			expression["value"] = util.boolean_aliases[church_leaf.text];
 		} else if (util.is_identifier(church_leaf.text)) {
-            expression = {type: 'Identifier', name: church_leaf.text}
+			expression = {type: 'Identifier', name: church_leaf.text}
 		} else {
 			var value = get_value_of_string_or_number(church_leaf.text);
-			if (value < 0) {
+			if (typeof value == "number" && value < 0) {
 				expression["type"] = "UnaryExpression";
 				expression["operator"] = "-"
 				expression["argument"] = {"type": "Literal", "value": -value}
@@ -410,7 +419,7 @@ function church_tree_to_esprima_ast(church_tree) {
 	var body = make_expression_statement_list(church_tree.children);
 
 	ast["body"] = body;
-    ast = estraverse.replace(ast, renameIdentifiers)
+	ast = estraverse.replace(ast, renameIdentifiers)
 	return ast;
 }
 
@@ -420,6 +429,7 @@ function convert_char(c) { return ("_" + c.charCodeAt(0)); }
 // Any identifier that doesn't match the form [a-zA-Z_$][0-9a-zA-Z_$]* isn't
 // okay in JS, so we need to rename them.
 function format_identifier(id) {
+  
 	var new_id;
 	if (id[0].match("[a-zA-Z_$]")) {
 		new_id = id[0];
@@ -433,20 +443,23 @@ function format_identifier(id) {
 			new_id = new_id + convert_char(id[j]);
 		}
 	}
+  
 	return new_id;
+
+  
 }
 
 renameIdentifiers = {
-leave: function(node) {
-    if(node.type == 'Identifier') {
-        if(node.name in rename_map) {
-            node.name = rename_map[node.name]
-        } else {
-            node.name = format_identifier(node.name)
-        }
-    }
-    return node
-}
+	leave: function(node) {
+		if(node.type == 'Identifier') {
+			if(node.name in rename_map) {
+				node.name = rename_map[node.name]
+			} else {
+				node.name = format_identifier(node.name)
+			}
+		}
+		return node
+	}
 }
 
 
