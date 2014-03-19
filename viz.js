@@ -2,14 +2,16 @@
 
 var d3 = require("d3");
 var format_result = require("./util").format_result;
-var listToArray = require("./church_builtins").listToArray;
-var _ = require("underscore");
+var _ = require("underscore"); 
+var typeUtils = require("./type-utils");
+var listToArray = typeUtils.listToArray;
+var arrayToList = typeUtils.arrayToList; 
 
 var maxBins = 20;
 
-var formatPercent = d3.format(".0%");
+global.sideEffects = [] ;
 
-function erinSort(array) {
+var erinSort = function(array) {
   var firstElem = array[0];
   if (typeof(firstElem) == "number") {
     return array.sort(function(a,b) {return b-a});
@@ -21,7 +23,10 @@ function erinSort(array) {
     return array;
   }
   return array;
-}
+};
+
+var formatPercent = d3.format(".0%");
+
 
 // listXY: a list containing (1) a list of x axis labels and (2) a list containing
 // y axis values
@@ -40,56 +45,52 @@ barplot = function(listXY, title) {
       freq:  ys[i]
     });
   }
+
+  //TODO: make left margin vary depending on how long the names of the elements in the list are
+  var margin = {top: 40, right: 20, bottom: 60, left: 60},
+      width = 0.85 * 600 - margin.left - margin.right,
+      height = 100 + (20 * counts.length) - margin.top - margin.bottom;
+
+  var x = d3.scale.linear()
+        .domain([0, maxY])
+        .range([0, width]);
   
-  return function($div) {
+	var y = d3.scale.ordinal()
+        .domain(xs)
+        .rangeRoundBands([height, 0], .1);
+  
+	var yAxis = d3.svg.axis()
+	      .scale(y)
+	      .orient("left");
 
-    var $histDiv = $("<div></div>").appendTo($div);
-    var div = $histDiv[0];
-    
-    //TODO: make left margin vary depending on how long the names of the elements in the list are
-    var margin = {top: 40, right: 20, bottom: 60, left: 60},
-        width = 0.85 * $div.width() - margin.left - margin.right,
-        height = 100 + (20 * counts.length) - margin.top - margin.bottom;
+  var svgContainer = document.createElementNS(d3.ns.prefix.svg,'svg');
 
-    var x = d3.scale.linear()
-          .domain([0, maxY])
-          .range([0, width]);
-    
-	  var y = d3.scale.ordinal()
-          .domain(xs)
-          .rangeRoundBands([height, 0], .1);
-    
-	  var yAxis = d3.svg.axis()
-	        .scale(y)
-	        .orient("left");
+  var svg = d3
+        .select(svgContainer)
+        .attr("class", "chart")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height+ margin.top + margin.bottom)
+        .style('margin-left', '0')
+        .style('margin-top', '10px')
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
+  drawHist(svg, counts, xs, width, height, x, y, false);
 
-    var svg = d3.select(div).append("svg")
-          .attr("class", "chart")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height+ margin.top + margin.bottom)
-          .style('margin-left', '0')
-          .style('margin-top', '10px')
-          .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+  // .tickFormat(formatPercent);
 
-    drawHist(svg, counts, xs, width, height, x, y, false);
-
-    var xAxis = d3.svg.axis()
-          .scale(x)
-          .orient("bottom");
-    // .tickFormat(formatPercent);
-
-    drawAxes(svg, xAxis, yAxis, height, 0, width, "hist");
-    drawTitle(svg, title, width, margin);
-    
-    return counts;
-
-  };
+  drawAxes(svg, xAxis, yAxis, height, 0, width, "hist");
+  drawTitle(svg, title, width, margin);
+  
+  sideEffects.push({type: 'svg', data: svgContainer });
   
 };
 
-window.hist = function(samps, title) {
+hist = function(samps, title) {
+  
   // TODO: this is a hack. we want proper conversion of data types
   var values = erinSort(listToArray(samps));
   var strvalues = values.map(function(x) {return format_result(x);});
@@ -118,62 +119,61 @@ window.hist = function(samps, title) {
   }
 
 
+  //  var $histDiv = $("<div></div>").appendTo($div);
+  // var div = $histDiv[0];
+  
+  //TODO: make left margin vary depending on how long the names of the elements in the list are
+  // TODO: can we do this abstractly, without knowing beforehand how many pixels we have?
+  var margin = {top: 40, right: 20, bottom: 60, left: 60},
+      width = 0.85 * /* $div.width() */ 600 - margin.left - margin.right,
+      height = 100 + (20 * counts.length) - margin.top - margin.bottom;
 
-  return function($div) {
+  var x = d3.scale.linear()
+        .domain([0, maxFreq])
+        .range([0, width]);
+  if (continuous) {
+	  var yMin = Math.min.apply(Math, values);
+	  var yMax = Math.max.apply(Math, values);
+	  var y = d3.scale.ordinal()
+          .domain(values)
+          .rangeRoundBands([0, height], .1);
+	  var yAxis = d3.svg.axis()
+	        .scale(d3.scale.linear()
+	               .domain([yMin, yMax])
+	               .range([height, 0]))
+	        .orient("left");
+  } else {
+	  var y = d3.scale.ordinal()
+          .domain(strvalues)
+          .rangeRoundBands([height, 0], .1);
+	  var yAxis = d3.svg.axis()
+	        .scale(y)
+	        .orient("left");
+  }
 
-    var $histDiv = $("<div></div>").appendTo($div);
-    var div = $histDiv[0];
-    
-    //TODO: make left margin vary depending on how long the names of the elements in the list are
-    var margin = {top: 40, right: 20, bottom: 60, left: 60},
-        width = 0.85 * $div.width() - margin.left - margin.right,
-        height = 100 + (20 * counts.length) - margin.top - margin.bottom;
+  var svgContainer = document.createElementNS(d3.ns.prefix.svg,'svg');
 
-    var x = d3.scale.linear()
-          .domain([0, maxFreq])
-          .range([0, width]);
-    if (continuous) {
-	    var yMin = Math.min.apply(Math, values);
-	    var yMax = Math.max.apply(Math, values);
-	    var y = d3.scale.ordinal()
-            .domain(values)
-            .rangeRoundBands([0, height], .1);
-	    var yAxis = d3.svg.axis()
-	          .scale(d3.scale.linear()
-	                 .domain([yMin, yMax])
-	                 .range([height, 0]))
-	          .orient("left");
-    } else {
-	    var y = d3.scale.ordinal()
-            .domain(strvalues)
-            .rangeRoundBands([height, 0], .1);
-	    var yAxis = d3.svg.axis()
-	          .scale(y)
-	          .orient("left");
-    }
+  var svg = d3
+        .select(svgContainer) // HT http://stackoverflow.com/a/21101552/351392
+        .attr("class", "chart")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height+ margin.top + margin.bottom)
+        .style('margin-left', '0')
+        .style('margin-top', '10px')
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var svg = d3.select(div).append("svg")
-          .attr("class", "chart")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height+ margin.top + margin.bottom)
-          .style('margin-left', '0')
-          .style('margin-top', '10px')
-          .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  drawHist(svg, counts, strvalues, width, height, x, y, false);
 
-    drawHist(svg, counts, strvalues, width, height, x, y, false);
+  var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom")
+        .tickFormat(formatPercent);
 
-    var xAxis = d3.svg.axis()
-          .scale(x)
-          .orient("bottom")
-          .tickFormat(formatPercent);
-
-    drawAxes(svg, xAxis, yAxis, height, 0, width, "hist");
-    drawTitle(svg, title, width, margin);
-    
-    return counts;
-
-  };
+  drawAxes(svg, xAxis, yAxis, height, 0, width, "hist");
+  drawTitle(svg, title, width, margin);
+  
+  sideEffects.push({type: 'svg', data: svgContainer});
 
 };
 
@@ -191,126 +191,107 @@ density = function(samps, title, withHist) {
           };
         }),
       maxFreq = _(counts).chain().map(function(x) { return x.freq}).max().value();
+  
+  //TODO: make left margin vary depending on how long the names of the elements in the list are
+  var margin = {top: 40, right: 20, bottom: 30, left: 40},
+      width = 0.8 * /*$div.width() */ 600 - margin.left - margin.right,
+      height = 300 - margin.top - margin.bottom;
 
-  return function($div) {
+  var svgContainer = document.createElementNS(d3.ns.prefix.svg,'svg');
+  
+  var svg = d3
+        .select(svgContainer)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height+ margin.top + margin.bottom)
+        .style('margin-left', '10%')
+        .style('margin-top', '20px')
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var $densDiv = $("<div></div>").appendTo($div);
-    var div = $densDiv[0];
-    
-    //TODO: make left margin vary depending on how long the names of the elements in the list are
-    var margin = {top: 40, right: 20, bottom: 30, left: 40},
-        width = 0.8 * $div.width() - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
-    
-    var svg = d3.select(div).append("svg")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height+ margin.top + margin.bottom)
-          .style('margin-left', '10%')
-          .style('margin-top', '20px')
-          .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  var xMin = Math.min.apply(Math, values);
+  var xMax = Math.max.apply(Math, values);
+  /*    if (withHist) {
+   var binnedData = binData(counts, values);
+   if (binnedData.maxVal > xMax) {
+   xMax = Math.max(xMax, binnedData.maxVal);
+   }
+   if (binnedData.minVal < xMin) {
+   xMin = Math.min(xMin, binnedData.minVal);
+   }
+   }*/
+  
+  var range = xMax - xMin;
+  var x = d3.scale.linear()
+        .domain([xMin, xMax])
+        .range([0, width]);
+  var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
+  
+  function kernelDensityEstimator(kernel, x) {
+    return function(sample) {
+      return x.map(function(x) {
+        return [x, d3.mean(sample, function(v) { return kernel(x - v); })];
+      });
+    };
+  }
 
-    var xMin = Math.min.apply(Math, values);
-    var xMax = Math.max.apply(Math, values);
-    /*    if (withHist) {
-     var binnedData = binData(counts, values);
-     if (binnedData.maxVal > xMax) {
-     xMax = Math.max(xMax, binnedData.maxVal);
-     }
-     if (binnedData.minVal < xMin) {
-     xMin = Math.min(xMin, binnedData.minVal);
-     }
-     }*/
-    
-    var range = xMax - xMin;
-    var x = d3.scale.linear()
-          .domain([xMin, xMax])
-          .range([0, width]);
-    var xAxis = d3.svg.axis()
-          .scale(x)
-          .orient("bottom");
-    
-    function kernelDensityEstimator(kernel, x) {
-      return function(sample) {
-        return x.map(function(x) {
-          return [x, d3.mean(sample, function(v) { return kernel(x - v); })];
-        });
-      };
+  function epanechnikovKernel(scale) {
+    return function(u) {
+      return Math.abs(u /= scale) <= 1 ? .75 * (1 - u * u) / scale : 0;
+    };
+  }
+
+  var kde = kernelDensityEstimator(epanechnikovKernel(3), x.ticks(100));
+
+  var densities = kde(values).map(function(x) {return x[1];});
+
+  var yMax = Math.max.apply(Math, densities);
+  if (withHist) {
+    var binnedData = binData(counts, values, maxBins);
+    if (binnedData.maxFreq > yMax) {
+      yMax = Math.max(yMax, binnedData.maxFreq);
     }
+  }
+  
+  var y = d3.scale.linear()
+        .domain([0, yMax])
+        .range([height, 0]);
+  var yAxis = d3.svg.axis()
+        .scale(y)
+        .ticks(5)
+        .orient("left")
+        .tickFormat(d3.format("%"));
 
-    function epanechnikovKernel(scale) {
-      return function(u) {
-        return Math.abs(u /= scale) <= 1 ? .75 * (1 - u * u) / scale : 0;
-      };
-    }
+  if (withHist) {
+    drawHist(svg, binnedData.counts, binnedData.values, width, height, x, y, true, yMax/binnedData.maxFreq);
+  }
 
-    var kde = kernelDensityEstimator(epanechnikovKernel(3), x.ticks(100));
+  //density curve
+  var line = d3.svg.line()
+        .x(function(d) { return x(d[0]); })
+        .y(function(d) { return y(d[1]); });
+  svg.append("path")
+    .datum(kde(values))
+    .attr("class", "line")
+    .attr("d", line);
 
-    var densities = kde(values).map(function(x) {return x[1];});
+  drawAxes(svg, xAxis, yAxis, height, 0, width, "density");
+  drawTitle(svg, title, width, margin);
 
-    var yMax = Math.max.apply(Math, densities);
-    if (withHist) {
-      var binnedData = binData(counts, values, maxBins);
-      if (binnedData.maxFreq > yMax) {
-        yMax = Math.max(yMax, binnedData.maxFreq);
-      }
-    }
-    
-    var y = d3.scale.linear()
-          .domain([0, yMax])
-          .range([height, 0]);
-    var yAxis = d3.svg.axis()
-          .scale(y)
-          .ticks(5)
-          .orient("left")
-          .tickFormat(d3.format("%"));
-
-    if (withHist) {
-      drawHist(svg, binnedData.counts, binnedData.values, width, height, x, y, true, yMax/binnedData.maxFreq);
-    }
-
-    //density curve
-    var line = d3.svg.line()
-          .x(function(d) { return x(d[0]); })
-          .y(function(d) { return y(d[1]); });
-    svg.append("path")
-      .datum(kde(values))
-      .attr("class", "line")
-      .attr("d", line);
-
-    drawAxes(svg, xAxis, yAxis, height, 0, width, "density");
-    drawTitle(svg, title, width, margin)
-    var data = counts;
-    return data;
-
-  };
+  sideEffects.push({type: 'svg', data: svgContainer});
 
 };
 
-multiviz = function(vizs) {
-  vizs = Array.prototype.slice.call(arguments);
-  
-  //TODO: need to rescale the target div to accomodate more items?
-  return function($div) {
-    for (var i = 0; i < vizs.length; i++) {
-      var inserteddivset = $("<div></div>").appendTo($div);
-      if (typeof vizs[i] == "function") {
-        vizs[i]($(inserteddivset[0]));
-      }
-      else {
-        var runResult = format_result(vizs[i]);
-        $(inserteddivset[0]).text(runResult);
-      } 
-    }
-  };
+multiviz = function() {
 };
 
 scatter = function(samples, title) {
-  return plot(samples, title, false);
+  plot(samples, title, false);
 };
 
 lineplot = function(samples, title) {
-  return plot(samples, title, true);
+  plot(samples, title, true);
 };
 
 function plot(samples, title, lines) {
@@ -322,83 +303,81 @@ function plot(samples, title, lines) {
   var maxY = Math.max.apply(Math, yVals)
   var minX = Math.min.apply(Math, xVals)
   var minY = Math.min.apply(Math, yVals)
+  
+  var margin = {top: 40, right: 20, bottom: 30, left: 40},
+      width = 0.8 * /*$div.width()*/ 600 - margin.left - margin.right,
+      height = 300 - margin.top - margin.bottom;
 
-  return function($div) {
+  var svgContainer = document.createElementNS(d3.ns.prefix.svg,'svg');
 
-    var $plotDiv = $("<div></div>").appendTo($div);
-    var div = $plotDiv[0];
-    
-    var margin = {top: 40, right: 20, bottom: 30, left: 40},
-        width = 0.8 * $div.width() - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
-    
-    var svg = d3.select(div).append("svg")
-          .attr("width", width + margin.left + margin.right)
-          .attr("height", height+ margin.top + margin.bottom)
-          .style('margin-left', margin.left)
-          .style('margin-top', margin.top / 2)
-          .append("g")
-          .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  var svg = d3
+        .select(svgContainer)
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height+ margin.top + margin.bottom)
+        .style('margin-left', margin.left)
+        .style('margin-top', margin.top / 2)
+        .append("g")
+        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var x = d3.scale.linear()
-          .domain([minX, maxX])
-          .range([0, width]);
-    var xAxis = d3.svg.axis()
-          .scale(x)
-          .orient("bottom");
+  var x = d3.scale.linear()
+        .domain([minX, maxX])
+        .range([0, width]);
+  var xAxis = d3.svg.axis()
+        .scale(x)
+        .orient("bottom");
 
-    var y = d3.scale.linear()
-          .domain([minY, maxY])
-          .range([height, 0]);
-    var yAxis = d3.svg.axis()
-          .scale(y)
-          .orient("left");
+  var y = d3.scale.linear()
+        .domain([minY, maxY])
+        .range([height, 0]);
+  var yAxis = d3.svg.axis()
+        .scale(y)
+        .orient("left");
 
-    if (0 < maxY && 0 > minY) {
-      var xAxisPos = maxY / (maxY - minY) * height;
-    } else if (0 > maxY) {
-      var xAxisPos = 0;
-    } else {
-      var xAxisPos = height;
+  if (0 < maxY && 0 > minY) {
+    var xAxisPos = maxY / (maxY - minY) * height;
+  } else if (0 > maxY) {
+    var xAxisPos = 0;
+  } else {
+    var xAxisPos = height;
+  }
+
+  if (0 < maxX && 0 > minX) {
+    var yAxisPos = width - (maxX / (maxX - minX) * width);
+  } else if (0 > maxX) {
+    var yAxisPos = width;
+  } else {
+    var yAxisPos = 0;
+  }
+
+  drawAxes(svg, xAxis, yAxis, xAxisPos, yAxisPos, width, "plot");
+
+  if (lines) {
+    var sortedData = data.sort(function(a,b) {return a[0] - b[0];})
+    var previous = sortedData[0];
+    for (var i=1; i<sortedData.length; i++) {
+      var d = sortedData[i];
+      svg.append("line")
+        .attr("class", "lineplot")
+        .attr("x1", x(previous[0]))
+        .attr("x2", x(d[0]))
+        .attr("y1", y(previous[1]))
+        .attr("y2", y(d[1]));
+      previous = d;
     }
+  }
 
-    if (0 < maxX && 0 > minX) {
-      var yAxisPos = width - (maxX / (maxX - minX) * width);
-    } else if (0 > maxX) {
-      var yAxisPos = width;
-    } else {
-      var yAxisPos = 0;
-    }
+  svg.selectAll("circle").data(data)
+    .enter()
+    .append("circle")
+    .attr("class", "point")
+    .attr("cx", function(d) {return x(d[0]);})
+    .attr("cy", function(d) {return y(d[1]);})
+    .attr("r", 3);
 
-    drawAxes(svg, xAxis, yAxis, xAxisPos, yAxisPos, width, "plot");
+  drawTitle(svg, title, width, margin);
+  sideEffects.push({type: 'svg', data: svgContainer});
 
-    if (lines) {
-      var sortedData = data.sort(function(a,b) {return a[0] - b[0];})
-      var previous = sortedData[0];
-      for (var i=1; i<sortedData.length; i++) {
-        var d = sortedData[i];
-        svg.append("line")
-          .attr("class", "lineplot")
-          .attr("x1", x(previous[0]))
-          .attr("x2", x(d[0]))
-          .attr("y1", y(previous[1]))
-          .attr("y2", y(d[1]));
-        previous = d;
-      }
-    }
 
-    svg.selectAll("circle").data(data)
-      .enter()
-      .append("circle")
-      .attr("class", "point")
-      .attr("cx", function(d) {return x(d[0]);})
-      .attr("cy", function(d) {return y(d[1]);})
-      .attr("r", 3);
-
-    drawTitle(svg, title, width, margin);
-    return data;
-
-  };
 }
 
 function binData(counts, values, maxBins) {

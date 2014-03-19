@@ -20,17 +20,57 @@
 
       select {
       font-size: 20px;
-      } 
+      }
+      ul {
+      font-size: 12px
+      }
+      li code {
+      border: 1px solid #aaa;
+      border-radius: 2px;
+      padding: 1px 3px 1px 3px;
+      background-color: #dfdfdf
+      }
+      li {
+      padding-top: 10px
+      }
     </style>
     
   </head>
   <body>
     <h1>WebChurch</h1>
+
+    Keyboard shortcuts:
+    <ul>
+      <li> <code>Cmd + .</code> or <code>Ctrl + .</code> - Fold selected section (slightly buggy right now)</li>
+      <li> <code>Cmd + ;</code> or <code>Ctrl + ;</code> - Comment selection section</li>
+    </ul>
     
-    <pre id="codebox"><code>(+ 1 1)</code></pre>
+    
+    <pre id="codebox"><code>(hist (list 'a 'a 'a 'b 'c 'c 'c 'c 'd 'd))
+(density (repeat 200 gaussian) 'gaussian true)
+
+(lineplot (repeat 50 (lambda () (repeat 2 gaussian))))
+
+(barplot '((a b c)
+           (5 3 9)
+           ))
+
+(plus 5 3)</code></pre>
 
   </body>
   <script>
-    require('./editor').injector( $("#codebox")[0], {text: $("#codebox > code").text(), engine: "webchurch"} )
+    var savedCode = store.get('code');
+    var defaultText = savedCode || $("#codebox > code").text();
+
+    require('./editor').injector($("#codebox")[0],
+    {
+    defaultText: defaultText,
+    defaultEngine: "webchurch",
+    onRunStart: function(editor) {
+    store.set('code', editor.getValue());
+    }
+    }
+    );
+
   </script>
 </html>

@@ -10,12 +10,19 @@ border-radius: 3px;
 margin-bottom: 1em
 }
 
+.results {
+    margin-top: 1em;
+    border: 1px solid #9f9f9f;
+    min-height: 3.5em;
+    border-radius: 3px;
+    font-size: 12px !important;
+    font-family: monospace;
+}
+
 pre {
 line-height: 110%;
 overflow-x: auto;
-border-radius: 3px;
 font-size: 12px;
-border: 1px solid #afafaf; 
 padding: 2px;
 }
 

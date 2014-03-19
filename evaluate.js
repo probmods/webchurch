@@ -9,10 +9,8 @@ var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
 var precompile = require('./precompile.js').precompile;
-var transform = require('./probabilistic/transform');
 var wctransform = require('./wctransform');
 var util = require('./util.js');
-
 
 
 // Note: escodegen zero-indexes columns, while JS evaluators and the Church
@@ -87,6 +85,8 @@ function evaluate(church_codestring,precomp,argstring) {
 		var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
 		var stack = err.stack.split("\n");
 		var msg = stack[0].split(":");
+
+    console.log(err.stack);
     
 		var js_sites = get_sites_from_stack(stack.slice(1));
 		var church_sites = [];
@@ -96,6 +96,8 @@ function evaluate(church_codestring,precomp,argstring) {
       
 			if(church_site){church_sites.push(church_site);};
 		}
+
+    console.log(code_and_source_map.code);
     
     //        console.log("js source ",code_and_source_map.code)
     //        console.log("error stack ", msg)

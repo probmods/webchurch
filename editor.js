@@ -1,8 +1,9 @@
-/* global require */
+/* global require, CodeMirror, $ */
 
 var evaluate = require('./evaluate').evaluate,
     format_result = require('./evaluate').format_result;
 
+var d3 = require('d3');
 require("codemirror"); // this doesn't export anything but instead sets window.CodeMirror
 require("./cm-church");
 require("./cm-brackets");
@@ -15,31 +16,19 @@ CodeMirror.keyMap.default["Tab"] = "indentAuto";
 CodeMirror.keyMap.default["Cmd-;"] = "toggleComment";
 CodeMirror.keyMap.default["Cmd-."] = function(cm){cm.foldCode(cm.getCursor(), folding.myRangeFinder); };
 
+CodeMirror.keyMap.default["Ctrl-;"] = "toggleComment";
+CodeMirror.keyMap.default["Ctrl-."] = function(cm){cm.foldCode(cm.getCursor(), folding.myRangeFinder); };
+
+
 var _ = require('underscore');
 _.templateSettings = {
   interpolate: /\{\{(.+?)\}\}/g
 };
 
-// return a dictionary of DOM element attributes
-var getAttributes = function(x) {
-  var attributes = {};
-  // extract all info from 
-  for(var i = 0, ii = x.attributes.length; i < ii; i++) {
-    var attr = x.attributes.item(i),
-        name = attr.name,
-        value = attr.value;
-    
-    attributes[name] = value;
-  }
-  return attributes;
-};
-
-
 var runners = {};
 runners['webchurch'] = makewebchurchrunner();
 runners['webchurch-opt'] = makewebchurchrunner(true);
 
-// TODO: add
 function makewebchurchrunner(evalparams){
   return function(editor) {
     var code = editor.getValue(),
@@ -52,19 +41,28 @@ function makewebchurchrunner(evalparams){
       var runResult = evaluate(code,evalparams);
       
       var underlyingData;
+
+      // render all side effects
+      sideEffects.forEach(function(e) {
+        if (e.type == "string") {
+          $results.append( $("<pre>"+e.data+"</pre>") );
+        }
+        if (e.type == "svg") {
+          $results.append( $("<div></div>").append(e.data));
+          // try {
+          //   d3.select($results[0]).append(e.data);
+          // } catch (err) {
+          //   debugger;
+          // }
+        }
+        
+      }); 
       
-      if (typeof runResult == "function") {
-        // otherwise, call the function with the current div as an argument
-        underlyingData = runResult($results);
-        //underlyingData = format_result(runResult($results));
-      }
-      else {
-        //        runResult = format_result(runResult);
-        // if we get back a string, just show the text
-        underlyingData = runResult;
-        runResult = format_result(runResult);
-        $results.removeClass("error").text(runResult);
-      }
+      //        runResult = format_result(runResult);
+      // if we get back a string, just show the text
+      underlyingData = runResult;
+      runResult = format_result(runResult);
+      $results.removeClass("error").append($("<pre>"+runResult+'</pre>'));
       
     } catch (e) {
       
@@ -83,35 +81,34 @@ function makewebchurchrunner(evalparams){
         //        mark.clear()
       }
 
-    }
-
-
+    } 
   };
 };
 
 var inject = function(domEl, options) {
-  var attributes = getAttributes(domEl),
-      text = options.text,
-      defaultText = options.defaultText,
-      selectedEngine = options.engine,
-      exerciseName = options.exerciseName;
+  options = _(options).defaults({
+    defaultText: "",
+    exerciseName: "",
+    defaultEngine: "webchurch"
+  }); 
   
   // editor
   var editor = CodeMirror(
     function(el) {
-      // var $ioContainer = $("<div class='io'></div");
       $(domEl).replaceWith(el);
     },
     {
-      value: text,
+      value: options.defaultText,
       lineNumbers: false,
       matchBrackets: true,
       continueComments: "Enter",
       viewportMargin: Infinity,
-      autoCloseBrackets: true
+      autoCloseBrackets: true,
+      mode: 'scheme'
     });
 
   _(editor).extend(options);
+  editor.engine = editor.defaultEngine;
   
   //fold ";;;fold:" parts:
   var lastLine = editor.lastLine();
@@ -122,12 +119,12 @@ var inject = function(domEl, options) {
   }
   
   // results div
-  var $results = $("<pre class='results'>");
+  var $results = $("<div class='results'>");
   $results.css('display', 'none');
 
   // engine selector
 
-  var engines = ["webchurch", "webchurch-opt", "cosh", "bher", "mit-church"],
+  var engines = ["webchurch", "webchurch-opt"],
       engineSelectorString = "<select>\n" + _(engines).map(
         function(engine) {
           var tmpl = _.template('<option value="{{ engine }}" {{ selectedString }}> {{ engine }} </option>'),
@@ -148,8 +145,8 @@ var inject = function(domEl, options) {
   // reset button
   var $resetButton = $("<button>").html("Reset");
   $resetButton.click(function() {
-    editor.setValue(defaultText);
-    editor.$engineSelector.val(editor.defaultEngine);
+    editor.setValue(options.defaultText);
+    editor.$engineSelector.val(options.defaultEngine);
     
     $results.hide().html('');
 
@@ -160,6 +157,11 @@ var inject = function(domEl, options) {
   // run button
   var $runButton = $("<button class='run'>").html("Run");
   $runButton.click(function() {
+    if (options.onRunStart) {
+      options.onRunStart(editor);
+    }
+    
+    sideEffects = [];
     $results.html('');
     $runButton.attr('disabled','disabled');
 
@@ -171,11 +173,9 @@ var inject = function(domEl, options) {
     // with a different engine
     if (editor.oldCode != newCode || editor.oldEngine != newEngine) {
       // unset editor.codeId
-      editor.codeId = false;
-      
-      // asynchronously POST church code to /code/{exercise_name}
+      editor.codeId = false; 
     }
-
+    
     editor.oldCode = newCode;
     editor.oldEngine = newEngine;
 
@@ -206,7 +206,7 @@ var inject = function(domEl, options) {
   $(editor.display.wrapper).after($codeControls, $results);
 
 
-  $(editor.display.wrapper).attr("id", "ex-"+ exerciseName);
+  $(editor.display.wrapper).attr("id", "ex-"+ options.exerciseName);
   
   editor.$runButton = $runButton;
   editor.$engineSelector = $engineSelector;

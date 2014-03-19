@@ -20,6 +20,10 @@ _.templateSettings = {
 var util = require('./util.js');
 var fs = require('fs');
 
+var typeUtils = require('./type-utils.js');
+var listToArray = typeUtils.listToArray;
+var arrayToList = typeUtils.arrayToList;
+
 // var seed = require('seed-random');
 // var set_seed =  function(str) {
 //   seed(str, {global: true});//over-ride global Math.random
@@ -40,23 +44,6 @@ var $b = addBuiltin;
 var the_empty_list = [];
 
 function sizeof(obj) { return Object.keys(obj).length; }
-
-var listToArray = function(list, recurse) {
-	if (recurse) {
-		return list.slice(0, -1).map(function (x) {return Array.isArray(x) ? listToArray(x) : x});
-	} else {
-		return list.slice(0, -1);
-	}
-};
-
-var arrayToList = function(arr, mutate) {
-	if (mutate) {
-		arr.push(null);	
-	} else {
-		arr = arr.concat(null);
-	}
-	return arr;
-};
 
 // needs to live in global scope
 // but users shouldn't need to directly call this function
@@ -1188,7 +1175,12 @@ var display = $b({
   fn: function() {
     var args = args_to_array(arguments);
     var strs = args.map(util.format_result);
-    console.log(strs.join(" "));
+    // TODO: make this work in a uniform way on both client and server 
+    sideEffects.push({
+      type: 'string',
+      data: strs.join(" ")
+    }); 
+   console.log(strs.join(" "));
 
   }
 });
