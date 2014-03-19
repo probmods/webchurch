@@ -1,3 +1,5 @@
+/* global require */
+
 /*
  This takes an AST for desugarred Church and turns it into a js AST.
  
@@ -9,65 +11,55 @@
 
 
 //var escodegen = require("escodegen");
-var estraverse = require("escodegen/node_modules/estraverse")
+var estraverse = require("escodegen/node_modules/estraverse");
 var util = require('./util.js');
+var builtins = require('./church_builtins.js');
+var builtinAnnotations = builtins.__annotations__;
+
+/*
+ construct rename_map using builtinAnnotations
+ using anything declared in the 'alias' key.
+ if nothing is declared there, default to applying
+ these substitutions to construct the alias:
+ 
+  wrapped_foo => foo
+  is_foo      => foo?
+  foo_to_bar  => foo->bar
+  _ => -
+
+ */
 
 var rename_map = {
-	"+": "plus",
-	"-": "minus",
-	"*": "mult",
-	"/": "div",
-  "soft-equal": "soft_equal",
-	">": "greater",
-	"<": "less",
-	">=": "geq",
-	"<=": "leq",
-	"=": "eq",
+  baseval: 'evaluate'
+};
 
-	"null?": "is_null",
-	"list?": "is_list",
-	"pair?": "is_pair",
-	"make-list": "make_list",
-	"list-ref": "list_ref",
-	"list-elt": "list_elt",
-	"for-each": "for_each",
-	"eq?": "is_eq",
-	"equal?": "is_equal",
+Object.keys(builtinAnnotations).forEach(function(name) {
+  var annotation = builtinAnnotations[name];
+  var alias;
 
-	"regexp-split": "regexp_split",
-	"string->number": "string_to_number",
-	"number->string": "number_to_string",
-
-	"eval": "wrapped_evaluate",
-
-	"uniform-draw": "wrapped_uniform_draw",
-	"multinomial": "wrapped_multinomial",
-	"flip": "wrapped_flip",
-	"uniform": "wrapped_uniform",
-	"sample-integer": "wrapped_random_integer",
-	"random-integer": "wrapped_random_integer",
-	"gaussian": "wrapped_gaussian",
-	"gamma": "wrapped_gamma",
-	"beta": "wrapped_beta",
-	"dirichlet": "wrapped_dirichlet",
-
-	"baseval":"evaluate",
-	"round": "Math.round",
-	"abs": "Math.abs",
-	"exp": "Math.exp",
-	"log": "Math.log",
-	"pow": "Math.pow",
-	"mh-query": "wrapped_traceMH",
-	"rejection-query": "rejectionSample",
-	"enumeration-query": "wrapped_enumerate",
-
-	"read-file": "read_file",
-	"read-csv": "read_csv",
-  "string-append": "string_append",
-  "symbol->string": "symbol_to_string",
-  "get-time": "Date.now"
-}
-
+  // if the annotation contains an explicit alias
+  // or array of aliases, set those
+  if (annotation.alias) {
+    alias = annotation.alias;
+    if (typeof alias == 'string') {
+      rename_map[alias] = name;
+    }
+    if (Array.isArray(alias)) {
+      alias.forEach(function(a) {
+        rename_map[a] = name;
+      });
+    }
+    
+  } else {
+    alias = name
+      .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
+      .replace(/is_(.+)/, function(m, p1) { return p1 + "?"})
+      .replace('_to_', '->')
+      .replace('_', '-');
+    
+    rename_map[alias] = name;
+  }
+});
 
 var program_node = {
 	"type": "Program",
@@ -437,6 +429,7 @@ function convert_char(c) { return ("_" + c.charCodeAt(0)); }
 // Any identifier that doesn't match the form [a-zA-Z_$][0-9a-zA-Z_$]* isn't
 // okay in JS, so we need to rename them.
 function format_identifier(id) {
+  
 	var new_id;
 	if (id[0].match("[a-zA-Z_$]")) {
 		new_id = id[0];
@@ -450,7 +443,10 @@ function format_identifier(id) {
 			new_id = new_id + convert_char(id[j]);
 		}
 	}
+  
 	return new_id;
+
+  
 }
 
 renameIdentifiers = {

@@ -1,5 +1,7 @@
 /* global global, console, require, process */
 
+global["evaluate"] = require('../evaluate.js').evaluate;
+
 var log = function() {
   var array = Array.prototype.slice.call(arguments, 0);
   array.forEach(function(x) {
@@ -52,10 +54,17 @@ function parseMd(src) {
     var line = lines[i];
 
     if (line.match(/~~~~/) && !line.match(/test/)) {
-      inInput = false;
-      var input = inputLines.join('\n');
-      cases.push({ input: inputLines.join("\n")});
-      inputLines = [];
+      if (inInput) {
+        inInput = false;
+        var input = inputLines.join('\n');
+
+        // don't run incomplete code (includes ...)
+        // or physics code
+        if (!input.match(/\.\.\.|runPhysics/)) {
+          cases.push({ input: inputLines.join("\n")});
+        }
+        inputLines = []; 
+      }
     }
     
     if (inInput) {
@@ -63,7 +72,11 @@ function parseMd(src) {
     }
     
     if (line.match(/~~~~ {/) ) {
-      inInput = true;
+      if (line.match(/norun|mit-church/)) {
+        inInput = false;
+      } else {
+        inInput = true;
+      }
     }
 
   }
@@ -104,7 +117,8 @@ function runTests(filename) {
   var numCases = cases.length;
   var numPassed = 0;
 
-  // // for each case, parse the last line as
+  // for each case, parse the last line as
+  // the desired output
   var testResults = cases.map(function(c, index) {
     var input = c.input;
     var wantedOutput = c.wantedOutput;
@@ -113,7 +127,7 @@ function runTests(filename) {
       var actualOutput = format_result( evaluate(input) );
       if (typeof wantedOutput != 'undefined' && actualOutput != wantedOutput) {
         log(red("Test " + index + " failed"),
-            input,
+            //input,
             red("Wanted"),
             wantedOutput,
             red("Actual"),

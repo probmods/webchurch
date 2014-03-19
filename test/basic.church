@@ -117,10 +117,16 @@ abc
 (make-list 3 'foo)
 (foo foo foo)
 
+(make-list 0 'a)
+()
+
 (eq? 'a 'a)
 #t
 
 (eq? 'aa 'a)
+#f
+
+(eq? 3 "3")
 #f
 
 (equal? 1 1)
@@ -546,6 +552,12 @@ undefined
 (map (lambda (x y) (* x y)) '(1 2 3 4) '(5 6 7 8 9))
 (5 12 21 32)
 
+(all (map list? '(()
+                  (a)
+                  (a b)
+                  (a b c))))
+#t
+
 (fold and #t '(#t #t #f))
 #f
 
@@ -579,3 +591,30 @@ undefined
 
 (define f (mem (lambda (x) (gaussian 0 1)))) (= (f 'a) (f 'a))
 #t
+
+(string->number "0")
+0
+
+(string->number "0.0")
+0
+
+(string->number "123456")
+123456
+
+(string->number "-123456.789")
+-123456.789
+
+(number->string 123)
+123
+
+(number->string -123456)
+-123456
+
+(number->string (expt 10 6))
+1000000
+
+(string-split "abc.def.ghi" ".")
+(abc def ghi)
+
+(string-split "abcdefghi" ".")
+(abcdefghi)
