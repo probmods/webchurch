@@ -19,7 +19,6 @@
     "source-map": "0.1.30",
     "browserify": "2.36.0",
     "optparse": "1.0.5",
-    "seed-random": "~2.20",
     "underscore": "~1.6.0"
   },
   "author": {
