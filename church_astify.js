@@ -343,7 +343,7 @@ function church_astify(tokens) {
 			};
 		}
 		if (["mh-query"].indexOf(ast.children[0].text) != -1) {
-			if (ast.children.length < 5) {
+			if (ast.children.length < 6) {
 				throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
 			}
 			return {
