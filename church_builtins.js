@@ -599,15 +599,45 @@ var sort = $b({
   name: 'sort',
   desc: 'Sort a list according to a comparator function fn',
   params: [{name: "lst", type: "list"},
-           {name: "[fn]", type: "function", default: "<"}],
-  fn: function(lst, fn) {
-    if (fn === undefined) {
-      fn = less;
+           {name: "[cmp]", type: "function", default: ">"}],
+  fn: function(lst, cmp) {
+    if (cmp === undefined) {
+      cmp = greater;
     }
     var arr = listToArray(lst);
-    var sortedArr = arr.sort( fn );
+    var sortedArr = arr.sort( cmp );
     return arrayToList( sortedArr );
 
+  }
+});
+
+var unique = $b({
+  name: 'unique',
+  desc: 'Get the unique items in a list',
+  params: [{name: "lst", type: "list"},
+           {name: "[eq]", type: "function", desc: "Optional equality comparison function", default: "equal?"}
+          ],
+  fn: function(lst, eq) {
+    eq = eq || is_equal;
+    
+    var arr = listToArray(lst);
+    var uniques = [];
+    for(var i = 0, ii = arr.length ; i < ii; i++) {
+      var v = arr[i];
+      var alreadySeen = false;
+      for(var j = 0, jj = uniques.length; j < jj; j++) {
+        if (eq(v, uniques[j])) {
+          alreadySeen = true;
+          break;
+        }
+      }
+      if (!alreadySeen) {
+        uniques.push(v);
+      }
+    }
+
+    return arrayToList(uniques, true);
+    
   }
 });
 
@@ -1107,6 +1137,62 @@ var wrapped_dirichlet = $b({
   }
 });
 
+var DPmem = $b({
+  name: 'DPmem',
+  desc: 'Stochastic memoization using the Dirichlet Process',
+  params: [{name: 'alpha', type: 'real', desc: 'Concentration parameter of the DP'},
+           {name: 'f', type: 'function', desc: 'Function to stochastically memoize'}
+          ],
+  fn: function(alpha, f) {
+    var restaurants = {};
+    return function() {
+      var args = args_to_array(arguments);
+      var restaurantId = JSON.stringify(args);
+
+      var tables = restaurants[restaurantId];
+      var numTables;
+
+      if (tables === undefined) {
+        numTables = 0;
+        tables = restaurants[restaurantId] = [];
+      } else {
+        numTables = tables.length;
+      }
+
+      var value;
+
+      // no tables yet or we sample a new one
+      if (numTables == 0 || wrapped_flip(alpha / (numTables + alpha))) {
+        value = f.apply(null, arguments);
+        // store both the count and the un-serialized value
+        // (so we don't have to run JSON.parse if we later reuse it)
+        //tables[JSON.stringify(value)] = {count: 1, value: value};
+        tables.push({value: value, count: 1});
+      }
+      //  reuse existing table
+      else {
+
+        // construct a multinomial over current tables
+        var indices = [];
+        for(var i = 0; i < numTables; i++ ) {
+          indices.push(i);
+        }
+        
+        var counts = tables.map(function(table) { return table.count });
+
+        var sampledIndex = wrapped_multinomial(arrayToList(indices, true),
+                                               arrayToList(counts, true));
+
+        
+        value = tables[sampledIndex].value;
+        tables[sampledIndex].count++;
+      } 
+      return value; 
+      
+    }
+  }
+})
+
 // TODO: try to provide better error handling if
 // numsamps / lag is not provided. might have to fix this
 // inside js_astify
@@ -1263,8 +1349,8 @@ var iota = $b({
     {name: '[step]', type: 'real', desc: 'Difference between successive items in the list', default: 1}
   ], 
   fn: function(count, start, step) {
-    if (typeof start == 'undefined') { start = 0; }
-    if (typeof step == 'undefined') { step = 1; } 
+    if (start === undefined) { start = 0; }
+    if (step === undefined) { step = 1; } 
     
     var r = [];
     for(var k = start, i = 0;
@@ -1304,6 +1390,16 @@ var get_time = $b({
     return Date.now();
   }
 });
+
+// gensymCount is set in evaluate() inside evaluate.js
+var gensym = $b({
+  name: 'gensym',
+  desc: 'Generate a fresh symbol guaranteed not to be equal to anything else',
+  params: [],
+  fn: function() {
+    return "g" + (gensymCount++);
+  }
+})
 
 // var dict = $x.dict = function() {
 //   return {};
@@ -1417,6 +1513,15 @@ function parseTypeString(s) {
     return typeCheckers[s];
   }
 }
+
+var sample = $b({
+  name: 'sample',
+  desc: 'apply a thunk',
+  params: [{name: 'thunk', type: 'function'}],
+  fn: function(thunk) {
+    return thunk();
+  }
+})
 
 // var c = parseTypeString('pair<pair<real>>');
 // console.log(c(Pair(Pair(0.1, 'a'),

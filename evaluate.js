@@ -54,6 +54,7 @@ function get_sites_from_stack(split_stack) {
 
 function evaluate(church_codestring,precomp,argstring) {
   sideEffects = [];
+  gensymCount = 0;
   var tokens = tokenize(church_codestring);
 	var result;    
     
