@@ -53,6 +53,7 @@ function get_sites_from_stack(split_stack) {
 }
 
 function evaluate(church_codestring,precomp,argstring) {
+  sideEffects = [];
   var tokens = tokenize(church_codestring);
 	var result;    
     

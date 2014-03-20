@@ -187,9 +187,30 @@ var expt = $b({
 var sum = $b({
   name: 'sum',
   desc: 'Sum a list of numbers',
+  params: [{name: 'lst', type: 'list<real>', desc: 'List of numbers to sum'}],
+  fn: function(lst) {
+    var arr = listToArray(lst);
+    var r = 0;
+    for(var i = 0, ii = arr.length; i < ii; i++) {
+      r += arr[i];
+    }
+
+	  return r;
+  } 
+});
+
+var prod = $b({
+  name: 'prod',
+  desc: 'Multiply a list of numbers',
   params: [{name: 'lst', type: 'list<real>', desc: 'List of numbers to multiply'}],
   fn: function(lst) {
-	  return plus.apply(null, listToArray(lst, true));
+    var arr = listToArray(lst);
+    var r = 1;
+    for(var i = 0, ii = arr.length; i < ii; i++) {
+      r *= arr[i];
+    }
+
+	  return r;
   } 
 }); 
 
@@ -266,6 +287,7 @@ var none = $b({
 
 var some = $b({
   name: 'some',
+  alias: 'any',
   desc: 'Test whether some of the values in a list are true',
   params: [{name: 'lst', type: 'list', desc: 'List of boolean values'}],
   fn: function(lst) {
@@ -577,8 +599,11 @@ var sort = $b({
   name: 'sort',
   desc: 'Sort a list according to a comparator function fn',
   params: [{name: "lst", type: "list"},
-           {name: "fn", type: "function"}],
+           {name: "[fn]", type: "function", default: "<"}],
   fn: function(lst, fn) {
+    if (fn === undefined) {
+      fn = less;
+    }
     var arr = listToArray(lst);
     var sortedArr = arr.sort( fn );
     return arrayToList( sortedArr );
@@ -833,7 +858,7 @@ var make_list = $b({
 	for (var i = 0; i < n; i += 1) {
 		results[i] = x;
 	}
-	return arrayToList(results);
+	return arrayToList(results, true);
 
   }
 });
@@ -976,7 +1001,7 @@ var wrapped_multinomial = $b({
            {name: "probs", type: "list", desc: ""}],
   fn: function(items, probs, isStructural, conditionedValue) {    
 	  if (items.length != probs.length) {
-		  throw new Error("For multinomia, lists of items and probabilities must be of equal length");
+		  throw new Error("For multinomial, lists of items and probabilities must be of equal length");
 	  }
 	  return multinomialDraw(listToArray(items, false), listToArray(probs), isStructural, conditionedValue);
 
@@ -1426,7 +1451,7 @@ function wrapAsserts(annotation) {
     // console.log( 'inside wrapped ' + functionName);
     
     if (userNumArgs < numMandatoryParams) {
-      var err = _.template('<<functionName>> takes {{numArgs}} argument{{plural}}, but {{argsLength}} were given',
+      var err = _.template('<<functionName>> takes {{numArgs}} argument{{plural}}, but {{userNumArgs}} were given',
                            {userNumArgs: userNumArgs == 0 ? 'none' : 'only ' + userNumArgs,
                             numArgs: ((numParams == numMandatoryParams) ? '' : '(at least) ') + numMandatoryParams,
                             plural: numMandatoryParams == 1 ? '' : 's'
@@ -1461,7 +1486,7 @@ function wrapAsserts(annotation) {
         // run the appropriate type checker on the argument
         var checker = parseTypeString(specType); // typeCheckers[specType];
 
-        if (typeof checker == 'undefined') {
+        if (checker === undefined) {
           var errorString = _.template(
             'Bug in Church builtins - annotation for (<<functionName>> ...) tries to declare the type of the "{{argName}}" argument as "{{specType}}", which is not a recognized type',
             { specType: specType,

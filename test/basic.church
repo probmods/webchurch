@@ -463,6 +463,13 @@ abc
 ((lambda x (sum x)) 1 2 3)
 6
 
+;; make sure works on big lists
+(sum (make-list 123456 1))
+123456
+
+(prod (make-list 123456 1))
+1
+
 (and ((lambda () true)) ((lambda () true)))
 #t
 
