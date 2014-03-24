@@ -17,13 +17,14 @@ var argstring;
 var pc;
 
 var switches = [
-    ['-pc', '--precompile', 'Turn on pre-compilation'],
-    ['-a', '--program-args [MESSAGE]', 'Turn on pre-compilation'],
+    ['-p', '--precompile', 'Turn on pre-compilation'],
+    ['-a', '--program-args [MESSAGE]', 'Turn on pre-compilation']
 ];
 
 var parser = new optparse.OptionParser(switches);
 
-parser.on('pc', function(x) {
+
+parser.on('precompile', function(x) {
 	pc = true;
 });
 
