@@ -14,5 +14,5 @@ Installation
 Usage
 =====
 
-- Local online demo: Point your browser to `./online/index.html`
-- Command line: from the webchurch directory, run `./church test/run_sandbox.js`, which executes the contents of `test/sandbox.church`, or pass in a file name as an argument.
+- Local online demo: Point your browser to `./online/index.html`. If you make changes to the webchurch source code, you can recompile the browser binary be running `compile.sh`.
+- Command line: from the webchurch directory, run `church test/foo.church`, to execute the contents of `test/foo.church`.
