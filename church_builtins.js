@@ -24,6 +24,12 @@ var typeUtils = require('./type-utils.js');
 var listToArray = typeUtils.listToArray;
 var arrayToList = typeUtils.arrayToList;
 
+// determine whether we're running inside node.js
+var isNode = false;
+if (typeof module !== 'undefined' && module.exports) {
+  isNode = true;
+}
+
 // var seed = require('seed-random');
 // var set_seed =  function(str) {
 //   seed(str, {global: true});//over-ride global Math.random
@@ -39,7 +45,6 @@ var addBuiltin = function(dict) {
   return fWrapped;
 };
 var $b = addBuiltin;
-
 
 var the_empty_list = [];
 
@@ -62,7 +67,7 @@ var args_to_list = module.exports.args_to_list = function (args) {
 var plus = $b({
   name: 'plus',
   alias: '+',
-  desc: "Adds numbers",
+  desc: "Add numbers",
   params: [{name: '[x ...]', type: 'real', desc: 'Numbers to add'}],
   fn: function f() {
     var sum = 0;
@@ -175,7 +180,7 @@ var exp = $b({
 var expt = $b({
   name: 'expt',
   alias: ['pow','expt'],
-  desc: 'Exponent',
+  desc: 'Compute x raised to the power y',
   params: [{name: 'x', type: 'real'},
            {name: 'y', type: 'real'}
           ],
@@ -212,7 +217,7 @@ var prod = $b({
 
 	  return r;
   } 
-}); 
+});
 
 // check whether y \in (x - tol, x + tol)
 var soft_equal = $b({
@@ -272,7 +277,7 @@ var all = $b({
   desc: 'Test whether all of the values in a list are true',
   params: [{name: 'lst', type: 'list', desc: 'List of boolean values'}],
   fn: function(lst) {
-    return and.apply(null, listToArray(lst, true));
+    return and.apply(null, listToArray(lst));
   }
 });
 
@@ -281,7 +286,7 @@ var none = $b({
   desc: 'Test whether none of the values in a list are true',
   params: [{name: 'lst', type: 'list', desc: 'List of boolean values'}],
   fn: function(lst) {
-    return !or.apply(null, listToArray(lst, true));
+    return !or.apply(null, listToArray(lst));
   }
 });
 
@@ -291,7 +296,7 @@ var some = $b({
   desc: 'Test whether some of the values in a list are true',
   params: [{name: 'lst', type: 'list', desc: 'List of boolean values'}],
   fn: function(lst) {
-    return or.apply(null, listToArray(lst, true));
+    return or.apply(null, listToArray(lst));
   }
 });
 
@@ -530,6 +535,7 @@ var seventh = $b({
   }
 });
 
+// pulled out into its own function because we use it elsewhere
 var _rest = function(x) {
   if (x.length == 2 && x[1] != null) {
 		return x[1];
@@ -597,7 +603,7 @@ var drop = $b({
 
 var sort = $b({
   name: 'sort',
-  desc: 'Sort a list according to a comparator function fn',
+  desc: 'Sort a list according to a comparator function cmp',
   params: [{name: "lst", type: "list"},
            {name: "[cmp]", type: "function", default: ">"}],
   fn: function(lst, cmp) {
@@ -659,17 +665,17 @@ var map_at = $b({
   params: [{name: "lst", type: "list"},
            {name: "i", type: "nat"},
            {name: "f", type: "function"}],
-  fn: function(list, i, f) {
-    var arr = listToArray(list);
+  fn: function(lst, i, f) {
+    var arr = listToArray(lst);
     arr[i] = f(arr[i]);
-    return arrayToList(arr); 
+    return arrayToList(arr, true);
 
   }
 });
 
 var max = $b({
   name: 'max',
-  desc: '',
+  desc: 'Maximum of arguments',
   params: [{name: "[x ...]", type: "real", desc: ""}],
   fn: function(x) {
 	  var args = args_to_array(arguments);
@@ -680,7 +686,7 @@ var max = $b({
 
 var min = $b({
   name: 'min',
-  desc: '',
+  desc: 'Minimum of arguments',
   params: [{name: "[x ...]", type: "real", desc: ""}],
   fn: function() {
 	  var args = args_to_array(arguments);
@@ -689,11 +695,10 @@ var min = $b({
   }
 });
 
-// TODO: type checking for this
 var mean = $b({
   name: 'mean',
-  desc: '',
-  params: [{name: "lst", type: "list", desc: ""}],
+  desc: 'Mean of a list',
+  params: [{name: "lst", type: "list<real>", desc: ""}],
   fn: function(lst) {
 	  var vals = listToArray(lst),
         sum = 0,
@@ -807,7 +812,7 @@ var for_each = $b({
 
 var map = $b({
   name: 'map',
-  desc: '',
+  desc: 'Apply a function to every element of a list',
   params:
   [
     {name: 'fn', type: 'function', desc: ''},
@@ -841,8 +846,8 @@ var map = $b({
 
 var filter = $b({
   name: 'filter',
-  desc: '',
-  params: [{name: "pred", type: "", desc: ""},
+  desc: 'Select subset of elements of a list that satisfy a predicate pred',
+  params: [{name: "pred", type: "function", desc: ""},
            {name: "lst", type: "list", desc: ""}],
   fn: function(pred, lst) {
     var arr = listToArray(lst).filter(pred);
@@ -853,7 +858,7 @@ var filter = $b({
 
 var reverse = $b({
   name: 'reverse',
-  desc: '',
+  desc: 'Reverse a list',
   params: [{name: "lst", type: "list", desc: ""}],
   fn: function(lst) {
 	  var arr = listToArray(lst).reverse();
@@ -865,7 +870,7 @@ var reverse = $b({
 
 var length = $b({
   name: 'length',
-  desc: '',
+  desc: 'Get the length of a list',
   params: [{name: "lst", type: "list", desc: ""}],
   fn: function(lst) {
     return listToArray(lst).length;
@@ -878,7 +883,7 @@ var length = $b({
 // http://jsperf.com/best-init-array/3
 var make_list = $b({
   name: 'make_list',
-  desc: '',
+  desc: 'Make a list of length n where all elements are x',
   params: [{name: "n", type: "nat", desc: ""},
            {name: "x"}],
   fn: function(n, x) {
@@ -895,7 +900,7 @@ var make_list = $b({
 
 var is_eq = $b({
   name: 'is_eq',
-  desc: '',
+  desc: 'TODO',
   params: [{name: "x", type: "", desc: ""}, {name: "y", type: "", desc: ""}],
   fn: function(x, y) {
 	return x === y;
@@ -904,7 +909,7 @@ var is_eq = $b({
 
 var is_equal = $b({
   name: 'is_equal',
-  desc: '',
+  desc: 'TODO',
   params: [{name: "x", type: "", desc: ""}, {name: "y", type: "", desc: ""}],
   fn: function(x, y) {
     if (typeof(x) == typeof(y)) {
@@ -931,19 +936,19 @@ var is_equal = $b({
 
 var member = $b({
   name: 'member',
-  desc: 'Test whether x is in a list (optional: according to some comparator function eq-fn)',
+  desc: 'Test whether x is in a list according to some optional comparator function cmp)',
   params: [
     {name: "x"},
     {name: "list", type: "list"},
-    {name: "[eq-fn]", type: "function"}
+    {name: "[cmp]", type: "function"}
   ],
-  fn: function(x, lst, eq_fn) {
-    eq_fn = eq_fn || is_equal;
+  fn: function(x, lst, cmp) {
+    cmp = cmp || is_equal;
     
     var array = listToArray(lst);
     
 	  for (var i = 0, ii = array.length; i < ii; i++) {
-		  if (eq_fn(x, array[i])) {
+		  if (cmp(x, array[i])) {
 			  return lst;
 		  }
 	  }
@@ -953,20 +958,19 @@ var member = $b({
 
 var apply = $b({
   name: 'apply',
-  desc: '',
+  desc: 'TODO',
   params: [{name: "fn", type: "function", desc: ""},
            {name: "lst", type: "list", desc: ""}],
   fn: function(fn, lst) {
-	return fn.apply(null, listToArray(lst, false));
-
+	  return fn.apply(null, listToArray(lst)); 
   }
 });
 
-// todo: want algebraic types to handle alist
 var assoc = $b({
   name: 'assoc',
-  desc: '',
-  params: [{name: "x", type: "", desc: ""}, {name: "alist", type: "list<pair>", desc: ""}],
+  desc: 'Lookup a value in an association list',
+  params: [{name: "x", type: "", desc: ""},
+           {name: "alist", type: "list<pair>", desc: ""}],
   fn: function(x, alist) {
 	  alist = listToArray(alist);
 	  for (var i=0; i<alist.length; i++) {
@@ -991,7 +995,7 @@ var regexp_split = $b({
 
 var string_to_number = $b({
   name: 'string_to_number',
-  desc: '',
+  desc: 'Convert a string to a number',
   params: [{name: "s", type: "string", desc: ""}],
   fn: function(s) {
     var x = parseFloat(s);
@@ -1004,7 +1008,7 @@ var string_to_number = $b({
 
 var number_to_string = $b({
   name: 'number_to_string',
-  desc: '',
+  desc: 'Convert a number to a string',
   params: [{name: "x", type: "real", desc: ""}],
   fn: function(num) {
 	  return num.toString(); 
@@ -1013,7 +1017,7 @@ var number_to_string = $b({
 
 var wrapped_uniform_draw = $b({
   name: 'wrapped_uniform_draw',
-  desc: '',
+  desc: 'Uniformly sample an element from a list',
   numArgs: [1,3],
   params: [{name: "items", type: "list", desc: ""}],
   fn: function(items, isStructural, conditionedValue) {
@@ -1025,15 +1029,15 @@ var wrapped_uniform_draw = $b({
 
 var wrapped_multinomial = $b({
   name: 'wrapped_multinomial',
-  desc: '',
+  desc: 'Sample an element from lst with the probability specified in probs',
   numArgs: [2,4],
-  params: [{name: "items", type: "list", desc: ""},
-           {name: "probs", type: "list", desc: ""}],
-  fn: function(items, probs, isStructural, conditionedValue) {    
-	  if (items.length != probs.length) {
+  params: [{name: "lst", type: "list", desc: ""},
+           {name: "probs", type: "list<real>", desc: ""}],
+  fn: function(lst, probs, isStructural, conditionedValue) {
+	  if (lst.length != probs.length) {
 		  throw new Error("For multinomial, lists of items and probabilities must be of equal length");
 	  }
-	  return multinomialDraw(listToArray(items, false), listToArray(probs), isStructural, conditionedValue);
+	  return multinomialDraw(listToArray(lst), listToArray(probs), isStructural, conditionedValue);
 
   }
 });
@@ -1041,7 +1045,7 @@ var wrapped_multinomial = $b({
 // TODO: make sure p is less than 1
 var wrapped_flip = $b({
   name: 'wrapped_flip',
-  desc: '',
+  desc: 'Flip a weighted coin. Returns true or false',
   numArgs: [0,1,3],
   params: [{name: "[p]", type: "real", desc: "", default: "0.5"},
            {name: "[isStructural]", type: "", desc: "", noexport: true},
@@ -1082,7 +1086,7 @@ var wrapped_random_integer = $b({
 
 var wrapped_gaussian = $b({
   name: 'wrapped_gaussian',
-  desc: '',
+  desc: 'Sample from the Gaussian distribution N(mu, sigma)',
   numArgs: [0,1,2,4],
   params: [{name: "[mu]", type: "real", desc: "", default: 0},
            {name: "[sigma]", type: "real", desc: "", default: 1},
@@ -1098,7 +1102,7 @@ var wrapped_gaussian = $b({
 
 var wrapped_gamma = $b({
   name: 'wrapped_gamma',
-  desc: '',
+  desc: 'Sample from the gamma distribution G(a,b)',
   numArgs: [2,4],
   params: [{name: "a", type: "real", desc: ""},
            {name: "b", type: "real", desc: ""}],
@@ -1109,7 +1113,7 @@ var wrapped_gamma = $b({
 
 var wrapped_beta = $b({
   name: 'wrapped_beta',
-  desc: '',
+  desc: 'Sample from the beta distribution B(a,b). Returns only the first element.',
   numArgs: [2,4],
   params: [{name: "a", type: "positive real", desc: ""},
            {name: "b", type: "positive real", desc: ""}],
@@ -1127,11 +1131,11 @@ var wrapped_beta = $b({
 
 var wrapped_dirichlet = $b({
   name: 'wrapped_dirichlet',
-  desc: '',
+  desc: 'Sample from the Dirichlet distribution Dir(alpha).',
   numArgs: [1,3],
-  params: [{name: "alpha", type: "list", desc: ""}],
+  params: [{name: "alpha", type: "list<positive real>", desc: ""}],
   fn: function(alpha, isStructural, conditionedValue) {
-	  alpha = listToArray(alpha, true);
+	  alpha = listToArray(alpha);
 	  return arrayToList(dirichlet(alpha, isStructural, conditionedValue));
 
   }
@@ -1286,12 +1290,13 @@ var display = $b({
   fn: function() {
     var args = args_to_array(arguments);
     var strs = args.map(util.format_result);
-    // TODO: make this work in a uniform way on both client and server 
     sideEffects.push({
       type: 'string',
       data: strs.join(" ")
-    }); 
-   console.log(strs.join(" "));
+    });
+    if (isNode) {
+      console.log(strs.join(" "));
+    }
 
   }
 });
@@ -1389,6 +1394,21 @@ var get_time = $b({
   fn: function() {
     return Date.now();
   }
+});
+
+var make_gensym = $b({
+  name: 'make_gensym',
+  params: [{name: '[prefix]', default: 'n/a', type: 'string'}],
+  fn: function(prefix) {
+    prefix = prefix || "g";
+    var closure = (function() {
+      var counter = 0;
+      return function() {
+        return prefix + (counter++);
+      };
+    })();
+    return closure;
+  } 
 });
 
 // gensymCount is set in evaluate() inside evaluate.js
