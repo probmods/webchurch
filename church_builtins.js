@@ -275,7 +275,7 @@ var not = $b({
 var all = $b({
   name: 'all',
   desc: 'Test whether all of the values in a list are true',
-  params: [{name: 'lst', type: 'list', desc: 'List of boolean values'}],
+  params: [{name: 'lst', type: 'list<boolean>', desc: 'List of boolean values'}],
   fn: function(lst) {
     return and.apply(null, listToArray(lst));
   }
@@ -284,7 +284,7 @@ var all = $b({
 var none = $b({
   name: 'none',
   desc: 'Test whether none of the values in a list are true',
-  params: [{name: 'lst', type: 'list', desc: 'List of boolean values'}],
+  params: [{name: 'lst', type: 'list<boolean>', desc: 'List of boolean values'}],
   fn: function(lst) {
     return !or.apply(null, listToArray(lst));
   }
@@ -294,7 +294,7 @@ var some = $b({
   name: 'some',
   alias: 'any',
   desc: 'Test whether some of the values in a list are true',
-  params: [{name: 'lst', type: 'list', desc: 'List of boolean values'}],
+  params: [{name: 'lst', type: 'list<boolean>', desc: 'List of boolean values'}],
   fn: function(lst) {
     return or.apply(null, listToArray(lst));
   }
@@ -993,6 +993,34 @@ var regexp_split = $b({
   }
 });
 
+
+var boolean_to_number = $b({
+  name: 'boolean_to_number',
+  desc: 'Convert a boolean to a number',
+  params: [{name: "b", type: "boolean", desc: ""}],
+  fn: function(b) {
+    return b ? 1 : 0;
+  }
+});
+
+var number_to_boolean = $b({
+  name: 'number_to_boolean',
+  desc: 'Convert a number to a boolean',
+  params: [{name: "x", type: "real", desc: ""}],
+  fn: function(x) {
+    return x == 0 ? false : true;
+  }
+});
+
+var bang_bang = $b({
+  name: '!!',
+  desc: 'Coerce an object to a boolean',
+  params: [{name: 'x'}],
+  fn: function(x) {
+    return !!x;
+  }
+})
+
 var string_to_number = $b({
   name: 'string_to_number',
   desc: 'Convert a string to a number',
@@ -1005,6 +1033,7 @@ var string_to_number = $b({
     return x;
   }
 });
+
 
 var number_to_string = $b({
   name: 'number_to_string',
@@ -1289,13 +1318,14 @@ var display = $b({
   params: [{name: "[s ...]", type: "", desc: ""}],
   fn: function() {
     var args = args_to_array(arguments);
-    var strs = args.map(util.format_result);
-    sideEffects.push({
-      type: 'string',
-      data: strs.join(" ")
-    });
+    var strs = args.map(util.format_result); 
     if (isNode) {
       console.log(strs.join(" "));
+    } else {
+      sideEffects.push({
+        type: 'string',
+        data: strs.join(" ")
+      });
     }
 
   }
