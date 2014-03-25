@@ -24,10 +24,10 @@ var typeUtils = require('./type-utils.js');
 var listToArray = typeUtils.listToArray;
 var arrayToList = typeUtils.arrayToList;
 
-// determine whether we're running inside node.js
-var isNode = false;
-if (typeof module !== 'undefined' && module.exports) {
-  isNode = true;
+// determine whether we're running inside a browser
+var inBrowser = false;
+if (typeof document !== 'undefined') {
+  inBrowser = true;
 }
 
 // var seed = require('seed-random');
@@ -1319,13 +1319,13 @@ var display = $b({
   fn: function() {
     var args = args_to_array(arguments);
     var strs = args.map(util.format_result); 
-    if (isNode) {
-      console.log(strs.join(" "));
-    } else {
+    if (inBrowser) {
       sideEffects.push({
         type: 'string',
         data: strs.join(" ")
-      });
+      }); 
+    } else {
+      console.log(strs.join(" "));
     }
 
   }
