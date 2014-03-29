@@ -1273,25 +1273,6 @@ var wrapped_enumeration_query = $b({
   }
 });
 
-var evaluate;
-
-var wrapped_eval = $b({
-  name: 'wrapped_eval',
-  desc: '', 
-  params: [{name: "code", type: "", desc: ""}],
-  fn: function(code) {
-    // it used to be the case that evaluate was just a global
-    // but this changed some time after 51a6cd6a82
-    if (evaluate === undefined) {
-      evaluate = require('./evaluate').evaluate;
-    }
-    
-    // turn the code list back into a string before calling the webchurch evaluate
-    code = util.format_result(code);
-    return evaluate(code);
-  }
-});
-
 var read_file = $b({
   name: 'read_file',
   desc: '',
@@ -1679,7 +1660,7 @@ function wrapAsserts(annotation) {
     return fn.apply(null, userArgs);
   };
 
-  return wrapped;
-  // return fn;
+  // return wrapped;
+  return fn;
 
 }

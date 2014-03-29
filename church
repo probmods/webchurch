@@ -38,7 +38,7 @@ parser.parse(process.argv);
 code = require('fs').readFileSync(srcfile, "utf8");
 
 try {
-	result = format_result(evaluate(code, pc, argstring));
+	result = format_result(evaluate(code, {preCompile: pc, argstring: argstring}));
 	console.log(result);
 } catch (e) {
 	console.log(e.message)

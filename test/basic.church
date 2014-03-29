@@ -637,3 +637,11 @@ undefined
 
 (string-split "abcdefghi" ".")
 (abcdefghi)
+
+(define a 1)
+(define (f b)
+  (let ([c 3])
+    (eval '(+ a b c))))
+(f 2)
+6
+    

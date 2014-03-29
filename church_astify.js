@@ -309,6 +309,30 @@ function church_astify(tokens) {
 		}
 	}
 
+  function dsgr_eval(ast) {
+    if (ast.children[0].text == "eval") {
+      return {
+				children: [
+					{text: "eval"},
+					{
+            children: [
+              {text: "churchToJs"},
+              {
+                children: [
+                  {text: "formatResult"},
+                  ast.children[1]
+                ]
+              }
+            ]
+          }
+
+        ]
+      }
+		
+	}
+    return ast;
+  };
+
 	function dsgr_query(ast) {
 		// Makes the lambda that's passed to the query function
 		function query_helper(statements, condition, args) {
@@ -426,7 +450,7 @@ function church_astify(tokens) {
 	}
 
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if, transform_equals_condition];
+	var desugar_fns = [validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_eval, dsgr_query, validate_if, transform_equals_condition];
 
 	var ast = astify(tokens);
 	// Special top-level check

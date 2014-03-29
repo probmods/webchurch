@@ -52,28 +52,55 @@ function get_sites_from_stack(split_stack) {
 	return sites;
 }
 
-function evaluate(church_codestring,precomp,argstring) {
-  sideEffects = [];
-  gensymCount = 0;
-  var tokens = tokenize(church_codestring);
-	var result;    
-    
+// by default, returns 
+function churchToJs(churchCode, options) {
+  options = options || {};
+
+  var tokens = tokenize(churchCode);
+
+  var js_ast;
+  
   //flag for precompilation pass:
-  if(precomp) {
+  if(options.precomp) {
     console.log("pre-compiling...");
-    var js_precompiled = precompile(church_codestring);
-    var js_ast = esprima.parse(js_precompiled);
-    js_ast = wctransform.probTransformAST(js_ast); //new wc transform
+    var js_precompiled = precompile(churchCode);
+    js_ast = esprima.parse(js_precompiled);
+     //new wc transform
   } else {
     var church_ast = church_astify(tokens);
-    var js_ast = js_astify(church_ast);
-    js_ast = wctransform.probTransformAST(js_ast); //new wc transform
+    js_ast = js_astify(church_ast);
+    js_ast = wctransform.probTransformAST(js_ast, options.excludePreamble); 
   }
-    
-  var code_and_source_map = escodegen.generate(js_ast, {"sourceMap": "whatever", "sourceMapWithCode": true, "format": {"compact" : false}});
-    
-  // console.log(code_and_source_map.code);
 
+  //new wc transform
+  js_ast = wctransform.probTransformAST(js_ast, options.excludePreamble);
+
+  var code_and_source_map = escodegen.generate(js_ast,
+                                              {"sourceMap": "whatever",
+                                               "sourceMapWithCode": true,
+                                               "format": {"compact" : false}});
+
+  if (!options.allData) {
+    return code_and_source_map.code;
+  } else {
+    return {
+      tokens: tokens,
+      code_and_source_map: code_and_source_map
+    };
+  }
+}
+
+function evaluate(church_codestring, options) {
+  sideEffects = [];
+  gensymCount = 0;
+  options = options || {};
+  options.allData = true
+    
+  var compileResult = churchToJs(church_codestring, options);
+  var tokens = compileResult.tokens;
+  var code_and_source_map = compileResult.code_and_source_map;
+  
+  var result; 
     
 	try {
     // var d1 = new Date()
@@ -167,6 +194,7 @@ function evaluate(church_codestring,precomp,argstring) {
 }
 
 module.exports = {
-evaluate: evaluate,
-format_result: util.format_result
+  evaluate: evaluate,
+  format_result: util.format_result,
+  churchToJs: churchToJs
 };
