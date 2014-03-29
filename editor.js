@@ -29,6 +29,13 @@ var runners = {};
 runners['webchurch'] = makewebchurchrunner();
 runners['webchurch-opt'] = makewebchurchrunner(true);
 
+function wrap(tag, content) {
+  return _.template("<{{tag}}>{{content}}</{{tag}}>",
+                    {tag: tag,
+                     content: content
+                    });
+}
+
 function makewebchurchrunner(evalparams){
   return function(editor) {
     var code = editor.getValue(),
@@ -54,6 +61,16 @@ function makewebchurchrunner(evalparams){
           // } catch (err) {
           //   debugger;
           // }
+        }
+        if (e.type == "table") {
+
+          var tableString = wrap("table", e.data.map(function(row) {
+            var cols = row.map(function(x) { return wrap('td', x); }).join("");
+            return wrap("tr", cols); 
+          }).join("\n"));
+
+          $results.append( $(tableString) );
+          
         }
         
       }); 
