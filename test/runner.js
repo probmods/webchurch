@@ -1,6 +1,6 @@
 /* global global, console, require, process */
 
-global["evaluate"] = require('../evaluate.js').evaluate;
+// global["evaluate"] = require('../evaluate.js').evaluate;
 
 var log = function() {
   var array = Array.prototype.slice.call(arguments, 0);
