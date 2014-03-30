@@ -1044,15 +1044,25 @@ var number_to_string = $b({
   }
 });
 
+var sample_discrete = $b({
+  name: 'sample_discrete',
+  desc: 'Takes a list of weights and samples an index between 0 and (number of weights - 1) with probability proportional to the weights.',
+  numArgs: [1,3],
+  params: [{name: "weights", type: "list<real>", desc: ""}],
+  fn: function(weights, isStructural, conditionedValue) {
+    return multinomialDraw( listToArray(iota(weights.length)),
+                            listToArray(weights),
+                            isStructural, conditionedValue);
+  }
+})
+
 var wrapped_uniform_draw = $b({
   name: 'wrapped_uniform_draw',
   desc: 'Uniformly sample an element from a list',
   numArgs: [1,3],
   params: [{name: "items", type: "list", desc: ""}],
   fn: function(items, isStructural, conditionedValue) {
-    var u = uniformDraw(listToArray(items, false), isStructural, conditionedValue);
-	  return u; //uniformDraw(listToArray(items, false), isStructural, conditionedValue);
-
+    return uniformDraw(listToArray(items), isStructural, conditionedValue); 
   }
 });
 
@@ -1386,6 +1396,19 @@ var iota = $b({
 
   }
 });
+
+var range = $b({
+  name: 'range',
+  desc: 'Create list based on a range',
+  params: [
+    {name: 'start', type: 'nat'},
+    {name: 'end', type: 'nat'}
+  ], 
+  fn: function(start, end) {
+    return iota(end - start + 1, start, 1);
+  }
+});
+
 
 var update_list = $b({
   name: 'update_list',
