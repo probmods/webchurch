@@ -53,7 +53,7 @@ function get_sites_from_stack(split_stack) {
 }
 
 // by default, returns 
-function churchToJs(churchCode, options) {
+var churchToJs = function(churchCode, options) {
   options = options || {};
 
   var tokens = tokenize(churchCode);
@@ -89,32 +89,57 @@ function churchToJs(churchCode, options) {
   }
 }
 
+var inBrowser = !(typeof document == "undefined");
+
 function evaluate(church_codestring, options) {
   sideEffects = [];
   gensymCount = 0;
   options = options || {};
-  options.allData = true
+  // ask churchToJs for all the data, not just the js string
+  options.allData = true;
     
   var compileResult = churchToJs(church_codestring, options);
   var tokens = compileResult.tokens;
   var code_and_source_map = compileResult.code_and_source_map;
+  var jsCode = code_and_source_map.code;
+  var sourceMap = code_and_source_map.map;
   
   var result; 
     
 	try {
     // var d1 = new Date()
-    result = eval(code_and_source_map.code);
+    if (inBrowser) {
+      // if we're running in a browser, we want to use global
+      // eval for speed but avoid introducing global variables
+      // that stick around after model execution, so wrap
+      // the transformed code inside a function call
+      // that returns the value of the last line
+      var jsLines = code_and_source_map.code.split("\n");
+      var lastIndex = jsLines.length - 1;
+      jsLines[lastIndex] = "return " + jsLines[lastIndex];
+      jsLines = jsLines.join("\n"); 
+
+      result = (0,eval)("(function() { " + jsLines + "})()"); 
+    } else {
+      global.require = require;
+      result = (0,eval)(jsCode);
+    }
     // var d2 = new Date()
     // console.log("transformed source run time: ", (d2.getTime() - d1.getTime()) / 1000)    
 	} catch (err) {
+
+    if (inBrowser) {
+      console.log("------ JS code is ------");
+      console.log(jsCode);
+      console.log("------ Stack is ------");
+      console.log(err.stack);
+    } 
     
-		var js_to_church_site_map = get_js_to_church_site_map(code_and_source_map.map);
+		var js_to_church_site_map = get_js_to_church_site_map(sourceMap);
     var churchLines = church_codestring.split("\n");
 		var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
 		var stack = err.stack.split("\n");
 		var msg = stack[0].split(":");
-
-    console.log(err.stack);
     
 		var js_sites = get_sites_from_stack(stack.slice(1));
 		var church_sites = [];
@@ -125,9 +150,8 @@ function evaluate(church_codestring, options) {
 			if(church_site){church_sites.push(church_site);};
 		}
 
-    console.log(code_and_source_map.code);
     
-    //        console.log("js source ",code_and_source_map.code)
+    //        console.log("js source ",sourceMap)
     //        console.log("error stack ", msg)
     //        console.log("js_sites ",js_sites)
     //        console.log("source map ", code_and_source_map.map)
