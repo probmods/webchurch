@@ -69,7 +69,6 @@ function churchToJs(churchCode, options) {
   } else {
     var church_ast = church_astify(tokens);
     js_ast = js_astify(church_ast);
-    js_ast = wctransform.probTransformAST(js_ast, options.excludePreamble); 
   }
 
   //new wc transform
