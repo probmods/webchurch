@@ -1683,7 +1683,7 @@ function wrapAsserts(annotation) {
     return fn.apply(null, userArgs);
   };
 
-  // return wrapped;
-  return fn;
+  return wrapped;
+  // return fn;
 
 }
