@@ -1401,8 +1401,8 @@ var range = $b({
   name: 'range',
   desc: 'Create list based on a range',
   params: [
-    {name: 'start', type: 'nat'},
-    {name: 'end', type: 'nat'}
+    {name: 'start', type: 'integer'},
+    {name: 'end', type: 'integer'}
   ], 
   fn: function(start, end) {
     return iota(end - start + 1, start, 1);
@@ -1500,6 +1500,9 @@ var gensym = $b({
 // maybe basic types stuff should live in a module
 // separate from builtins and separate from asserts
 var typeCheckers = {
+  'integer': function(x) {
+    return typeof x == 'number' && Math.floor(x) == x;
+  },
   nat: function(x) {
     return typeof x == 'number' && Math.floor(x) == x && x >= 0;
   },
