@@ -1525,6 +1525,7 @@ var get_time = $b({
 
 var make_gensym = $b({
   name: 'make_gensym',
+  desc: "Returns a gensym, which is a function that returns a new string value every time you call it (i.e., you're guaranteed to never get the same return value twice). You can specify an optional prefix for these values (default is 'g')",
   params: [{name: '[prefix]', default: 'n/a', type: 'string'}],
   fn: function(prefix) {
     prefix = prefix || "g";
@@ -1538,15 +1539,12 @@ var make_gensym = $b({
   } 
 });
 
-// gensymCount is set in evaluate() inside evaluate.js
 var gensym = $b({
   name: 'gensym',
-  desc: 'Generate a fresh symbol guaranteed not to be equal to anything else',
+  desc: 'A default gensym (prefix is #g)',
   params: [],
-  fn: function() {
-    return "g" + (gensymCount++);
-  }
-})
+  fn: make_gensym('#g')
+});
 
 // var dict = $x.dict = function() {
 //   return {};
