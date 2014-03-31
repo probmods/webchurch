@@ -399,10 +399,13 @@ abc
 (unique '(a a a a a a b c c a))
 (a b c)
 
-(repeat 10 gensym)
+;; TODO: gensym should probably be an xrp
+(define g (make-gensym))
+(repeat 10 g)
 (g0 g1 g2 g3 g4 g5 g6 g7 g8 g9)
 
-(repeat 1 gensym)
+(define g (make-gensym))
+(repeat 1 g)
 (g0)
 
 (list? (pair 1 2))
