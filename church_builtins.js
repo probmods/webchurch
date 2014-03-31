@@ -10,6 +10,91 @@
 // represents pairs as arrays
 // represents lists as arrays with null as the last element 
 
+// TODO: move the asserts stuff into its own library
+// it depends on two utility functions, though:
+// _rest and listToArray
+// maybe basic types stuff should live in a module
+// separate from builtins and separate from asserts
+var typeCheckers = {
+  'integer': function(x) {
+    return typeof x == 'number' && Math.floor(x) == x;
+  },
+  nat: function(x) {
+    return typeof x == 'number' && Math.floor(x) == x && x >= 0;
+  },
+  'positive real': function(x) {
+    return typeof x == 'number' && x > 0;
+  },
+  real: function(x) {
+    return typeof x == 'number';
+  },
+  function: function(x) {
+    return typeof x == 'function';
+  },
+  pair: function(x) {
+    return Array.isArray(x) && x.length >= 2;
+  },
+  list: function(x) {
+    return Array.isArray(x) && x[x.length - 1] == null;
+  },
+  'boolean': function(x) {
+    return typeof x == 'boolean';
+  },
+  'string': function(x) {
+    return typeof x == 'string';
+  }
+};
+
+// handle simple parameterized types like
+// List real, Pair real
+// TODO: test this
+function parseTypeString(s) {
+  if (/list|pair/.test(s)) {
+    var baseType = /list/.test(s) ? 'list' : 'pair';
+    
+    var uStart = s.indexOf("<");
+    var uEnd = s.lastIndexOf(">");
+
+    var baseChecker = typeCheckers[baseType];
+    
+    if (uStart == -1 || uEnd == -1) {
+      return baseChecker; 
+    }
+    
+    var u = s.slice(uStart + 1, uEnd);
+    var uChecker = parseTypeString(u);
+
+    if (baseType == 'pair') {
+      return function(x) {
+        if (!baseChecker(x)) {
+          return false;
+        } 
+
+        return uChecker(x[0]) && uChecker(_rest(x));
+      };
+
+    }
+    
+    // otherwise, return checker for list<...>
+    return function(x) {
+      if (!baseChecker(x)) {
+        return false;
+      }
+      var x_array = listToArray(x);
+      for(var i = 0, ii = x_array.length; i < ii; i++) {
+        if (!uChecker(x_array[i])) {
+          return false;
+        };
+      }
+      return true; 
+    };
+    
+    
+  } else {
+    return typeCheckers[s];
+  }
+}
+
 // TODO: underscore is too heavy weight
 // replace with mustache. or maybe something even dumber
 var _ = require('underscore');
@@ -1494,90 +1579,6 @@ var gensym = $b({
 //   }
 // };
 
-// TODO: move the asserts stuff into its own library
-// it depends on two utility functions, though:
-// _rest and listToArray
-// maybe basic types stuff should live in a module
-// separate from builtins and separate from asserts
-var typeCheckers = {
-  'integer': function(x) {
-    return typeof x == 'number' && Math.floor(x) == x;
-  },
-  nat: function(x) {
-    return typeof x == 'number' && Math.floor(x) == x && x >= 0;
-  },
-  'positive real': function(x) {
-    return typeof x == 'number' && x > 0;
-  },
-  real: function(x) {
-    return typeof x == 'number';
-  },
-  function: function(x) {
-    return typeof x == 'function';
-  },
-  pair: function(x) {
-    return Array.isArray(x) && x.length >= 2;
-  },
-  list: function(x) {
-    return Array.isArray(x) && x[x.length - 1] == null;
-  },
-  'boolean': function(x) {
-    return typeof x == 'boolean';
-  },
-  'string': function(x) {
-    return typeof x == 'string';
-  }
-};
-
-// handle simple parameterized types like
-// List real, Pair real
-// TODO: test this
-function parseTypeString(s) {
-  if (/list|pair/.test(s)) {
-    var baseType = /list/.test(s) ? 'list' : 'pair';
-    
-    var uStart = s.indexOf("<");
-    var uEnd = s.lastIndexOf(">");
-
-    var baseChecker = typeCheckers[baseType];
-    
-    if (uStart == -1 || uEnd == -1) {
-      return baseChecker; 
-    }
-    
-    var u = s.slice(uStart + 1, uEnd);
-    var uChecker = parseTypeString(u);
-
-    if (baseType == 'pair') {
-      return function(x) {
-        if (!baseChecker(x)) {
-          return false;
-        } 
-
-        return uChecker(x[0]) && uChecker(_rest(x));
-      };
-
-    }
-    
-    // otherwise, return checker for list<...>
-    return function(x) {
-      if (!baseChecker(x)) {
-        return false;
-      }
-      var x_array = listToArray(x);
-      for(var i = 0, ii = x_array.length; i < ii; i++) {
-        if (!uChecker(x_array[i])) {
-          return false;
-        };
-      }
-      return true; 
-    };
-    
-    
-  } else {
-    return typeCheckers[s];
-  }
-}
 
 var sample = $b({
   name: 'sample',
