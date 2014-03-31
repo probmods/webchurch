@@ -142,7 +142,7 @@ leave: function(node){
 //preamble that forwards the functions needed at runtime:
 var preamble = "\
 var formatResult = require('./util.js').format_result;\
-var churchToJs = require('./evaluate').churchToJs;\
+var churchToBareJs = require('./evaluate').churchToBareJs;\
 var __pr = require('./probabilistic-js');\
 __pr.openModule(__pr);\
 var __ch = require('./church_builtins');\
@@ -154,11 +154,11 @@ openModule(__ch);";
 //    return probTransformAST(ast)
 //}
 
-function probTransformAST(ast, excludePreamble)
+function probTransformAST(ast, includePreamble)
 {
     estraverse.replace(ast, WrapIfs)
 	estraverse.replace(ast, MoveCalls)
-  if (!excludePreamble) {
+  if (includePreamble) {
 	  ast.body.unshift(esprima.parse(preamble))
   }
     estraverse.replace(ast, BlockStatementCollapser)

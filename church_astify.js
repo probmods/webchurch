@@ -316,7 +316,8 @@ function church_astify(tokens) {
 					{text: "eval"},
 					{
             children: [
-              {text: "churchToJs"},
+              // churchToBareJs: for use in eval only
+              {text: "churchToBareJs"},
               {
                 children: [
                   {text: "formatResult"},
@@ -324,8 +325,7 @@ function church_astify(tokens) {
                 ]
               }
             ]
-          }
-
+          } 
         ]
       }
 		

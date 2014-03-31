@@ -79,15 +79,24 @@ function makewebchurchrunner(evalparams){
       // if we get back a string, just show the text
       underlyingData = runResult;
       runResult = format_result(runResult);
-      $results.removeClass("error").append($("<pre>"+runResult+'</pre>'));
+      $results.append($("<pre>"+runResult+'</pre>'));
       
     } catch (e) {
       
       var error = e.message;
-      $results.addClass("error").text( error );
+      $results
+        .append( $("<p></p>")
+                 .addClass('error')
+                 .css('font-size', '120%')
+                 .text(error) );
       
       if (e.stackarray != undefined) {
-        $results.append("\nStack trace: " + e.stack );
+        var churchStack = $("<pre></pre>");
+        churchStack.text(e.stackarray
+                         .map(function(x) { return _.template("{{text}}: {{start}}-{{end}}", x) })
+                         .join("\n"))
+        
+        $results.append( '<div><u>Church stack array:</u></div>', churchStack); 
         
         //        var errorlocation = e.stackarray[0]
         //        var start=errorlocation.start.split(":"), end=errorlocation.end.split(":")
@@ -97,6 +106,12 @@ function makewebchurchrunner(evalparams){
                                            {className: "CodeMirrorError", clearOnEnter: true});
         //        mark.clear()
       }
+
+      var jsStack = $("<pre></pre>");
+      jsStack.text(e.jsStack.join('\n'));
+
+      $results.append('<div><u>JS stack:</u></div>', jsStack );
+
 
     } 
   };

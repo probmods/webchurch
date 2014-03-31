@@ -33,6 +33,19 @@ var rename_map = {
   baseval: 'evaluate'
 };
 
+renameIdentifiers = {
+	leave: function(node) {
+		if(node.type == 'Identifier') {
+			if(node.name in rename_map) {
+				node.name = rename_map[node.name]
+			} else {
+				node.name = format_identifier(node.name)
+			}
+		}
+		return node
+	}
+}
+
 Object.keys(builtinAnnotations).forEach(function(name) {
   var annotation = builtinAnnotations[name];
   var alias;
@@ -418,6 +431,7 @@ function church_tree_to_esprima_ast(church_tree) {
 	var ast = deep_copy(program_node);
 	var body = make_expression_statement_list(church_tree.children);
 
+  
 	ast["body"] = body;
 	ast = estraverse.replace(ast, renameIdentifiers)
 	return ast;
@@ -449,18 +463,7 @@ function format_identifier(id) {
   
 }
 
-renameIdentifiers = {
-	leave: function(node) {
-		if(node.type == 'Identifier') {
-			if(node.name in rename_map) {
-				node.name = rename_map[node.name]
-			} else {
-				node.name = format_identifier(node.name)
-			}
-		}
-		return node
-	}
-}
+
 
 
 exports.church_tree_to_esprima_ast = church_tree_to_esprima_ast;
