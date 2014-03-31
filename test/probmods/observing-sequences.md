@@ -54,7 +54,7 @@
  (hist (sequences false) "second if first is false"))
 ~~~~
 
-~~~~ {test_id="5"}
+~~~~ {.idealized test_id="5"}
 (define latent (latent-prior))
 
 (define (thunk) (observe latent))
