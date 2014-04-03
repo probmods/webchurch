@@ -13,32 +13,45 @@ var format_result = require("./evaluate.js").format_result;
 
 var srcfile = process.argv.length > 2 ? process.argv[process.argv.length-1] : abort("Usage: church [OPTIONS]... [FILE]");
 process.argv = process.argv.slice(0, -1);
-var argstring;
-var pc;
+var opts = {};
 
 var switches = [
     ['-p', '--precompile', 'Turn on pre-compilation'],
-    ['-a', '--program-args [MESSAGE]', 'Turn on pre-compilation']
+    ['-a', '--program-args [MESSAGE]', 'Arguments to pass to program'],
+    ['-t', '--timed', 'Print out timing information'],
+    ['-d', '--desugar-only', 'Apply Church desugaring without execution'],
+    ['-c', '--compile-only', 'Compile to Javascript without execution']
 ];
 
 var parser = new optparse.OptionParser(switches);
 
 
 parser.on('precompile', function(x) {
-	pc = true;
+	opts.pc = true;
 });
 
 parser.on("program-args", function(opt, value) {
-	argstring = value;
+	opts.argstring = value;
 });
 
+parser.on("timed", function() {
+	opts.timed = true;
+});
+
+parser.on("desugar-only", function() {
+	opts.desugar = true;
+});
+
+parser.on("compile-only", function() {
+	opts.compile = true;
+});
 
 parser.parse(process.argv);
 
 code = require('fs').readFileSync(srcfile, "utf8");
 
 try {
-	result = format_result(evaluate(code, {precompile: pc, argstring: argstring}));
+	result = format_result(evaluate(code, opts));
 	console.log(result);
 } catch (e) {
 	console.log(e.message)
