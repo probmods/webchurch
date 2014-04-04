@@ -463,7 +463,5 @@ function format_identifier(id) {
   
 }
 
-
-
-
 exports.church_tree_to_esprima_ast = church_tree_to_esprima_ast;
+exports.rename_map = rename_map;

@@ -1144,8 +1144,9 @@ var sample_discrete = $b({
 var wrapped_uniform_draw = $b({
   name: 'wrapped_uniform_draw',
   desc: 'Uniformly sample an element from a list',
-  numArgs: [1,3],
+  numArgs: [1,2],
   params: [{name: "items", type: "list", desc: ""}],
+  erp: true,
   fn: function(items, isStructural, conditionedValue) {
     return uniformDraw(listToArray(items), isStructural, conditionedValue); 
   }
@@ -1154,14 +1155,15 @@ var wrapped_uniform_draw = $b({
 var wrapped_multinomial = $b({
   name: 'wrapped_multinomial',
   desc: 'Sample an element from lst with the probability specified in probs',
-  numArgs: [2,4],
+  numArgs: [2,3],
   params: [{name: "lst", type: "list", desc: ""},
            {name: "probs", type: "list<real>", desc: ""}],
-  fn: function(lst, probs, isStructural, conditionedValue) {
+  erp: true,
+  fn: function(lst, probs, conditionedValue) {
 	  if (lst.length != probs.length) {
 		  throw new Error("For multinomial, lists of items and probabilities must be of equal length");
 	  }
-	  return multinomialDraw(listToArray(lst), listToArray(probs), isStructural, conditionedValue);
+	  return multinomialDraw(listToArray(lst), listToArray(probs), undefined, conditionedValue);
 
   }
 });
@@ -1170,13 +1172,13 @@ var wrapped_multinomial = $b({
 var wrapped_flip = $b({
   name: 'wrapped_flip',
   desc: 'Flip a weighted coin. Returns true or false',
-  numArgs: [0,1,3],
+  numArgs: [0,1,2],
   params: [{name: "[p]", type: "real", desc: "", default: "0.5"},
-           {name: "[isStructural]", type: "", desc: "", noexport: true},
            {name: "[conditionedValue]", type: "", desc: "", noexport: true}
           ],
-  fn: function(p, isStructural, conditionedValue) {
-	  return flip(p, isStructural, conditionedValue) == 1;
+  erp: true,
+  fn: function(p, conditionedValue) {
+	  return flip(p, undefined, conditionedValue) == 1;
 
   }
 });
@@ -1184,11 +1186,14 @@ var wrapped_flip = $b({
 var wrapped_uniform = $b({
   name: 'wrapped_uniform',
   desc: 'Sample a random real uniformly from the interval [a,b]',
-  numArgs: [2,4],
+  numArgs: [2,3],
   params: [{name: "a", type: "real", desc: ""},
-           {name: "b", type: "real", desc: ""}],
-  fn: function(a, b, isStructural, conditionedValue) {
-	  return uniform(a, b, isStructural, conditionedValue);
+           {name: "b", type: "real", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}
+           ],
+  erp: true,
+  fn: function(a, b, conditionedValue) {
+	  return uniform(a, b, undefined, conditionedValue);
 
   }
 });
@@ -1197,58 +1202,66 @@ var wrapped_random_integer = $b({
   name: 'wrapped_random_integer',
   desc: '',
   alias: ['random-integer','sample-integer'],
-  numArgs: [1,3],
-  params: [{name: "n", type: "nat", desc: ""}],
-  fn: function(n,isStructural, conditionedValue) {
+  numArgs: [1,2],
+  params: [{name: "n", type: "nat", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}
+  ],
+  erp: true,
+  fn: function(n, conditionedValue) {
     var probs = [], p = 1/n;
 	  for (var i = 0; i < n; i++){
       probs[i] = p;
     };
-    return multinomial(probs,isStructural, conditionedValue); 
+    return multinomial(probs, undefined, conditionedValue); 
   }
 });
 
 var wrapped_gaussian = $b({
   name: 'wrapped_gaussian',
   desc: 'Sample from the Gaussian distribution N(mu, sigma)',
-  numArgs: [0,1,2,4],
+  numArgs: [0,1,2,3],
   params: [{name: "[mu]", type: "real", desc: "", default: 0},
            {name: "[sigma]", type: "real", desc: "", default: 1},
            {name: "[isStructural]", type: "", desc: "", noexport: true},
            {name: "[conditionedValue]", type: "", desc: "", noexport: true}
           ],
-  fn: function(mu, sigma, isStructural, conditionedValue) {
+  erp: true,
+  fn: function(mu, sigma, conditionedValue) {
     mu = mu || 0;
     sigma = sigma || 1;
-	  return gaussian(mu, sigma, isStructural, conditionedValue);
+	  return gaussian(mu, sigma, undefined, conditionedValue);
   }
 });
 
 var wrapped_gamma = $b({
   name: 'wrapped_gamma',
   desc: 'Sample from the gamma distribution G(a,b)',
-  numArgs: [2,4],
+  numArgs: [2,3],
   params: [{name: "a", type: "real", desc: ""},
-           {name: "b", type: "real", desc: ""}],
-  fn: function(a, b, isStructural, conditionedValue) {
-	  return gamma(a, b, isStructural, conditionedValue);
+           {name: "b", type: "real", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}],
+  erp: true,
+  fn: function(a, b, conditionedValue) {
+	  return gamma(a, b, undefined, conditionedValue);
   }
 });
 
 var wrapped_beta = $b({
   name: 'wrapped_beta',
   desc: 'Sample from the beta distribution B(a,b). Returns only the first element.',
-  numArgs: [2,4],
+  numArgs: [2,3],
   params: [{name: "a", type: "positive real", desc: ""},
-           {name: "b", type: "positive real", desc: ""}],
-  fn: function(a, b, isStructural, conditionedValue) {
+           {name: "b", type: "positive real", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}],
+  erp: true,
+  fn: function(a, b, conditionedValue) {
     if (a <= 0) {
       throw new Error('The a argument to beta must be greater than 0');
     }
     if (b <= 0) {
       throw new Error('The b argument to beta must be greater than 0');
     }
-	  return beta(a, b, isStructural, conditionedValue);
+	  return beta(a, b, undefined, conditionedValue);
 
   }
 });
@@ -1256,11 +1269,13 @@ var wrapped_beta = $b({
 var wrapped_dirichlet = $b({
   name: 'wrapped_dirichlet',
   desc: 'Sample from the Dirichlet distribution Dir(alpha).',
-  numArgs: [1,3],
-  params: [{name: "alpha", type: "list<positive real>", desc: ""}],
-  fn: function(alpha, isStructural, conditionedValue) {
+  numArgs: [1,2],
+  params: [{name: "alpha", type: "list<positive real>", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}],
+  erp: true,
+  fn: function(alpha, conditionedValue) {
 	  alpha = listToArray(alpha);
-	  return arrayToList(dirichlet(alpha, isStructural, conditionedValue));
+	  return arrayToList(dirichlet(alpha, undefined, conditionedValue));
 
   }
 });
@@ -1612,7 +1627,7 @@ function wrapAsserts(annotation) {
     return !prop.name.match(/\[/);
   }).length;
 
-  var wrapped = function() {    
+  var wrapped = function() {
     // var userArgs = Array.prototype.slice.call(arguments, 0);
     var userArgs = arguments;
     
@@ -1684,6 +1699,7 @@ function wrapAsserts(annotation) {
     }
     return fn.apply(null, userArgs);
   };
+  wrapped.num_args = annotation.numArgs;
 
   return wrapped;
   // return fn;

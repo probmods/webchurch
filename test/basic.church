@@ -648,3 +648,30 @@ undefined
 (f 2)
 6
     
+(rejection-query
+  (define x (gaussian 0 1))
+  x
+  (= x 0))
+0
+
+(rejection-query
+  (define x (gaussian 0 1))
+  (define y 'whatever)
+  x
+  (= x 0))
+0
+
+(rejection-query
+  (define x (gaussian 0 1))
+  (condition (= 0 x))
+  x
+  #t)
+0
+
+(rejection-query
+  (define x (flip 0.5))
+  (condition (equal? x #t))
+  (define x 0)
+  x
+  #t)
+0
