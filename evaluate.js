@@ -7,6 +7,7 @@ var source_map = require('source-map');
 
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
+var church_ast_to_string = require('./church_astify.js').church_ast_to_string;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
 var precompile = require('./precompile.js').precompile;
 var wctransform = require('./wctransform');
@@ -164,10 +165,13 @@ var churchToJs = function(churchCode, options) {
 }
 
 function evaluate(church_codestring, options) {
+  var t0 = new Date().getTime();
   options = options || {};
   
   // ask churchToJs for all the data, not just the js string
   options.returnCodeOnly = false;
+
+  if (options.desugar) return church_ast_to_string(church_astify(tokenize(church_codestring)));
     
   var compileResult = churchToJs(church_codestring, options);
   var tokens = compileResult.tokens;
@@ -175,12 +179,17 @@ function evaluate(church_codestring, options) {
   var jsCode = code_and_source_map.code;
   var sourceMap = code_and_source_map.map;
   
+  if (options.compile) return jsCode;
+
   var result;
 
   if (typeof global.require == 'undefined') {
     global.require = require;
   }
-    
+  
+  var t1 = new Date().getTime();
+  if (options.timed) console.log("Time to compile: " + (t1-t0) + "ms");
+
 	try {
     // var d1 = new Date()
     
@@ -190,7 +199,8 @@ function evaluate(church_codestring, options) {
     // that returns the value of the last line 
 
     result = (0,eval)(jsCode);
-    
+    var t2 = new Date().getTime();
+    if (options.timed) console.log("Time to execute: " + (t2-t1) + "ms");
     // var d2 = new Date()
     // console.log("transformed source run time: ", (d2.getTime() - d1.getTime()) / 1000)    
 	} catch (err) {
