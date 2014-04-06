@@ -699,16 +699,18 @@ var drop = $b({
 
 var sort = $b({
   name: 'sort',
-  desc: 'Sort a list according to a comparator function cmp',
+  desc: 'Sort a list according to a comparator function cmp(a,b) that returns a number greater than 0 if a > b, 0 if a == b, and a number less than 0 if a < b',
   params: [{name: "lst", type: "list"},
            {name: "[cmp]", type: "function", default: ">"}],
   fn: function(lst, cmp) {
-    if (cmp === undefined) {
-      cmp = greater;
-    }
     var arr = listToArray(lst);
-    var sortedArr = arr.sort( cmp );
-    return arrayToList( sortedArr );
+    var sortedArr;
+    if (cmp === undefined ) {
+      sortedArr = arr.sort();
+    } else {
+      sortedArr = arr.sort( cmp );
+    }
+    return arrayToList( sortedArr, true );
 
   }
 });
