@@ -154,7 +154,7 @@ var plus = $b({
   alias: '+',
   desc: "Add numbers",
   params: [{name: '[x ...]', type: 'real', desc: 'Numbers to add'}],
-  fn: function f() {
+  fn: function () {
     var sum = 0;
 	  for (var i = 0, ii = arguments.length; i < ii; i++) {
 		  sum = sum + arguments[i];
@@ -223,6 +223,17 @@ var div = $b({
 		  denominator *= arguments[i];
 	  }
     return numerator / denominator;
+  }
+});
+
+var mod = $b({
+  name: 'mod',
+  alias: 'modulo',
+  desc: "Modulo. Returns x mod y",
+  params: [{name: 'x', type: 'real'},
+           {name: 'x', type: 'real'}],
+  fn: function(x,y) {
+    return x % y;
   }
 });
 
@@ -1119,6 +1130,14 @@ var string_to_number = $b({
   }
 });
 
+var string_to_symbol = $b({
+  name: 'string_to_symbol',
+  desc: 'Convert a string to a symbol',
+  params: [{name: "s", type: "string", desc: ""}],
+  fn: function(s) {
+    return s;
+  }
+});
 
 var number_to_string = $b({
   name: 'number_to_string',
