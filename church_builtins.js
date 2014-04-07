@@ -334,7 +334,7 @@ var soft_equal = $b({
           ],
   fn: function(y, x, tol) {
     // FIXME: assert upper > lower
-    return (y > x - tol && x < x + tol);
+    return (y > x - tol && y < x + tol);
   }
 });
 
