@@ -87,7 +87,6 @@ function makewebchurchrunner(evalparams){
       $results
         .append( $("<p></p>")
                  .addClass('error')
-                 .css('font-size', '120%')
                  .text(error) );
       
       if (e.stackarray != undefined) {
@@ -175,7 +174,7 @@ var inject = function(domEl, options) {
   });
 
   // reset button
-  var $resetButton = $("<button>").html("Reset");
+  var $resetButton = $("<button class='reset'>").html("Reset");
   $resetButton.click(function() {
     editor.setValue(options.defaultText);
     editor.$engineSelector.val(options.defaultEngine);
@@ -183,8 +182,6 @@ var inject = function(domEl, options) {
     $results.hide().html('');
 
   });
-
-  $resetButton.css('float', 'right');
 
   // run button
   var $runButton = $("<button class='run'>").html("Run");
@@ -220,10 +217,6 @@ var inject = function(domEl, options) {
                             }
                           }, 15);
   });
-
-  $runButton.css({'padding-top': '5px',
-                  'padding-bottom': '5px'
-                 });
 
   var $codeControls = $("<div class='code-controls'>");
   // HT http://somerandomdude.com/work/open-iconic/#
