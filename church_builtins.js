@@ -285,6 +285,15 @@ var expt = $b({
   }
 });
 
+var sqrt = $b({
+  name: 'sqrt',
+  desc: 'Square root',
+  params: [{name: 'x', type: 'real'}],
+  fn: function(x) {
+    return Math.sqrt(x);
+  }
+});
+
 var sum = $b({
   name: 'sum',
   desc: 'Sum a list of numbers',
