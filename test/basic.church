@@ -294,6 +294,16 @@ abc
 (=)
 #t
 
+;; check that 3 is in the range 4 plus or minus 2
+(soft-equal 3 4 2)
+#t
+
+(soft-equal 100 4 2)
+#f
+
+(soft-equal 0 4 2)
+#f
+
 '()
 ()
 
