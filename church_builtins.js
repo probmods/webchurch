@@ -1431,6 +1431,19 @@ var read_csv = $b({
   }
 });
 
+var console_log = $b({
+  name: 'console_log',
+  desc: 'Print arguments to Javascript console',
+  params: [{name: "[s ...]", type: "", desc: ""}],
+  fn: function() {
+    var args = args_to_array(arguments);
+    var strs = args.map(util.format_result); 
+    for (var i=0;i<strs.length;i++) {
+      console.log(strs[i]);
+    };
+  }
+});
+
 var display = $b({
   name: 'display',
   alias: 'pn',
