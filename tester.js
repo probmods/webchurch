@@ -82,7 +82,7 @@ function parseMd(src) {
       if (line.match(/shouldfail/)) {
         currentCase.shouldFail = true;
       }
-      if (line.match(/norun|mit-church|idealized/)) {
+      if (line.match(/norun|mit-church|idealized|skip/)) {
         currentCase.skip = true;
       }
       inInput = true;
