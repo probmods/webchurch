@@ -413,7 +413,7 @@ A
           (hist samples "Reflectance"))
 ~~~~
 
-~~~~ {test_id="22"}
+~~~~ {test_id="22" .skip}
 (define observed-luminance 3.0)
 
 (define samples
