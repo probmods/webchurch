@@ -19,6 +19,18 @@ margin-bottom: 1em
     font-family: monospace;
 }
 
+.results table {
+    margin: 10px;
+    border-collapse: collapse;
+    border: 2px solid #aaaaaa;
+}
+
+
+.results td {
+border: 1px solid #aaaaaa;
+padding: 0.25em 0.5em 0.25em 0.5em;
+}
+
 pre {
 line-height: 110%;
 overflow-x: auto;

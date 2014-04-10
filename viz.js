@@ -27,6 +27,13 @@ var erinSort = function(array) {
 
 var formatPercent = d3.format(".0%");
 
+// input: list of rows. each row is itself a list
+table = function(rows, title) {
+  var arrayRows = listToArray(rows).map(function(cols) { return listToArray(cols) });
+
+  sideEffects.push({type: 'table', data: arrayRows});
+  
+}
 
 // listXY: a list containing (1) a list of x axis labels and (2) a list containing
 // y axis values

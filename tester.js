@@ -1,6 +1,8 @@
 /* global global, console, require, process */
 
-global["evaluate"] = require('../evaluate.js').evaluate;
+
+// Takes as input an arbitrary number of filenames / directories
+
 
 var log = function() {
   var array = Array.prototype.slice.call(arguments, 0);
@@ -19,9 +21,9 @@ var red = function(str) {
   return "\033[31m" + str + ":\033[91m";
 };
 
-var evaluate = require("../evaluate.js").evaluate;
-var church_builtins = require("../church_builtins.js");
-var format_result = require("../evaluate.js").format_result;
+var evaluate = require("./evaluate.js").evaluate;
+var church_builtins = require("./church_builtins.js");
+var format_result = require("./evaluate.js").format_result;
 var fs = require('fs');
 
 var tests = [];
@@ -50,33 +52,40 @@ function parseMd(src) {
   var inInput = false;
   var cases = [];
 
+  var currentCase;
+
   for(var i = 0, ii = lines.length, inputLines = []; i < ii; i++) {
     var line = lines[i];
 
+    // match end of test
     if (line.match(/~~~~/) && !line.match(/test/)) {
       if (inInput) {
-        inInput = false;
-        var input = inputLines.join('\n');
-
-        // don't run incomplete code (includes ...)
-        // or physics code
-        if (!input.match(/\.\.\.|runPhysics/)) {
-          cases.push({ input: inputLines.join("\n")});
-        }
-        inputLines = []; 
-      }
+        inInput = false; 
+        cases.push(currentCase); 
+      } 
     }
     
     if (inInput) {
-      inputLines.push(line);
-    }
-    
-    if (line.match(/~~~~ {/) ) {
-      if (line.match(/norun|mit-church/)) {
-        inInput = false;
-      } else {
-        inInput = true;
+      currentCase.input += '\n' + line;
+      // skip incomplete code (includes ...)
+      // and physics code 
+      if (line.match(/\.\.\.|runPhysics/)) {
+        currentCase.skip = true;
       }
+    }
+
+    // match beginning of test
+    if (line.match(/~~~~ {/) ) {
+      // create a new case
+      currentCase = {input: []};
+      
+      if (line.match(/shouldfail/)) {
+        currentCase.shouldFail = true;
+      }
+      if (line.match(/norun|mit-church|idealized|skip/)) {
+        currentCase.skip = true;
+      }
+      inInput = true;
     }
 
   }
@@ -102,11 +111,13 @@ global['raphael-js'] = function(x) { return x };
 global['make-raphael'] = function(x) { return x };
 global['lineplot'] = function(x) { return x };
 global['lineplot-value'] = function(x) { return x };
+global['lineplot_45value'] = function(x) { return x };
 global['_46_46_46'] = true; // for ...
 global.worldWidth = 350;
 global.worldHeight = 500;
 
-function runTests(filename) {
+
+function runTestFile(filename) {
   var src = fs.readFileSync(filename, 'utf8');
   var filenameSplit = filename.split(".");
   var fileExtension = filenameSplit[filenameSplit.length-1]; 
@@ -122,6 +133,11 @@ function runTests(filename) {
   var testResults = cases.map(function(c, index) {
     var input = c.input;
     var wantedOutput = c.wantedOutput;
+
+    if (c.skip) {
+      numPassed++;
+      return c;
+    }
     
     try {
       var actualOutput = format_result( evaluate(input) );
@@ -138,10 +154,16 @@ function runTests(filename) {
         //process.stdout.write(".");
       } 
     } catch(e) {
-      log(red("Test " + index + " failed"),
-          input,
-          red('Exception'),
-          e,'');
+      // if this test should fail, count it as a success
+      // otherwise, complain
+      if (c.shouldFail) {
+        numPassed++;
+      } else {
+        log(red("Test " + index + " failed"),
+            input,
+            red('Exception'),
+            e,'');
+      }
     }
     
     c.actualOutput = actualOutput;
@@ -154,27 +176,43 @@ function runTests(filename) {
       "Passed " + numPassed + " / " + numCases + " tests",
       allPassed ? "Good" : "Bad" );
 
-  process.exit(allPassed ? 0 : 1);
+  return allPassed;
 }
 
-var srcfile = process.argv[process.argv.length-1];
 
-runTests(srcfile);
-// runTests("probmods/appendix-scheme.md");
-// runTests("probmods/generative-models.md");
-// runTests("probmods/conditioning.md");
-// runTests("probmods/patterns-of-inference.md");
-// runTests("probmods/observing-sequences.md");
-// runTests("probmods/inference-about-inference.md");
-// runTests("probmods/inference-process.md");
-// runTests("probmods/learning-as-conditional-inference.md");
-// runTests("probmods/hierarchical-models.md");
-// runTests("probmods/occam's-razor.md");
-// runTests("probmods/mixture-models.md");
-// runTests("probmods/non-parametric-models.md");
-// runTests("probmods/appendix-language.md");
-// runTests("probmods/appendix-conjugate-exponential.md");
+var paths = process.argv.slice(2);
 
+var allTestFiles = [];
 
+// TODO: doesn't handle nested directories
+paths.forEach(function(path) {
+  var lstat = fs.lstatSync(path);
+  if (lstat.isFile()) {
+   allTestFiles.push(path);
+  } else if (lstat.isDirectory()) {
+    var dirFiles = fs.readdirSync(path);
 
+    dirFiles = dirFiles
+      .filter(function(fileName) {
+        // filter out any files that aren't church or markdown
+        return /\.(md|church)$/.test( fileName );
+      }) 
+      .map(function(fileName) {
+        return path + '/' + fileName;
+      });
+
+    
+    allTestFiles = allTestFiles.concat(dirFiles); 
+  }
+})
+
+allPassed = true;
+allTestFiles.forEach(function(filename) {
+  console.log('----- Starting', filename);
+  if (!runTestFile(filename)) {
+    allPassed = false;
+  }
+})
+
+process.exit(allPassed ? 0 : 1)
 

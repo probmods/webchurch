@@ -8,7 +8,92 @@
 // function called List (or, to create a pair in javascript, use Pair)
 
 // represents pairs as arrays
-// represents lists as arrays with null as the last element 
+// represents lists as arrays with null as the last element
+
+// TODO: move the asserts stuff into its own library
+// it depends on two utility functions, though:
+// _rest and listToArray
+// maybe basic types stuff should live in a module
+// separate from builtins and separate from asserts
+var typeCheckers = {
+  'integer': function(x) {
+    return typeof x == 'number' && Math.floor(x) == x;
+  },
+  nat: function(x) {
+    return typeof x == 'number' && Math.floor(x) == x && x >= 0;
+  },
+  'positive real': function(x) {
+    return typeof x == 'number' && x > 0;
+  },
+  real: function(x) {
+    return typeof x == 'number';
+  },
+  function: function(x) {
+    return typeof x == 'function';
+  },
+  pair: function(x) {
+    return Array.isArray(x) && x.length >= 2;
+  },
+  list: function(x) {
+    return Array.isArray(x) && x[x.length - 1] == null;
+  },
+  'boolean': function(x) {
+    return typeof x == 'boolean';
+  },
+  'string': function(x) {
+    return typeof x == 'string';
+  }
+};
+
+// handle simple parameterized types like
+// List real, Pair real
+// TODO: test this
+function parseTypeString(s) {
+  if (/list|pair/.test(s)) {
+    var baseType = /list/.test(s) ? 'list' : 'pair';
+
+    var uStart = s.indexOf("<");
+    var uEnd = s.lastIndexOf(">");
+
+    var baseChecker = typeCheckers[baseType];
+
+    if (uStart == -1 || uEnd == -1) {
+      return baseChecker;
+    }
+
+    var u = s.slice(uStart + 1, uEnd);
+    var uChecker = parseTypeString(u);
+
+    if (baseType == 'pair') {
+      return function(x) {
+        if (!baseChecker(x)) {
+          return false;
+        }
+
+        return uChecker(x[0]) && uChecker(_rest(x));
+      };
+
+    }
+
+    // otherwise, return checker for list<...>
+    return function(x) {
+      if (!baseChecker(x)) {
+        return false;
+      }
+      var x_array = listToArray(x);
+      for(var i = 0, ii = x_array.length; i < ii; i++) {
+        if (!uChecker(x_array[i])) {
+          return false;
+        };
+      }
+      return true;
+    };
+
+
+  } else {
+    return typeCheckers[s];
+  }
+}
 
 // TODO: underscore is too heavy weight
 // replace with mustache. or maybe something even dumber
@@ -39,7 +124,7 @@ module.exports.__annotations__ = {};
 
 var addBuiltin = function(dict) {
   var fWrapped = wrapAsserts(dict);
-  
+
   module.exports[dict.name] = fWrapped;
   module.exports.__annotations__[dict.name] = dict;
   return fWrapped;
@@ -69,7 +154,7 @@ var plus = $b({
   alias: '+',
   desc: "Add numbers",
   params: [{name: '[x ...]', type: 'real', desc: 'Numbers to add'}],
-  fn: function f() {
+  fn: function () {
     var sum = 0;
 	  for (var i = 0, ii = arguments.length; i < ii; i++) {
 		  sum = sum + arguments[i];
@@ -96,7 +181,7 @@ var minus = $b({
       }
       return r;
     }
-  } 
+  }
 });
 
 var mult = $b({
@@ -127,8 +212,8 @@ var div = $b({
     var numArgs = arguments.length;
     if (numArgs == 0) {
       return 1;
-    } 
-    
+    }
+
     if (numArgs == 1) {
       return arguments[0];
     }
@@ -138,6 +223,17 @@ var div = $b({
 		  denominator *= arguments[i];
 	  }
     return numerator / denominator;
+  }
+});
+
+var mod = $b({
+  name: 'mod',
+  alias: 'modulo',
+  desc: "Modulo. Returns x mod y",
+  params: [{name: 'x', type: 'real'},
+           {name: 'x', type: 'real'}],
+  fn: function(x,y) {
+    return x % y;
   }
 });
 
@@ -189,6 +285,15 @@ var expt = $b({
   }
 });
 
+var sqrt = $b({
+  name: 'sqrt',
+  desc: 'Square root',
+  params: [{name: 'x', type: 'real'}],
+  fn: function(x) {
+    return Math.sqrt(x);
+  }
+});
+
 var sum = $b({
   name: 'sum',
   desc: 'Sum a list of numbers',
@@ -201,7 +306,7 @@ var sum = $b({
     }
 
 	  return r;
-  } 
+  }
 });
 
 var prod = $b({
@@ -216,7 +321,7 @@ var prod = $b({
     }
 
 	  return r;
-  } 
+  }
 });
 
 // check whether y \in (x - tol, x + tol)
@@ -229,7 +334,7 @@ var soft_equal = $b({
           ],
   fn: function(y, x, tol) {
     // FIXME: assert upper > lower
-    return (y > x - tol && x < x + tol);
+    return (y > x - tol && y < x + tol);
   }
 });
 
@@ -306,7 +411,7 @@ var greater = $b({
   desc: 'Test whether x is greater than all y\'s',
   params: [{name: 'x', type: 'real'},
            {name: '[y ...]', type: 'real'}
-          ], 
+          ],
   fn: function() {
     var numArgs = arguments.length;
     var x = arguments[0];
@@ -325,7 +430,7 @@ var less = $b({
   desc: 'Test whether x is less than all y\'s',
   params: [{name: 'x', type: 'real'},
            {name: '[y ...]', type: 'real'}
-          ], 
+          ],
   fn: function() {
     var numArgs = arguments.length;
     var x = arguments[0];
@@ -344,7 +449,7 @@ var geq = $b({
   desc: 'Test whether x is greater than or equal to all y\'s',
   params: [{name: 'x', type: 'real'},
            {name: '[y ...]', type: 'real'}
-          ], 
+          ],
   fn: function() {
     var numArgs = arguments.length;
     var x = arguments[0];
@@ -363,7 +468,7 @@ var leq = $b({
   desc: 'Test whether x is less than or equal to all y\'s',
   params: [{name: 'x', type: 'real'},
            {name: '[y ...]', type: 'real'}
-          ], 
+          ],
   fn: function() {
     var numArgs = arguments.length;
     var x = arguments[0];
@@ -380,7 +485,7 @@ var eq = $b({
   name: 'eq',
   alias: '=',
   desc: 'Test whether all arguments are equal',
-  params: [{name: '[x ...]', type: 'real'}], 
+  params: [{name: '[x ...]', type: 'real'}],
   fn: function() {
     var numArgs = arguments.length;
     var x = arguments[0];
@@ -420,7 +525,7 @@ var is_list = $b({
   fn: function(x) {
     return Array.isArray(x) && x[x.length-1] == null;
   }
-}); 
+});
 
 var Pair = $b({
   name: 'pair',
@@ -449,7 +554,7 @@ var first = $b({
   desc: 'Get the first item of a list (or pair)',
   params: [{name: 'lst', type: 'pair'}],
   fn: function(lst) {
-    var arr = listToArray(lst); 
+    var arr = listToArray(lst);
     if (arr.length < 1) {
       throw new Error('Tried to get the first element of an empty list');
     }
@@ -462,7 +567,7 @@ var second = $b({
   desc: 'Get the second item of a list',
   params: [{name: 'lst', type: 'list'}],
   fn: function(lst) {
-    var arr = listToArray(lst); 
+    var arr = listToArray(lst);
     if (arr.length < 2) {
       throw new Error('Tried to get the 2nd element of a list with only ' + arr.length + ' item');
     }
@@ -475,7 +580,7 @@ var third = $b({
   desc: 'Get the third item of a list',
   params: [{name: 'lst', type: 'list'}],
   fn: function(lst) {
-    var arr = listToArray(lst); 
+    var arr = listToArray(lst);
     if (arr.length < 3) {
       throw new Error('Tried to get the 3rd element of list with only ' + arr.length + ' elements');
     }
@@ -488,7 +593,7 @@ var fourth = $b({
   desc: 'Get the fourth item of a list',
   params: [{name: 'lst', type: 'list'}],
   fn: function(lst) {
-    var arr = listToArray(lst); 
+    var arr = listToArray(lst);
     if (arr.length < 4) {
       throw new Error('Tried to get the 4th element of list with only ' + arr.length + ' elements');
     }
@@ -501,7 +606,7 @@ var fifth = $b({
   desc: 'Get the fifth item of a list',
   params: [{name: 'lst', type: 'list'}],
   fn: function(lst) {
-    var arr = listToArray(lst); 
+    var arr = listToArray(lst);
     if (arr.length < 5) {
       throw new Error('Tried to get the 5th element of list with only ' + arr.length + ' elements');
     }
@@ -514,7 +619,7 @@ var sixth = $b({
   desc: 'Get the sixth item of a list',
   params: [{name: 'lst', type: 'list'}],
   fn: function(lst) {
-    var arr = listToArray(lst); 
+    var arr = listToArray(lst);
     if (arr.length < 6) {
       throw new Error('Tried to get the 6th element of list with only ' + arr.length + ' elements');
     }
@@ -527,7 +632,7 @@ var seventh = $b({
   desc: 'Get the seventh item of a list',
   params: [{name: 'lst', type: 'list'}],
   fn: function(lst) {
-    var arr = listToArray(lst); 
+    var arr = listToArray(lst);
     if (arr.length < 7) {
       throw new Error('Tried to get the 7th element of list with only ' + arr.length + ' elements');
     }
@@ -541,7 +646,7 @@ var _rest = function(x) {
 		return x[1];
 	} else {
 		return x.slice(1);
-	}    
+	}
 };
 
 var rest = $b({
@@ -597,22 +702,24 @@ var drop = $b({
   params: [{name: 'lst', type: 'list'},
            {name: 'n', type: 'nat'}],
   fn: function(lst,n) {
-    return arrayToList(listToArray(lst).slice(n)); 
+    return arrayToList(listToArray(lst).slice(n));
   }
 });
 
 var sort = $b({
   name: 'sort',
-  desc: 'Sort a list according to a comparator function cmp',
+  desc: 'Sort a list according to a comparator function cmp(a,b) that returns a number greater than 0 if a > b, 0 if a == b, and a number less than 0 if a < b',
   params: [{name: "lst", type: "list"},
            {name: "[cmp]", type: "function", default: ">"}],
   fn: function(lst, cmp) {
-    if (cmp === undefined) {
-      cmp = greater;
-    }
     var arr = listToArray(lst);
-    var sortedArr = arr.sort( cmp );
-    return arrayToList( sortedArr );
+    var sortedArr;
+    if (cmp === undefined ) {
+      sortedArr = arr.sort();
+    } else {
+      sortedArr = arr.sort( cmp );
+    }
+    return arrayToList( sortedArr, true );
 
   }
 });
@@ -625,7 +732,7 @@ var unique = $b({
           ],
   fn: function(lst, eq) {
     eq = eq || is_equal;
-    
+
     var arr = listToArray(lst);
     var uniques = [];
     for(var i = 0, ii = arr.length ; i < ii; i++) {
@@ -643,7 +750,7 @@ var unique = $b({
     }
 
     return arrayToList(uniques, true);
-    
+
   }
 });
 
@@ -703,7 +810,7 @@ var mean = $b({
 	  var vals = listToArray(lst),
         sum = 0,
         n = vals.length;
-    
+
 	  for (var i=0; i < n; i++) {
       sum += vals[i];
     }
@@ -719,13 +826,13 @@ var append = $b({
     {name: '[lst ...]', type: 'list'}
   ],
   fn: function() {
-    
+
     // not ideal because we're crossing the list abstraction barrier
     var r = [];
     for(var i = 0, ii = arguments.length; i < ii; i++) {
       r = r.concat(listToArray(arguments[i]));
     }
-    return arrayToList(r, true); 
+    return arrayToList(r, true);
   }
 });
 
@@ -767,7 +874,7 @@ var fold = $b({
 		  arrs.push(listToArray(lists[i]));
 	  }
 	  var max_length = Math.min.apply(this, arrs.map(function(el) {return el.length;}));
-	  var cumulativeValue = initialValue; 
+	  var cumulativeValue = initialValue;
 	  for (i=0; i<max_length; i++) {
 		  var fn_args = arrs.map(function(el) {return el[i];});
 		  fn_args.push(cumulativeValue);
@@ -794,21 +901,21 @@ var repeat = $b({
 	  return lst;
 
   }
-}); 
+});
 
 var for_each = $b({
   name: 'for_each',
-  desc: 'Apply a function to every member of a list, but don\'t return anything', 
+  desc: 'Apply a function to every member of a list, but don\'t return anything',
   params: [
     {name: 'fn', type: 'function'},
     {name: 'lst', type: 'list'}],
   fn: function(fn,lst) {
     var arr = listToArray(lst);
-    arr.forEach(function(x, i, lst) { fn(x) }); 
+    arr.forEach(function(x, i, lst) { fn(x) });
     return;
 
   }
-}); 
+});
 
 var map = $b({
   name: 'map',
@@ -820,19 +927,19 @@ var map = $b({
   ],
   fn: function() {
     var args = args_to_array(arguments),
-        fn = args[0]; 
-    
+        fn = args[0];
+
     var lists = args.slice(1),
         arr = [],
         numLists = lists.length;
 
     var arrays = lists.map(function(L) { return listToArray(L) });
-    
+
     // ^ have to write it verbosely because otherwise, map will pass in extra arguments
     // namely the current index and the entire array. the index element will
     // get used as the recursive flag to the listToArray function
     // this causes nested maps to have the wrong behavior
-    
+
     var n = Math.min.apply(null, arrays.map(function(a) { return a.length}));
 
     for(var i=0;i<n;i++) {
@@ -852,7 +959,7 @@ var filter = $b({
   fn: function(pred, lst) {
     var arr = listToArray(lst).filter(pred);
     arr.push(null);
-    return arr; 
+    return arr;
   }
 });
 
@@ -921,7 +1028,7 @@ var is_equal = $b({
             }
           };
           return true;
-          
+
 			  } else {
 				  return false;
 			  }
@@ -944,15 +1051,15 @@ var member = $b({
   ],
   fn: function(x, lst, cmp) {
     cmp = cmp || is_equal;
-    
+
     var array = listToArray(lst);
-    
+
 	  for (var i = 0, ii = array.length; i < ii; i++) {
 		  if (cmp(x, array[i])) {
 			  return lst;
 		  }
 	  }
-	  return false; 
+	  return false;
   }
 });
 
@@ -962,7 +1069,7 @@ var apply = $b({
   params: [{name: "fn", type: "function", desc: ""},
            {name: "lst", type: "list", desc: ""}],
   fn: function(fn, lst) {
-	  return fn.apply(null, listToArray(lst)); 
+	  return fn.apply(null, listToArray(lst));
   }
 });
 
@@ -978,7 +1085,7 @@ var assoc = $b({
 			  return alist[i];
 		  }
 	  }
-	  return false; 
+	  return false;
   }
 });
 
@@ -989,7 +1096,7 @@ var regexp_split = $b({
   params: [{name: "s", type: "string", desc: ""},
            {name: "sep", type: "string", desc: ""}],
   fn: function(str, sep) {
-	  return arrayToList(str.split(sep)); 
+	  return arrayToList(str.split(sep));
   }
 });
 
@@ -1034,39 +1141,59 @@ var string_to_number = $b({
   }
 });
 
+var string_to_symbol = $b({
+  name: 'string_to_symbol',
+  desc: 'Convert a string to a symbol',
+  params: [{name: "s", type: "string", desc: ""}],
+  fn: function(s) {
+    return s;
+  }
+});
 
 var number_to_string = $b({
   name: 'number_to_string',
   desc: 'Convert a number to a string',
   params: [{name: "x", type: "real", desc: ""}],
   fn: function(num) {
-	  return num.toString(); 
+	  return num.toString();
   }
 });
+
+var sample_discrete = $b({
+  name: 'sample_discrete',
+  desc: 'Takes a list of weights and samples an index between 0 and (number of weights - 1) with probability proportional to the weights.',
+  numArgs: [1,3],
+  params: [{name: "weights", type: "list<real>", desc: ""}],
+  fn: function(weights, isStructural, conditionedValue) {
+    return multinomialDraw( listToArray(iota(weights.length)),
+                            listToArray(weights),
+                            isStructural, conditionedValue);
+  }
+})
 
 var wrapped_uniform_draw = $b({
   name: 'wrapped_uniform_draw',
   desc: 'Uniformly sample an element from a list',
-  numArgs: [1,3],
+  numArgs: [1,2],
   params: [{name: "items", type: "list", desc: ""}],
+  erp: true,
   fn: function(items, isStructural, conditionedValue) {
-    var u = uniformDraw(listToArray(items, false), isStructural, conditionedValue);
-	  return u; //uniformDraw(listToArray(items, false), isStructural, conditionedValue);
-
+    return uniformDraw(listToArray(items), isStructural, conditionedValue);
   }
 });
 
 var wrapped_multinomial = $b({
   name: 'wrapped_multinomial',
   desc: 'Sample an element from lst with the probability specified in probs',
-  numArgs: [2,4],
+  numArgs: [2,3],
   params: [{name: "lst", type: "list", desc: ""},
            {name: "probs", type: "list<real>", desc: ""}],
-  fn: function(lst, probs, isStructural, conditionedValue) {
+  erp: true,
+  fn: function(lst, probs, conditionedValue) {
 	  if (lst.length != probs.length) {
 		  throw new Error("For multinomial, lists of items and probabilities must be of equal length");
 	  }
-	  return multinomialDraw(listToArray(lst), listToArray(probs), isStructural, conditionedValue);
+	  return multinomialDraw(listToArray(lst), listToArray(probs), undefined, conditionedValue);
 
   }
 });
@@ -1075,13 +1202,13 @@ var wrapped_multinomial = $b({
 var wrapped_flip = $b({
   name: 'wrapped_flip',
   desc: 'Flip a weighted coin. Returns true or false',
-  numArgs: [0,1,3],
+  numArgs: [0,1,2],
   params: [{name: "[p]", type: "real", desc: "", default: "0.5"},
-           {name: "[isStructural]", type: "", desc: "", noexport: true},
            {name: "[conditionedValue]", type: "", desc: "", noexport: true}
           ],
-  fn: function(p, isStructural, conditionedValue) {
-	  return flip(p, isStructural, conditionedValue) == 1;
+  erp: true,
+  fn: function(p, conditionedValue) {
+	  return flip(p, undefined, conditionedValue) == 1;
 
   }
 });
@@ -1089,11 +1216,14 @@ var wrapped_flip = $b({
 var wrapped_uniform = $b({
   name: 'wrapped_uniform',
   desc: 'Sample a random real uniformly from the interval [a,b]',
-  numArgs: [2,4],
+  numArgs: [2,3],
   params: [{name: "a", type: "real", desc: ""},
-           {name: "b", type: "real", desc: ""}],
-  fn: function(a, b, isStructural, conditionedValue) {
-	  return uniform(a, b, isStructural, conditionedValue);
+           {name: "b", type: "real", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}
+           ],
+  erp: true,
+  fn: function(a, b, conditionedValue) {
+	  return uniform(a, b, undefined, conditionedValue);
 
   }
 });
@@ -1102,58 +1232,66 @@ var wrapped_random_integer = $b({
   name: 'wrapped_random_integer',
   desc: '',
   alias: ['random-integer','sample-integer'],
-  numArgs: [1,3],
-  params: [{name: "n", type: "nat", desc: ""}],
-  fn: function(n,isStructural, conditionedValue) {
+  numArgs: [1,2],
+  params: [{name: "n", type: "nat", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}
+  ],
+  erp: true,
+  fn: function(n, conditionedValue) {
     var probs = [], p = 1/n;
 	  for (var i = 0; i < n; i++){
       probs[i] = p;
     };
-    return multinomial(probs,isStructural, conditionedValue); 
+    return multinomial(probs, undefined, conditionedValue);
   }
 });
 
 var wrapped_gaussian = $b({
   name: 'wrapped_gaussian',
   desc: 'Sample from the Gaussian distribution N(mu, sigma)',
-  numArgs: [0,1,2,4],
+  numArgs: [0,1,2,3],
   params: [{name: "[mu]", type: "real", desc: "", default: 0},
            {name: "[sigma]", type: "real", desc: "", default: 1},
            {name: "[isStructural]", type: "", desc: "", noexport: true},
            {name: "[conditionedValue]", type: "", desc: "", noexport: true}
           ],
-  fn: function(mu, sigma, isStructural, conditionedValue) {
+  erp: true,
+  fn: function(mu, sigma, conditionedValue) {
     mu = mu || 0;
     sigma = sigma || 1;
-	  return gaussian(mu, sigma, isStructural, conditionedValue);
+	  return gaussian(mu, sigma, undefined, conditionedValue);
   }
 });
 
 var wrapped_gamma = $b({
   name: 'wrapped_gamma',
   desc: 'Sample from the gamma distribution G(a,b)',
-  numArgs: [2,4],
+  numArgs: [2,3],
   params: [{name: "a", type: "real", desc: ""},
-           {name: "b", type: "real", desc: ""}],
-  fn: function(a, b, isStructural, conditionedValue) {
-	  return gamma(a, b, isStructural, conditionedValue);
+           {name: "b", type: "real", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}],
+  erp: true,
+  fn: function(a, b, conditionedValue) {
+	  return gamma(a, b, undefined, conditionedValue);
   }
 });
 
 var wrapped_beta = $b({
   name: 'wrapped_beta',
   desc: 'Sample from the beta distribution B(a,b). Returns only the first element.',
-  numArgs: [2,4],
+  numArgs: [2,3],
   params: [{name: "a", type: "positive real", desc: ""},
-           {name: "b", type: "positive real", desc: ""}],
-  fn: function(a, b, isStructural, conditionedValue) {
+           {name: "b", type: "positive real", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}],
+  erp: true,
+  fn: function(a, b, conditionedValue) {
     if (a <= 0) {
       throw new Error('The a argument to beta must be greater than 0');
     }
     if (b <= 0) {
       throw new Error('The b argument to beta must be greater than 0');
     }
-	  return beta(a, b, isStructural, conditionedValue);
+	  return beta(a, b, undefined, conditionedValue);
 
   }
 });
@@ -1161,11 +1299,13 @@ var wrapped_beta = $b({
 var wrapped_dirichlet = $b({
   name: 'wrapped_dirichlet',
   desc: 'Sample from the Dirichlet distribution Dir(alpha).',
-  numArgs: [1,3],
-  params: [{name: "alpha", type: "list<positive real>", desc: ""}],
-  fn: function(alpha, isStructural, conditionedValue) {
+  numArgs: [1,2],
+  params: [{name: "alpha", type: "list<positive real>", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}],
+  erp: true,
+  fn: function(alpha, conditionedValue) {
 	  alpha = listToArray(alpha);
-	  return arrayToList(dirichlet(alpha, isStructural, conditionedValue));
+	  return arrayToList(dirichlet(alpha, undefined, conditionedValue));
 
   }
 });
@@ -1210,18 +1350,18 @@ var DPmem = $b({
         for(var i = 0; i < numTables; i++ ) {
           indices.push(i);
         }
-        
+
         var counts = tables.map(function(table) { return table.count });
 
         var sampledIndex = wrapped_multinomial(arrayToList(indices, true),
                                                arrayToList(counts, true));
 
-        
+
         value = tables[sampledIndex].value;
         tables[sampledIndex].count++;
-      } 
-      return value; 
-      
+      }
+      return value;
+
     }
   }
 })
@@ -1273,17 +1413,6 @@ var wrapped_enumeration_query = $b({
   }
 });
 
-var wrapped_eval = $b({
-  name: 'wrapped_eval',
-  desc: '', 
-  params: [{name: "code", type: "", desc: ""}],
-  fn: function(code) {
-    //need to turn the code list back into a string before calling the webchurch evaluate...
-    code = util.format_result(code);
-    return evaluate(code);
-  }
-});
-
 var read_file = $b({
   name: 'read_file',
   desc: '',
@@ -1311,6 +1440,19 @@ var read_csv = $b({
   }
 });
 
+var console_log = $b({
+  name: 'console_log',
+  desc: 'Print arguments to Javascript console',
+  params: [{name: "[s ...]", type: "", desc: ""}],
+  fn: function() {
+    var args = args_to_array(arguments);
+    var strs = args.map(util.format_result);
+    for (var i=0;i<strs.length;i++) {
+      console.log(strs[i]);
+    };
+  }
+});
+
 var display = $b({
   name: 'display',
   alias: 'pn',
@@ -1318,12 +1460,12 @@ var display = $b({
   params: [{name: "[s ...]", type: "", desc: ""}],
   fn: function() {
     var args = args_to_array(arguments);
-    var strs = args.map(util.format_result); 
+    var strs = args.map(util.format_result);
     if (inBrowser) {
       sideEffects.push({
         type: 'string',
         data: strs.join(" ")
-      }); 
+      });
     } else {
       console.log(strs.join(" "));
     }
@@ -1357,10 +1499,10 @@ var string_append = $b({
   desc: 'Append an arbitrary number of strings',
   params: [
     {name: '[s ...]', type: 'string'}
-  ], 
+  ],
   fn: function() {
     var args = args_to_array(arguments);
-    return args.join(""); 
+    return args.join("");
 
   }
 });
@@ -1371,7 +1513,7 @@ var symbol_to_string = $b({
   desc: '',
   params: [{name: "sym", type: "string", desc: ""}],
   fn: function(sym) {
-    return sym; 
+    return sym;
   }
 });
 
@@ -1382,11 +1524,11 @@ var iota = $b({
     {name: 'count', type: 'nat', desc: 'Number of items'},
     {name: '[start]', type: 'real', desc: 'First item in list', default: 0},
     {name: '[step]', type: 'real', desc: 'Difference between successive items in the list', default: 1}
-  ], 
+  ],
   fn: function(count, start, step) {
     if (start === undefined) { start = 0; }
-    if (step === undefined) { step = 1; } 
-    
+    if (step === undefined) { step = 1; }
+
     var r = [];
     for(var k = start, i = 0;
         i < count;
@@ -1398,6 +1540,19 @@ var iota = $b({
   }
 });
 
+var range = $b({
+  name: 'range',
+  desc: 'Create list based on a range',
+  params: [
+    {name: 'start', type: 'integer'},
+    {name: 'end', type: 'integer'}
+  ],
+  fn: function(start, end) {
+    return iota(end - start + 1, start, 1);
+  }
+});
+
+
 var update_list = $b({
   name: 'update_list',
   desc: '',
@@ -1406,7 +1561,7 @@ var update_list = $b({
            {name: "value", type: "", desc: ""}],
   fn: function(lst, n, value) {
 
-    var array = listToArray(lst);     
+    var array = listToArray(lst);
     if (array.length < n) {
 	    throw new Error("list index too big: asked for item #" + (n+1) + " but list only contains " + n + " items");
 	  }
@@ -1419,7 +1574,7 @@ var update_list = $b({
 
 var get_time = $b({
   name: 'get_time',
-  desc: '', 
+  desc: '',
   params: [],
   fn: function() {
     return Date.now();
@@ -1428,6 +1583,7 @@ var get_time = $b({
 
 var make_gensym = $b({
   name: 'make_gensym',
+  desc: "Returns a gensym, which is a function that returns a new string value every time you call it (i.e., you're guaranteed to never get the same return value twice). You can specify an optional prefix for these values (default is 'g')",
   params: [{name: '[prefix]', default: 'n/a', type: 'string'}],
   fn: function(prefix) {
     prefix = prefix || "g";
@@ -1438,18 +1594,15 @@ var make_gensym = $b({
       };
     })();
     return closure;
-  } 
+  }
 });
 
-// gensymCount is set in evaluate() inside evaluate.js
 var gensym = $b({
   name: 'gensym',
-  desc: 'Generate a fresh symbol guaranteed not to be equal to anything else',
+  desc: 'A default gensym (prefix is #g)',
   params: [],
-  fn: function() {
-    return "g" + (gensymCount++);
-  }
-})
+  fn: make_gensym('#g')
+});
 
 // var dict = $x.dict = function() {
 //   return {};
@@ -1473,7 +1626,7 @@ var gensym = $b({
 // var dict_lookup = $x.dict_lookup = function(d,k) {
 //   var keys = Object.keys(d);
 //   k = k + "";
-  
+
 //   if ( keys.indexOf(k) > -1) {
 //     var entry = [k, d[k]];
 //     return arrayToList(entry);
@@ -1482,87 +1635,6 @@ var gensym = $b({
 //   }
 // };
 
-// TODO: move the asserts stuff into its own library
-// it depends on two utility functions, though:
-// _rest and listToArray
-// maybe basic types stuff should live in a module
-// separate from builtins and separate from asserts
-var typeCheckers = {
-  nat: function(x) {
-    return typeof x == 'number' && Math.floor(x) == x && x >= 0;
-  },
-  'positive real': function(x) {
-    return typeof x == 'number' && x > 0;
-  },
-  real: function(x) {
-    return typeof x == 'number';
-  },
-  function: function(x) {
-    return typeof x == 'function';
-  },
-  pair: function(x) {
-    return Array.isArray(x) && x.length >= 2;
-  },
-  list: function(x) {
-    return Array.isArray(x) && x[x.length - 1] == null;
-  },
-  'boolean': function(x) {
-    return typeof x == 'boolean';
-  },
-  'string': function(x) {
-    return typeof x == 'string';
-  }
-};
-
-// handle simple parameterized types like
-// List real, Pair real
-// TODO: test this
-function parseTypeString(s) {
-  if (/list|pair/.test(s)) {
-    var baseType = /list/.test(s) ? 'list' : 'pair';
-    
-    var uStart = s.indexOf("<");
-    var uEnd = s.lastIndexOf(">");
-
-    var baseChecker = typeCheckers[baseType];
-    
-    if (uStart == -1 || uEnd == -1) {
-      return baseChecker; 
-    }
-    
-    var u = s.slice(uStart + 1, uEnd);
-    var uChecker = parseTypeString(u);
-
-    if (baseType == 'pair') {
-      return function(x) {
-        if (!baseChecker(x)) {
-          return false;
-        } 
-
-        return uChecker(x[0]) && uChecker(_rest(x));
-      };
-
-    }
-    
-    // otherwise, return checker for list<...>
-    return function(x) {
-      if (!baseChecker(x)) {
-        return false;
-      }
-      var x_array = listToArray(x);
-      for(var i = 0, ii = x_array.length; i < ii; i++) {
-        if (!uChecker(x_array[i])) {
-          return false;
-        };
-      }
-      return true; 
-    };
-    
-    
-  } else {
-    return typeCheckers[s];
-  }
-}
 
 var sample = $b({
   name: 'sample',
@@ -1590,21 +1662,21 @@ function wrapAsserts(annotation) {
   var paramProps = annotation.params || [];
 
   var validArgumentLengths = annotation.numArgs;
-  
+
   var numParams = paramProps.length;
-  
+
   // compute number of mandatory arguments
   var numMandatoryParams = paramProps.filter(function(prop) {
     return !prop.name.match(/\[/);
   }).length;
 
-  var wrapped = function() {    
+  var wrapped = function() {
     // var userArgs = Array.prototype.slice.call(arguments, 0);
     var userArgs = arguments;
-    
+
     var userNumArgs = userArgs.length;
     // console.log( 'inside wrapped ' + functionName);
-    
+
     if (userNumArgs < numMandatoryParams) {
       var err = _.template('<<functionName>> takes {{numArgs}} argument{{plural}}, but {{userNumArgs}} were given',
                            {userNumArgs: userNumArgs == 0 ? 'none' : 'only ' + userNumArgs,
@@ -1617,7 +1689,7 @@ function wrapAsserts(annotation) {
 
     // make sure that the number of arguments that the
     // user supplied is a valid number of arguments
-    // to this function 
+    // to this function
     if (validArgumentLengths) {
       if (validArgumentLengths.indexOf(userNumArgs) == -1) {
         throw new Error('Invalid number of arguments to <<functionName>>');
@@ -1626,17 +1698,17 @@ function wrapAsserts(annotation) {
 
     // for each supplied argument, check type
     for(var i = 0, a, props, variadic = false, specType, argName; i < userNumArgs; i++) {
-      
+
       a = userArgs[i];
       if (!variadic) {
         props = paramProps[i];
         specType = props.type;
-      }      
+      }
       argName = props.name;
       if (argName.match(/\.\.\./)) {
         variadic = true;
-      } 
-      
+      }
+
       if (specType) {
         // run the appropriate type checker on the argument
         var checker = parseTypeString(specType); // typeCheckers[specType];
@@ -1646,13 +1718,13 @@ function wrapAsserts(annotation) {
             'Bug in Church builtins - annotation for (<<functionName>> ...) tries to declare the type of the "{{argName}}" argument as "{{specType}}", which is not a recognized type',
             { specType: specType,
               argName: argName
-            } 
+            }
           );
           throw new Error(errorString);
         }
-        
+
         var typeChecks = checker(a);
-        
+
         if (!typeChecks) {
           var errorString = _.template(
             // <<functionName>> will get filled in inside evaluate.js
@@ -1666,10 +1738,11 @@ function wrapAsserts(annotation) {
 
           throw new Error(errorString);
         }
-      } 
+      }
     }
     return fn.apply(null, userArgs);
   };
+  wrapped.num_args = annotation.numArgs;
 
   return wrapped;
   // return fn;

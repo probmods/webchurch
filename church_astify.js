@@ -1,4 +1,6 @@
 var util = require('./util.js');
+var church_builtins = require('./church_builtins.js');
+var rename_map = require('./js_astify.js').rename_map;
 
 var brackets_map = {"(": ")", "[": "]"};
 
@@ -309,6 +311,30 @@ function church_astify(tokens) {
 		}
 	}
 
+  function dsgr_eval(ast) {
+    if (ast.children[0].text == "eval") {
+      return {
+				children: [
+					{text: "eval"},
+					{
+            children: [
+              // churchToBareJs: for use in eval only
+              {text: "churchToBareJs"},
+              {
+                children: [
+                  {text: "formatResult"},
+                  ast.children[1]
+                ]
+              }
+            ]
+          } 
+        ]
+      }
+		
+	}
+    return ast;
+  };
+
 	function dsgr_query(ast) {
 		// Makes the lambda that's passed to the query function
 		function query_helper(statements, condition, args) {
@@ -369,27 +395,27 @@ function church_astify(tokens) {
  
 	function transform_equals_condition(ast) {
 		function is_equals_conditionable(ast) {
-			var equals_conditionable_erps = ["flip", "uniform", "gaussian"];
-			return !util.is_leaf(ast) && ast.children[4] == undefined && equals_conditionable_erps.indexOf(ast.children[0].text) != -1;
+			if (util.is_leaf(ast)) return false;
+			var fn = church_builtins.__annotations__[rename_map[ast.children[0].text]];
+			return fn && fn.erp && ast.children[fn.numArgs[fn.numArgs.length-1]] == undefined;
 		}
 
 		function transform_erp(erp, conditioned_value) {
-			[1,2,3].map(function(x) {erp.children[x] = erp.children[x] || {}});
-			erp.children[4] = conditioned_value;
+			erp.children.push(conditioned_value);
 		}
 
 		function try_transform(left, right) {
 			if (left == undefined) return false;
 			if (is_equals_conditionable(left)) {
 				transform_erp(left, right);
-				lambda_children.splice(i, 1, left);
+				statements.splice(i, 1, left);
 				return true;
 			} else if (util.is_leaf(left) && define_table[left.text]) {
 				var left_entry = define_table[left.text];
 				if (!util.is_identifier(right.text) || (
 						define_table[right.text] && left_entry.index > define_table[right.text].index)) {
 					transform_erp(left_entry.def, right);
-					lambda_children.splice(i, 1);
+					statements.splice(i, 1);
 					return true;
 				}
 			}
@@ -400,18 +426,21 @@ function church_astify(tokens) {
 		if (["rejection-query", "enumeration-query", "mh-query"].indexOf(ast.children[0].text) != -1) {			
 			var define_table = {};
 			// Assumes preprocessing through dsgr_query
-			var lambda_children = ast.children[1].children
+			var statements = ast.children[1].children.slice(2);
 			var i = 0;
-			for (var i = 2; i < lambda_children.length; i++) {
-				if (!util.is_leaf(lambda_children[i])) {
-					if (lambda_children[i].children[0].text == "define") {
-						define_table[lambda_children[i].children[1].text] = {
+			// Iterate through each lambda statement
+			for (var i = 0; i < statements.length; i++) {
+				if (!util.is_leaf(statements[i])) {
+					// If statement is a define and an ERP without an existing condition, put it in a table
+					if (statements[i].children[0].text == "define" && is_equals_conditionable(statements[i].children[2])) {
+						define_table[statements[i].children[1].text] = {
 							index: i,
-							def: lambda_children[i].children[2]
+							def: statements[i].children[2]
 						};
-					} else if (lambda_children[i].children[0].text == "condition") {
-						var condition = lambda_children[i].children[1];
-						if (!util.is_leaf(condition) && condition.children[0].text == "=") {
+					// If statement is a condition, check if it's an equality and attempt to transform
+					} else if (statements[i].children[0].text == "condition") {
+						var condition = statements[i].children[1];
+						if (!util.is_leaf(condition) && ["=", "equal?"].indexOf(condition.children[0].text) != -1 && condition.children.length == 3) {
 							var left = condition.children[1];
 							var right = condition.children[2];
 							if (!try_transform(left, right)) try_transform(right, left);
@@ -426,7 +455,7 @@ function church_astify(tokens) {
 	}
 
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_query, validate_if, transform_equals_condition];
+	var desugar_fns = [validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_eval, dsgr_query, validate_if, transform_equals_condition];
 
 	var ast = astify(tokens);
 	// Special top-level check
@@ -445,8 +474,18 @@ function church_shallow_preconditions(ast) {
     return traverse(ast, transform_equals_condition, isquote)
 }
 
+// Print a Church AST for debugging
+function church_ast_to_string(ast) {
+	if (util.is_leaf(ast)) {
+		return ast.text;
+	} else {
+		return "(" + ast.children.map(function(x) {return church_ast_to_string(x)}).join(" ") + ")"
+	}
+}
+
 module.exports =
 {
+	church_ast_to_string: church_ast_to_string,
     church_astify: church_astify,
     church_shallow_preconditions: church_shallow_preconditions
 }

@@ -171,7 +171,7 @@ some-variable ;when this is evaluated it looks up and returns the value 10
     (- 4 6)))
 ~~~~
 
-~~~~ {test_id="32"}
+~~~~ {.shouldfail test_id="32"}
 (4 + 6)
 ~~~~
 
@@ -252,7 +252,7 @@ some-variable ;when this is evaluated it looks up and returns the value 10
 '(a 6 b c 7 d)
 ~~~~
 
-~~~~ {test_id="47"}
+~~~~ {.shouldfail test_id="47"}
 (3 4 7 8)
 ~~~~
 

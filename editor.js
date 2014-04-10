@@ -29,6 +29,13 @@ var runners = {};
 runners['webchurch'] = makewebchurchrunner();
 runners['webchurch-opt'] = makewebchurchrunner(true);
 
+function wrap(tag, content) {
+  return _.template("<{{tag}}>{{content}}</{{tag}}>",
+                    {tag: tag,
+                     content: content
+                    });
+}
+
 function makewebchurchrunner(evalparams){
   return function(editor) {
     var code = editor.getValue(),
@@ -55,6 +62,16 @@ function makewebchurchrunner(evalparams){
           //   debugger;
           // }
         }
+        if (e.type == "table") {
+
+          var tableString = wrap("table", e.data.map(function(row) {
+            var cols = row.map(function(x) { return wrap('td', x); }).join("");
+            return wrap("tr", cols); 
+          }).join("\n"));
+
+          $results.append( $(tableString) );
+          
+        }
         
       }); 
       
@@ -62,15 +79,23 @@ function makewebchurchrunner(evalparams){
       // if we get back a string, just show the text
       underlyingData = runResult;
       runResult = format_result(runResult);
-      $results.removeClass("error").append($("<pre>"+runResult+'</pre>'));
+      $results.append($("<pre>"+runResult+'</pre>'));
       
     } catch (e) {
       
       var error = e.message;
-      $results.addClass("error").text( error );
+      $results
+        .append( $("<p></p>")
+                 .addClass('error')
+                 .text(error) );
       
       if (e.stackarray != undefined) {
-        $results.append("\nStack trace: " + e.stack );
+        var churchStack = $("<pre></pre>");
+        churchStack.text(e.stackarray
+                         .map(function(x) { return _.template("{{text}}: {{start}}-{{end}}", x) })
+                         .join("\n"))
+        
+        $results.append( '<div><u>Church stack array:</u></div>', churchStack); 
         
         //        var errorlocation = e.stackarray[0]
         //        var start=errorlocation.start.split(":"), end=errorlocation.end.split(":")
@@ -80,6 +105,12 @@ function makewebchurchrunner(evalparams){
                                            {className: "CodeMirrorError", clearOnEnter: true});
         //        mark.clear()
       }
+
+      var jsStack = $("<pre></pre>");
+      jsStack.text(e.jsStack.join('\n'));
+
+      $results.append('<div><u>JS stack:</u></div>', jsStack );
+
 
     } 
   };
@@ -143,7 +174,7 @@ var inject = function(domEl, options) {
   });
 
   // reset button
-  var $resetButton = $("<button>").html("Reset");
+  var $resetButton = $("<button class='reset'>").html("Reset");
   $resetButton.click(function() {
     editor.setValue(options.defaultText);
     editor.$engineSelector.val(options.defaultEngine);
@@ -151,8 +182,6 @@ var inject = function(domEl, options) {
     $results.hide().html('');
 
   });
-
-  $resetButton.css('float', 'right');
 
   // run button
   var $runButton = $("<button class='run'>").html("Run");
@@ -188,10 +217,6 @@ var inject = function(domEl, options) {
                             }
                           }, 15);
   });
-
-  $runButton.css({'padding-top': '5px',
-                  'padding-bottom': '5px'
-                 });
 
   var $codeControls = $("<div class='code-controls'>");
   // HT http://somerandomdude.com/work/open-iconic/#

@@ -294,6 +294,16 @@ abc
 (=)
 #t
 
+;; check that 3 is in the range 4 plus or minus 2
+(soft-equal 3 4 2)
+#t
+
+(soft-equal 100 4 2)
+#f
+
+(soft-equal 0 4 2)
+#f
+
 '()
 ()
 
@@ -396,13 +406,27 @@ abc
 (sort '( 3 8 7 6 4 5 1 2 9 ))
 (1 2 3 4 5 6 7 8 9)
 
+;; test that sort can correctly use the comparator function argument
+(define (sort-by lst order fn)
+  (sort lst
+        (lambda (a b) (if (order (fn a) (fn b))
+                          1
+                          -1))))
+(define lst (repeat 100 (lambda () (list (uniform 0 1) (uniform 0 1))))) 
+(equal? (sort (map second lst))
+        (map second (sort-by lst > second)))
+#t
+
 (unique '(a a a a a a b c c a))
 (a b c)
 
-(repeat 10 gensym)
+;; TODO: gensym should probably be an xrp
+(define g (make-gensym))
+(repeat 10 g)
 (g0 g1 g2 g3 g4 g5 g6 g7 g8 g9)
 
-(repeat 1 gensym)
+(define g (make-gensym))
+(repeat 1 g)
 (g0)
 
 (list? (pair 1 2))
@@ -637,3 +661,38 @@ undefined
 
 (string-split "abcdefghi" ".")
 (abcdefghi)
+
+(define a 1)
+(define (f b)
+  (let ([c 3])
+    (eval '(+ a b c))))
+(f 2)
+6
+    
+(rejection-query
+  (define x (gaussian 0 1))
+  x
+  (= x 0))
+0
+
+(rejection-query
+  (define x (gaussian 0 1))
+  (define y 'whatever)
+  x
+  (= x 0))
+0
+
+(rejection-query
+  (define x (gaussian 0 1))
+  (condition (= 0 x))
+  x
+  #t)
+0
+
+(rejection-query
+  (define x (flip 0.5))
+  (condition (equal? x #t))
+  (define x 0)
+  x
+  #t)
+0

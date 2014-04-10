@@ -1,4 +1,4 @@
-~~~~ {test_id="0"}
+~~~~ {.idealized test_id="0"}
 (query
  (define hypothesis (prior))
  hypothesis
@@ -50,7 +50,7 @@
  (hist samples "Coin weight, conditioned on observed data"))
 ~~~~
 
-~~~~ {test_id="3"}
+~~~~ {.mit-church test_id="3"}
 (define make-coin (lambda (weight) (lambda () (if (flip weight) 'h 't))))
 
 (define (samples data)
