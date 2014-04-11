@@ -7,7 +7,7 @@
     "webchurch": "./compile.sh"
   },
   "scripts": {
-    "test": "node tester.js test/basic.church test/probmods"
+    "test": "node tester.js test/basic.church test/mh.church test/support-change.church test/probmods"
   },
   "repository": {
     "type": "git",
@@ -17,11 +17,12 @@
     "escodegen": "0.0.26",
     "esprima": "1.0.4",
     "source-map": "0.1.30",
-    "browserify": "2.36.0",
+    "browserify": "3.38.0",
     "optparse": "1.0.5",
     "underscore": "~1.6.0",
-    "codemirror": "~3.20.0",
-    "d3": "~3.3.11"
+    "codemirror": "4.0.3",
+    "d3": "3.4.4",
+    "backbone": "~1.1.2"
   },
   "author": {
     "name": "Julius Cheng",

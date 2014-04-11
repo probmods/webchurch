@@ -2,3 +2,4 @@ online/webchurch.js
 online/webchurch-ww.js
 node_modules/*
 probabilistic
+*.DS_Store
