@@ -25,23 +25,25 @@ function make_church_error(name, start, end, msg) {
 	return {name: "Church" + name, message: start + "-" + end + ": " + msg, start: start, end: end};
 }
 
+// TODO: update this for new list format
 function format_result(obj) {
-	function format_result_in_list_helper(obj) {
-		if (obj[0] == null) {
-			return ")";
-		} else if (obj.length == 1) {
-			return " . " + format_result(obj[0]) + ")";
-		} else {
-			return " " + format_result(obj[0]) + format_result_in_list_helper(obj.slice(1));
-		}
-	}
-
 	if (Array.isArray(obj)) {
-		if (obj.length >= 2) {
-			return "(" + format_result(obj[0]) + format_result_in_list_helper(obj.slice(1));
-		} else {
-			return "()";
-		}
+    // if we're a list
+    if (obj[obj.length-1] == null) {
+      return "(" + obj.slice(0,-1).map(format_result).join(" ") + ")";
+    }
+    // if we're just a pair
+    else {
+      var formatted = obj.map(format_result);
+      var most = formatted.slice(0,-1);
+      var last = formatted[formatted.length - 1]
+
+      return "(" +
+        most.join(" ") +
+        " . " +
+        last +
+        ")";
+    }      
 	} else {
 		if (typeof(obj) == "boolean") {
 			if (obj) {
