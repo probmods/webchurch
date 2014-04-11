@@ -9,8 +9,6 @@ var arrayToList = typeUtils.arrayToList;
 
 var maxBins = 20;
 
-global.sideEffects = [] ;
-
 var erinSort = function(array) {
   var firstElem = array[0];
   if (typeof(firstElem) == "number") {
@@ -18,7 +16,7 @@ var erinSort = function(array) {
   }
   if (typeof(firstElem) == "string") {
     return array.sort();
-  }
+  } 
   if (Object.prototype.toString.call(firstElem) === '[object Array]') {
     return array;
   }
