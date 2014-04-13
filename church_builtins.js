@@ -1171,6 +1171,35 @@ var sample_discrete = $b({
   }
 })
 
+var multi_equals_condition = $b({
+  name: 'multi_equals_condition',
+  desc: '',
+  numArgs: [3],
+  params: [{name: "fn", type: "function", desc: ""},
+           {name: "n", type: "nat", desc: ""},
+           {name: "value", type: "list", desc: ""}],
+  fn: function (fn, n, values) {
+    if (values.length != n+1) condition(false);
+          var marg = enumerateDist(fn);
+
+    try {
+      var marg = enumerateDist(fn);
+    } catch (e) {
+      throw new Error("Function in a repeated condition must be enumerable to be computed");
+    }
+    for (var i=0;i<n;i++) {
+      var key = typeof(values[i]) == "string" ? '"'+values[i]+'"' : String(values[i]);
+      var entry = marg[key];
+      if (entry) {
+        factor(Math.log(entry.prob));
+      } else {
+        condition(false);
+        break;
+      }
+    }
+  }
+});
+
 var wrapped_uniform_draw = $b({
   name: 'wrapped_uniform_draw',
   desc: 'Uniformly sample an element from a list',
