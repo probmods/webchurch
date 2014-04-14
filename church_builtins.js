@@ -1452,6 +1452,8 @@ var read_file = $b({
   }
 });
 
+// CSV stuff follows RFC4180 (http://tools.ietf.org/html/rfc4180)
+// - in double quote-enclosed fields, double quotes are escaped with another double quote
 var read_csv = $b({
   name: 'read_csv',
   desc: '',
@@ -1466,6 +1468,27 @@ var read_csv = $b({
           .map(function(x) {x=x.split(sep);return arrayToList(x,true);});
 	  return arrayToList(data, true);
 
+  }
+});
+
+var write_csv = $b({
+  name: 'write_csv',
+  desc: '',
+  params: [{name: "data", type: "list<list>", desc: ""},
+           {name: "fileName", type: "string", desc: ""},
+           {name: "sep", type: "string", desc: ""}],
+  fn: function(data, fileName, sep) {
+    var stream = fs.createWriteStream(fileName);
+    console.log(data)
+    for (var i=0;i<data.length-1;i++) {
+      var cells = [];
+      for (var j=0;j<data[i].length-1;j++) {
+        var cell = data[i][j];
+        var modified = cell.toString().replace(/"/g, '""');
+        cells.push(cell == modified ? cell : '"' + modified + '"');
+      }
+      stream.write(cells.join(",") + "\n");
+    }
   }
 });
 
