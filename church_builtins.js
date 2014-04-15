@@ -1460,14 +1460,33 @@ var read_csv = $b({
   params: [{name: "fileName", type: "string", desc: ""},
            {name: "[sep]", type: "string", desc: ""}],
   fn: function(fileName, sep) {
-	  // TODO: rewrite as FSM instead of simple splits
-    // (or just use external library?)
 	  sep = sep || ",";
-	  var data = fs.readFileSync(fileName, "utf8")
-          .split("\n")
-          .map(function(x) {x=x.split(sep);return arrayToList(x,true);});
+    var text = fs.readFileSync(fileName, "utf8");
+    var data = [];
+    var row = [];
+    var begin = 0;
+    var cell;
+    for (var i=0;i<text.length;i++) {
+      begin = i+1;
+      if (text[i] == '"') {
+        for (i++; !(text[i] == '"' && text[i+1] != '"') && i < text.length; i++) {}
+        cell = text.slice(begin, i).replace(/""/g, '"');
+        i++;
+        if ([",", "\n"].indexOf(text[i]) == -1) throw new Error("Malformed CSV file");
+      } else {
+        begin = i;
+        for (; text[i] != "," && text[i] != "\n" && i < text.length; i++) {
+          if (text[i] == '"') throw new Error("Malformed CSV file");
+        }
+        cell = text.slice(begin, i);
+      }
+      row.push(cell);
+      if (text[i] == "\n" || i >= text.length) {
+        data.push(arrayToList(row, true));
+        row = [];
+      }
+    }
 	  return arrayToList(data, true);
-
   }
 });
 
@@ -1476,8 +1495,9 @@ var write_csv = $b({
   desc: '',
   params: [{name: "data", type: "list<list>", desc: ""},
            {name: "fileName", type: "string", desc: ""},
-           {name: "sep", type: "string", desc: ""}],
+           {name: "[sep]", type: "string", desc: ""}],
   fn: function(data, fileName, sep) {
+    sep = sep || ",";
     var stream = fs.createWriteStream(fileName);
     console.log(data)
     for (var i=0;i<data.length-1;i++) {
