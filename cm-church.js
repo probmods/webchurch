@@ -1,6 +1,9 @@
 /**
  * Author: Koh Zi Han, based on implementation by Koh Zi Chun
  */
+
+var CodeMirror = require('codemirror');
+
 CodeMirror.defineMode("scheme", function () {
     var BUILTIN = "builtin", COMMENT = "comment", STRING = "string",
         ATOM = "atom", NUMBER = "number", BRACKET = "bracket";

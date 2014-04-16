@@ -1,3 +1,5 @@
+var CodeMirror = require('codemirror');
+
 /* global CodeMirror */
 
 (function() {

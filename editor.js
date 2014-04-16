@@ -4,11 +4,13 @@ var evaluate = require('./evaluate').evaluate,
     format_result = require('./evaluate').format_result;
 
 var d3 = require('d3');
-require("codemirror"); // this doesn't export anything but instead sets window.CodeMirror
+var CodeMirror = require("codemirror"); // this doesn't export anything but instead sets window.CodeMirror
 require("./cm-church");
 require("./cm-brackets");
 require("./cm-comments");
 require("./viz");
+
+var Backbone = require('backbone');
 
 var folding = require("./cm-folding");
 
@@ -27,7 +29,7 @@ _.templateSettings = {
 
 var runners = {};
 runners['webchurch'] = makewebchurchrunner();
-runners['webchurch-opt'] = makewebchurchrunner(true);
+runners['webchurch-opt'] = makewebchurchrunner({precompile: true});
 
 function wrap(tag, content) {
   return _.template("<{{tag}}>{{content}}</{{tag}}>",
@@ -36,16 +38,24 @@ function wrap(tag, content) {
                     });
 }
 
-function makewebchurchrunner(evalparams){
-  return function(editor) {
-    var code = editor.getValue(),
-        exerciseName = editor.exerciseName,
-        $results = editor.$results;
+function makewebchurchrunner(engineOptions){
+  if (engineOptions === undefined) {
+    engineOptions = {}
+  }
+  return function(editorModel) {
+    var cm = editorModel.get('cm');
+    var code = editorModel.get('code');
+    
+    var $results = cm.$results;
 
     $results.show();
-    if (editor.errormark != undefined){editor.errormark.clear(); }
+    if (cm.errormark != undefined) {
+      cm.errormark.clear();
+    }
+
+    editorModel.trigger('run:start');
     try {      
-      var runResult = evaluate(code,evalparams);
+      var runResult = evaluate(code, engineOptions);
       
       var underlyingData;
 
@@ -56,11 +66,6 @@ function makewebchurchrunner(evalparams){
         }
         if (e.type == "svg") {
           $results.append( $("<div></div>").append(e.data));
-          // try {
-          //   d3.select($results[0]).append(e.data);
-          // } catch (err) {
-          //   debugger;
-          // }
         }
         if (e.type == "table") {
 
@@ -73,15 +78,19 @@ function makewebchurchrunner(evalparams){
           
         }
         
-      }); 
+      });
       
-      //        runResult = format_result(runResult);
-      // if we get back a string, just show the text
       underlyingData = runResult;
       runResult = format_result(runResult);
-      $results.append($("<pre>"+runResult+'</pre>'));
+      if (!(runResult == "undefined")) {
+        $results.append($("<pre>"+runResult+'</pre>'));
+      }
+
+      editorModel.trigger('run:finish');
       
     } catch (e) {
+
+      editorModel.trigger('run:finish');
       
       var error = e.message;
       $results
@@ -97,15 +106,13 @@ function makewebchurchrunner(evalparams){
         
         $results.append( '<div><u>Church stack array:</u></div>', churchStack); 
         
-        //        var errorlocation = e.stackarray[0]
-        //        var start=errorlocation.start.split(":"), end=errorlocation.end.split(":")
         var start=e.start.split(":"), end=e.end.split(":");
-        editor.errormark = editor.markText({line: Number(start[0])-1, ch: Number(start[1])-1},
-                                           {line: Number(end[0])-1, ch: Number(end[1])},
-                                           {className: "CodeMirrorError", clearOnEnter: true});
-        //        mark.clear()
-      }
+        cm.errormark = cm.markText({line: Number(start[0])-1, ch: Number(start[1])-1},
+                                   {line: Number(end[0])-1, ch: Number(end[1])},
+                                   {className: "CodeMirrorError", clearOnEnter: true});
 
+      }
+      
       var jsStack = $("<pre></pre>");
       jsStack.text(e.jsStack.join('\n'));
 
@@ -116,20 +123,35 @@ function makewebchurchrunner(evalparams){
   };
 };
 
+var EditorModel = Backbone.Model.extend({
+  initialize: function(options) {
+    this.set('initialOptions', options);
+  },
+  defaults: {
+    code: "",
+    engine: "webchurch"
+  },
+  run: function() {
+    var engine = runners[this.get('engine')];
+    this.set('result', engine( this ));
+  }
+});
+
+// return a backbone model
 var inject = function(domEl, options) {
   options = _(options).defaults({
-    defaultText: "",
-    exerciseName: "",
-    defaultEngine: "webchurch"
-  }); 
+    code: $(domEl).text(),
+    engine: "webchurch",
+    exerciseName: "" 
+  });
   
   // editor
-  var editor = CodeMirror(
+  var cm = CodeMirror(
     function(el) {
-      $(domEl).replaceWith(el);
+      // $(domEl).replaceWith(el); 
     },
     {
-      value: options.defaultText,
+      value: options.code,
       lineNumbers: false,
       matchBrackets: true,
       continueComments: "Enter",
@@ -138,20 +160,24 @@ var inject = function(domEl, options) {
       mode: 'scheme'
     });
 
-  _(editor).extend(options);
-  editor.engine = editor.defaultEngine;
+  var editorModel = new EditorModel(_.extend({ cm: cm }, options));
+
+  // when text in codemirror changes, update editormodel
+  cm.on('change', function(cmInstance) {
+    editorModel.set('code', cmInstance.getValue()) 
+  });
   
   //fold ";;;fold:" parts:
-  var lastLine = editor.lastLine();
+  var lastLine = cm.lastLine();
   for(var i=0;i<=lastLine;i++) {
-    var txt = editor.getLine(i),
+    var txt = cm.getLine(i),
         pos = txt.indexOf(";;;fold:");
-    if (pos==0) {editor.foldCode(CodeMirror.Pos(i,pos),folding.tripleCommentRangeFinder);}
+    if (pos==0) {cm.foldCode(CodeMirror.Pos(i,pos),folding.tripleCommentRangeFinder);}
   }
   
   // results div
   var $results = $("<div class='results'>");
-  $results.css('display', 'none');
+  $results.hide();
 
   // engine selector
 
@@ -161,82 +187,76 @@ var inject = function(domEl, options) {
           var tmpl = _.template('<option value="{{ engine }}" {{ selectedString }}> {{ engine }} </option>'),
               str = tmpl({
                 engine: engine,
-                selectedString: engine == editor.engine ? "selected" : ""
+                selectedString: engine == cm.engine ? "selected" : ""
               });
 
           return str; 
         } 
       ).join("\n") + "\n</select>",
       $engineSelector = $(engineSelectorString);
-  
+
+  // when engine selector changes, update model
   $engineSelector.change(function(e) {
-    editor.engine = $(this).val();
+    editorModel.set('engine', $(this).val() );
   });
 
   // reset button
   var $resetButton = $("<button class='reset'>").html("Reset");
   $resetButton.click(function() {
-    editor.setValue(options.defaultText);
-    editor.$engineSelector.val(options.defaultEngine);
-    
-    $results.hide().html('');
-
+    cm.setValue( editorModel.get('initialOptions').code );
+    cm.$engineSelector.val( editorModel.get('initialOptions').engine ); 
+    $results.hide.html(''); 
   });
 
   // run button
   var $runButton = $("<button class='run'>").html("Run");
   $runButton.click(function() {
-    if (options.onRunStart) {
-      options.onRunStart(editor);
-    }
-    
-    sideEffects = [];
     $results.html('');
     $runButton.attr('disabled','disabled');
 
-    var newCode = editor.getValue(),
-        newEngine = editor.engine;
+    setTimeout(function() {
+      editorModel.run();
+    }, 15); 
 
-    // submit church code to accounts server if the
-    // code has actually changed or we're running
-    // with a different engine
-    if (editor.oldCode != newCode || editor.oldEngine != newEngine) {
-      // unset editor.codeId
-      editor.codeId = false; 
-    }
-    
-    editor.oldCode = newCode;
-    editor.oldEngine = newEngine;
-
-    // use runner on this editor
-    // use setTimeout so the run-button disabling actually
-    // shows up on the DOM
-    setTimeout(function() { runners[editor.engine](editor);
-                            if (editor.engine == "webchurch" || editor.engine == "webchurch-opt") {
-                              $runButton.removeAttr('disabled');
-                            }
-                          }, 15);
+    editorModel.on('run:finish', function() {
+      $runButton.removeAttr('disabled');
+    }) 
   });
 
   var $codeControls = $("<div class='code-controls'>");
   // HT http://somerandomdude.com/work/open-iconic/#
 
   $codeControls.append(
-    $runButton,
-    $engineSelector[0],
-    $resetButton[0]
+    // $resetButton[0],
+    // $engineSelector[0],
+    $runButton
+  );
+
+  var $cogMenu = $("<ul class='code-settings'></ul>");
+  $cogMenu.append(
+    "<li class='settings-icon'>&#x2630;</li>",
+    $("<li></li>").append($engineSelector[0]),
+    $("<li></li>").append($resetButton[0])
+  );
+
+  $(cm.display.wrapper).prepend(
+    $cogMenu 
   );
 
   // add code controls and results divs after codemirror
-  $(editor.display.wrapper).after($codeControls, $results);
+  $(cm.display.wrapper).prepend($codeControls);
 
-
-  $(editor.display.wrapper).attr("id", "ex-"+ options.exerciseName);
+  $(cm.display.wrapper).after($results);
   
-  editor.$runButton = $runButton;
-  editor.$engineSelector = $engineSelector;
-  editor.$resetButton = $resetButton;
-  editor.$results = $results;
+  $(cm.display.wrapper).attr("id", "ex-" + options.exerciseName);
+  
+  cm.$runButton = $runButton;
+  cm.$engineSelector = $engineSelector;
+  cm.$resetButton = $resetButton;
+  cm.$results = $results;
+
+  editorModel.set('codeMirror', cm);
+  return editorModel
   
 };
 

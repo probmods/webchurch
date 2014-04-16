@@ -15,17 +15,17 @@
       }
 
       button {
-        font-size: 14px
+      /*font-size: 14px*/
       }
       button.reset {
         float: right
       }
       button.run {
-        padding-top: 5px;
-        padding-bottom: 5px;
+      /*padding-top: 5px;
+        padding-bottom: 5px;*/
       }
       select {
-        font-size: 20px;
+      /*font-size: 20px;*/
       }
       ul {
         font-size: 12px
@@ -42,6 +42,43 @@
       p.error {
         font-size: 120%;
       }
+      
+      .code-controls {
+      position: absolute;
+      bottom: 0; 
+      right: 0;
+      opacity: 0;
+      z-index: 1000
+      }
+      
+      .code-settings {
+      z-index: 999;
+      position: absolute;
+      top: 0;
+      right: 0;
+      font-size: 16px;
+      list-style-type: none;
+      margin: 2px
+      }
+     
+      .code-settings li {
+      display: none;
+      }
+
+      .code-settings .settings-icon {
+      display: inline;
+      opacity: 0.3; 
+      }
+
+      .code-settings:hover li {
+      opacity: 1.0;
+      display: inline
+      }
+
+      .CodeMirror:hover .code-controls, .CodeMirror-focused .code-controls {
+      opacity: 1
+      }
+      
     </style>
     
   </head>
@@ -69,17 +106,18 @@
   </body>
   <script>
     var savedCode = store.get('code');
-    var defaultText = savedCode || $("#codebox > code").text();
+    var code = savedCode || $("#codebox > code").text();
 
-    require('./editor').injector($("#codebox")[0],
+    var editor = require('./editor').injector($("#codebox")[0],
     {
-    defaultText: defaultText,
-    defaultEngine: "webchurch",
-    onRunStart: function(editor) {
-    store.set('code', editor.getValue());
-    }
+    code: code,
+    engine: "webchurch",
     }
     );
+
+    editor.on('run.start', function() {
+    store.set('code', this.get('code'));
+    })
 
   </script>
 </html>

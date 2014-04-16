@@ -70,7 +70,7 @@ function churchToBareJs(churchCode) {
 var churchToJs = function(churchCode, options) {
   if (options === undefined) { options = {} }
   options = _(options).defaults({
-    compact: true,
+    compact: false,
     precompile: false,
     includePreamble: true,
     returnCodeOnly: true
@@ -114,7 +114,7 @@ var churchToJs = function(churchCode, options) {
   var body = js_ast.body;
 
   // add sideEffects initialization
-  body.unshift(esprima.parse('var sideEffects = []'));
+  // body.unshift(esprima.parse('var sideEffects = []'));
   
   // convert the last statement into a return statement
   if (body.length > 0) {
@@ -178,27 +178,27 @@ function evaluate(church_codestring, options) {
   var code_and_source_map = compileResult.code_and_source_map;
   var jsCode = code_and_source_map.code;
   var sourceMap = code_and_source_map.map;
-  
+
+  // initialize sideEffects
+  // this global variable is modified in viz.js
+  // and accessed in editor.js (makewebchurchrunner) 
+  sideEffects = [];
+ 
   if (options.compile) return jsCode;
 
-  var result;
+  var result; 
 
-  if (typeof global.require == 'undefined') {
-    global.require = require;
-  }
-  
   var t1 = new Date().getTime();
   if (options.timed) console.log("Time to compile: " + (t1-t0) + "ms");
 
 	try {
     // var d1 = new Date()
     
-    // use global eval for speed but avoid introducing global variables
-    // that stick around after model execution, so wrap
-    // the transformed code inside a function call
-    // that returns the value of the last line 
+    // use local eval for speed but avoid introducing global variables
+    // that stick around after model execution because the transformed code
+    // is wrapped inside a function 
 
-    result = (0,eval)(jsCode);
+    result = eval(jsCode);
     var t2 = new Date().getTime();
     if (options.timed) console.log("Time to execute: " + (t2-t1) + "ms");
     // var d2 = new Date()
@@ -210,6 +210,8 @@ function evaluate(church_codestring, options) {
 		var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
 		var stack = err.stack.split("\n");
 		var msg = stack[0].split(":");
+
+    console.log(err.stack);
     
 		var js_sites = get_sites_from_stack(stack.slice(1));
 		var church_sites = [];
