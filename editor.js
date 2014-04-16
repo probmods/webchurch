@@ -4,7 +4,7 @@ var evaluate = require('./evaluate').evaluate,
     format_result = require('./evaluate').format_result;
 
 var d3 = require('d3');
-var CodeMirror = require("codemirror"); // this doesn't export anything but instead sets window.CodeMirror
+var CodeMirror = require("codemirror");
 require("./cm-church");
 require("./cm-brackets");
 require("./cm-comments");
@@ -43,7 +43,7 @@ function makewebchurchrunner(engineOptions){
     engineOptions = {}
   }
   return function(editorModel) {
-    var cm = editorModel.get('cm');
+    var cm = editorModel.get('codeMirror');
     var code = editorModel.get('code');
     
     var $results = cm.$results;
@@ -144,11 +144,14 @@ var inject = function(domEl, options) {
     engine: "webchurch",
     exerciseName: "" 
   });
+
+  var editorModel = new EditorModel(options);
   
   // editor
   var cm = CodeMirror(
+    // TODO: defer this - we might not want to display immediately...
     function(el) {
-      // $(domEl).replaceWith(el); 
+      $(domEl).replaceWith(el);
     },
     {
       value: options.code,
@@ -160,7 +163,7 @@ var inject = function(domEl, options) {
       mode: 'scheme'
     });
 
-  var editorModel = new EditorModel(_.extend({ cm: cm }, options));
+  editorModel.set('codeMirror', cm);
 
   // when text in codemirror changes, update editormodel
   cm.on('change', function(cmInstance) {
@@ -255,7 +258,6 @@ var inject = function(domEl, options) {
   cm.$resetButton = $resetButton;
   cm.$results = $results;
 
-  editorModel.set('codeMirror', cm);
   return editorModel
   
 };
