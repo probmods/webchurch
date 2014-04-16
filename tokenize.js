@@ -50,7 +50,10 @@ function tokenize(s) {
 					}
 				}
 			}
-			tokens.push({text: s.slice(begin, end), start: site_map[begin], end: site_map[end-1]});
+			var token = s.slice(begin, end);
+			if (token[0] == '"') 
+				token = '"' + token.substring(1, token.length-1).replace(/\\\"/g, '"') + '"'
+			tokens.push({text: token, start: site_map[begin], end: site_map[end-1]});
 			begin = end;
 		}
 	}

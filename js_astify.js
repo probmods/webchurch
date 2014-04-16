@@ -68,7 +68,7 @@ Object.keys(builtinAnnotations).forEach(function(name) {
       .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
       .replace(/is_(.+)/, function(m, p1) { return p1 + "?"})
       .replace('_to_', '->')
-      .replace('_', '-');
+      .replace(/_/g, '-');
     
     rename_map[alias] = name;
   }

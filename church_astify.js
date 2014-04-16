@@ -4,6 +4,9 @@ var rename_map = require('./js_astify.js').rename_map;
 
 var brackets_map = {"(": ")", "[": "]"};
 
+var query_fns = ["rejection-query", "mh-query", "enumeration-query"];
+var condition_fns = ["condition", "factor", "condition-repeat-equals"];
+
 function make_generic_node(head, children) {
 	return {"head": head, "children": children};
 }
@@ -338,8 +341,7 @@ function church_astify(tokens) {
 	function dsgr_query(ast) {
 		// Makes the lambda that's passed to the query function
 		function query_helper(statements, condition, args) {
-			if (util.is_leaf(condition) ||
-                (condition.children[0].text != "condition" && condition.children[0].text != "factor")) {
+			if (util.is_leaf(condition) || condition_fns.indexOf(condition.children[0].text) == -1) {
 				condition = {
 					children: [{text: "condition"}, condition],
 					start: condition.start,
@@ -410,7 +412,7 @@ function church_astify(tokens) {
 				transform_erp(left, right);
 				statements.splice(i, 1, left);
 				return true;
-			} else if (util.is_leaf(left) && define_table[left.text]) {
+			} else if (util.is_leaf(left) && define_table[left.text] && is_equals_conditionable(define_table[left.text].def)) {
 				var left_entry = define_table[left.text];
 				if (!util.is_identifier(right.text) || (
 						define_table[right.text] && left_entry.index > define_table[right.text].index)) {
@@ -432,7 +434,7 @@ function church_astify(tokens) {
 			for (var i = 0; i < statements.length; i++) {
 				if (!util.is_leaf(statements[i])) {
 					// If statement is a define and an ERP without an existing condition, put it in a table
-					if (statements[i].children[0].text == "define" && is_equals_conditionable(statements[i].children[2])) {
+					if (statements[i].children[0].text == "define") {
 						define_table[statements[i].children[1].text] = {
 							index: i,
 							def: statements[i].children[2]
@@ -454,8 +456,67 @@ function church_astify(tokens) {
 		return ast;
 	}
 
+	function transform_repeat_equals_condition(ast) {
+		function try_transform(left, right) {
+			if (!util.is_leaf(left) && left.children[0].text == "repeat") {
+				ast.children[1].children[i+2] = {
+					children: [
+						{"text": "multi-equals-condition"},
+						left.children[2],
+						left.children[1],
+						right],
+					start: ast.children[1].children[i+2].children[0].start,
+					end: ast.children[1].children[i+2].children[0].end
+				};
+				return true;
+			}
+			return false;
+		}
+
+		if (["rejection-query", "enumeration-query", "mh-query"].indexOf(ast.children[0].text) != -1) {
+			var statements = ast.children[1].children.slice(2);
+			for (var i = 0; i < statements.length; i++) {
+				if (!util.is_leaf(statements[i]) && statements[i].children[0].text == "condition") {
+					var condition = statements[i].children[1];
+					if (!util.is_leaf(condition) && condition.children[0].text == "equal?" && condition.children.length == 3) {
+						var left = condition.children[1];
+						var right = condition.children[2];
+						if (!try_transform(left, right)) try_transform(right, left);
+					}
+				}
+			}
+		}
+		return ast;
+	}
+
+	// Break out conditions with ands into multiple condition statements
+	function transform_and_condition(ast) {
+		if (["rejection-query", "enumeration-query", "mh-query"].indexOf(ast.children[0].text) != -1) {
+			var lambda = ast.children[1];
+			var stmts = lambda.children.splice(2);
+			for (var i = 0; i < stmts.length; i++) {
+				if (!util.is_leaf(stmts[i]) && stmts[i].children[0].text == "condition") {
+					var condition_stmt = stmts[i];
+					var condition = condition_stmt.children[1];
+					if (!util.is_leaf(condition) && condition.children[0].text == "and") {
+						for (var j=1;j<condition.children.length;j++) {
+							lambda.children.push({children: [condition_stmt.children[0], condition.children[j]]});
+						}
+					} else {
+						lambda.children.push(stmts[i]);
+					}
+				} else {
+					lambda.children.push(stmts[i]);
+				}
+			}
+		}
+		return ast;
+	}
+
 	// Order is important, particularly desugaring quotes before anything else.
-	var desugar_fns = [validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_eval, dsgr_query, validate_if, transform_equals_condition];
+	var desugar_fns = [
+		validate_leaves, dsgr_define, dsgr_lambda, dsgr_let, dsgr_case, dsgr_cond, dsgr_eval, dsgr_query, validate_if,
+		transform_and_condition, transform_equals_condition, transform_repeat_equals_condition];
 
 	var ast = astify(tokens);
 	// Special top-level check

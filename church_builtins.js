@@ -1171,6 +1171,35 @@ var sample_discrete = $b({
   }
 })
 
+var multi_equals_condition = $b({
+  name: 'multi_equals_condition',
+  desc: '',
+  numArgs: [3],
+  params: [{name: "fn", type: "function", desc: ""},
+           {name: "n", type: "nat", desc: ""},
+           {name: "value", type: "list", desc: ""}],
+  fn: function (fn, n, values) {
+    if (values.length != n+1) condition(false);
+          var marg = enumerateDist(fn);
+
+    try {
+      var marg = enumerateDist(fn);
+    } catch (e) {
+      throw new Error("Function in a repeated condition must be enumerable to be computed");
+    }
+    for (var i=0;i<n;i++) {
+      var key = typeof(values[i]) == "string" ? '"'+values[i]+'"' : String(values[i]);
+      var entry = marg[key];
+      if (entry) {
+        factor(Math.log(entry.prob));
+      } else {
+        condition(false);
+        break;
+      }
+    }
+  }
+});
+
 var wrapped_uniform_draw = $b({
   name: 'wrapped_uniform_draw',
   desc: 'Uniformly sample an element from a list',
@@ -1423,20 +1452,63 @@ var read_file = $b({
   }
 });
 
+// CSV stuff follows RFC4180 (http://tools.ietf.org/html/rfc4180)
+// - in double quote-enclosed fields, double quotes are escaped with another double quote
 var read_csv = $b({
   name: 'read_csv',
   desc: '',
   params: [{name: "fileName", type: "string", desc: ""},
            {name: "[sep]", type: "string", desc: ""}],
   fn: function(fileName, sep) {
-	  // TODO: rewrite as FSM instead of simple splits
-    // (or just use external library?)
 	  sep = sep || ",";
-	  var data = fs.readFileSync(fileName, "utf8")
-          .split("\n")
-          .map(function(x) {x=x.split(sep);return arrayToList(x,true);});
+    var text = fs.readFileSync(fileName, "utf8");
+    var data = [];
+    var row = [];
+    var begin = 0;
+    var cell;
+    for (var i=0;i<text.length;i++) {
+      begin = i+1;
+      if (text[i] == '"') {
+        for (i++; !(text[i] == '"' && text[i+1] != '"') && i < text.length; i++) {}
+        cell = text.slice(begin, i).replace(/""/g, '"');
+        i++;
+        if ([",", "\n"].indexOf(text[i]) == -1) throw new Error("Malformed CSV file");
+      } else {
+        begin = i;
+        for (; text[i] != "," && text[i] != "\n" && i < text.length; i++) {
+          if (text[i] == '"') throw new Error("Malformed CSV file");
+        }
+        cell = text.slice(begin, i);
+      }
+      row.push(cell);
+      if (text[i] == "\n" || i >= text.length) {
+        data.push(arrayToList(row, true));
+        row = [];
+      }
+    }
 	  return arrayToList(data, true);
+  }
+});
 
+var write_csv = $b({
+  name: 'write_csv',
+  desc: '',
+  params: [{name: "data", type: "list<list>", desc: ""},
+           {name: "fileName", type: "string", desc: ""},
+           {name: "[sep]", type: "string", desc: ""}],
+  fn: function(data, fileName, sep) {
+    sep = sep || ",";
+    var stream = fs.createWriteStream(fileName);
+    console.log(data)
+    for (var i=0;i<data.length-1;i++) {
+      var cells = [];
+      for (var j=0;j<data[i].length-1;j++) {
+        var cell = data[i][j];
+        var modified = cell.toString().replace(/"/g, '""');
+        cells.push(cell == modified ? cell : '"' + modified + '"');
+      }
+      stream.write(cells.join(",") + "\n");
+    }
   }
 });
 
