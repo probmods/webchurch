@@ -1395,6 +1395,26 @@ var DPmem = $b({
   }
 })
 
+var wrapped_conditional = $b({
+  name: 'wrapped_conditional',
+  desc: '',
+  params: [{name: 'comp', type: 'function', desc: ''},
+           {name: 'params', type: 'list',
+           desc: 'List where the first element is the sampling strategy, ' +
+           'one of ("enumeration", "rejection, "mh"), if "mh", second element is the lag'
+           }],
+  fn: function(comp, params) {
+    var options = {};
+    if (params[0] == "enumeration") {
+      options.algorithm = "enumerate";
+    } else if (params[0] == "mh") {
+      options.algorithm = "traceMH";
+      options.lag = params[1];
+    }
+    return conditional(comp, options);
+  }
+});
+
 // TODO: try to provide better error handling if
 // numsamps / lag is not provided. might have to fix this
 // inside js_astify

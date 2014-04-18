@@ -668,3 +668,24 @@ undefined
     (eval '(+ a b c))))
 (f 2)
 6
+
+(repeat 5 (conditional '(enumerate)
+  (define x (if (flip) 1 0))
+  (define y (if (flip) 1 0))
+  (+ x y)
+  (and (= x 1) (= y 0))))
+(1 1 1 1 1)
+
+(repeat 5 (conditional '(mh 5)
+  (define x (if (flip) 1 0))
+  (define y (if (flip) 1 0))
+  (+ x y)
+  (and (= x 1) (= y 0))))
+(1 1 1 1 1)
+
+(repeat 5 (conditional '(rejection)
+  (define x (if (flip) 1 0))
+  (define y (if (flip) 1 0))
+  (+ x y)
+  (and (= x 1) (= y 0))))
+(1 1 1 1 1)
