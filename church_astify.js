@@ -4,7 +4,13 @@ var rename_map = require('./js_astify.js').rename_map;
 
 var brackets_map = {"(": ")", "[": "]"};
 
-var query_fns = ["rejection-query", "mh-query", "enumeration-query"];
+var query_fns = ["rejection-query", "mh-query", "enumeration-query", "conditional"];
+var query_fns_to_num_params = {
+	"rejection-query": 0,
+	"enumeration-query": 0,
+	"conditional": 1,
+	"mh-query": 2
+}
 var condition_fns = ["condition", "factor", "condition-repeat-equals"];
 
 function make_generic_node(head, children) {
@@ -357,32 +363,21 @@ function church_astify(tokens) {
 			};
 		}
 		
-		if (["rejection-query", "enumeration-query"].indexOf(ast.children[0].text) != -1) {
-			if (ast.children.length < 3) {
+		if (query_fns.indexOf(ast.children[0].text) != -1) {
+			var num_params = query_fns_to_num_params[ast.children[0].text];
+			if (ast.children.length < num_params + 4) {
 				throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
 			}
 			return {
 				children: [
 					ast.children[0],
-					query_helper(ast.children.slice(1, -1), ast.children[ast.children.length-1])
-				],
+					query_helper(ast.children.slice(num_params+1, -1), ast.children[ast.children.length-1])
+				].concat(ast.children.slice(1, num_params+1)),
 				start: ast.start,
 				end: ast.end
 			};
 		}
-		if (["mh-query"].indexOf(ast.children[0].text) != -1) {
-			if (ast.children.length < 6) {
-				throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
-			}
-			return {
-				children: [
-					ast.children[0],
-					query_helper(ast.children.slice(3, -1), ast.children[ast.children.length-1])
-				].concat(ast.children.slice(1, 3)),
-				start: ast.start,
-				end: ast.end
-			};
-		}
+
 		return ast;
 	}
 
@@ -425,7 +420,7 @@ function church_astify(tokens) {
 		}
 
 		var transformed;
-		if (["rejection-query", "enumeration-query", "mh-query"].indexOf(ast.children[0].text) != -1) {			
+		if (query_fns.indexOf(ast.children[0].text) != -1) {			
 			var define_table = {};
 			// Assumes preprocessing through dsgr_query
 			var statements = ast.children[1].children.slice(2);
@@ -473,7 +468,7 @@ function church_astify(tokens) {
 			return false;
 		}
 
-		if (["rejection-query", "enumeration-query", "mh-query"].indexOf(ast.children[0].text) != -1) {
+		if (query_fns.indexOf(ast.children[0].text) != -1) {
 			var statements = ast.children[1].children.slice(2);
 			for (var i = 0; i < statements.length; i++) {
 				if (!util.is_leaf(statements[i]) && statements[i].children[0].text == "condition") {
