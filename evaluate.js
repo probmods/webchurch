@@ -190,6 +190,7 @@ function evaluate(church_codestring, options) {
 
   var t1 = new Date().getTime();
   if (options.timed) console.log("Time to compile: " + (t1-t0) + "ms");
+  var argstring = options.argstring;
 
 	try {
     // var d1 = new Date()
