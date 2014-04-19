@@ -165,6 +165,13 @@ var churchToJs = function(churchCode, options) {
 }
 
 function evaluate(church_codestring, options) {
+  function really_evaluate() {
+    var result = eval(jsCode);
+    var t2 = new Date().getTime();
+    if (options.timed) console.log("Time to execute: " + (t2-t1) + "ms");
+    return result;
+  }
+
   var t0 = new Date().getTime();
   options = options || {};
   
@@ -191,6 +198,7 @@ function evaluate(church_codestring, options) {
   var t1 = new Date().getTime();
   if (options.timed) console.log("Time to compile: " + (t1-t0) + "ms");
   var argstring = options.argstring;
+  if (options.disable_church_errors) return really_evaluate();
 
 	try {
     // var d1 = new Date()
@@ -198,10 +206,7 @@ function evaluate(church_codestring, options) {
     // use local eval for speed but avoid introducing global variables
     // that stick around after model execution because the transformed code
     // is wrapped inside a function 
-
-    result = eval(jsCode);
-    var t2 = new Date().getTime();
-    if (options.timed) console.log("Time to execute: " + (t2-t1) + "ms");
+    result = really_evaluate();
     // var d2 = new Date()
     // console.log("transformed source run time: ", (d2.getTime() - d1.getTime()) / 1000)    
 	} catch (err) {

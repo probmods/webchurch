@@ -20,7 +20,8 @@ var switches = [
     ['-a', '--program-args [MESSAGE]', 'Arguments to pass to program'],
     ['-t', '--timed', 'Print out timing information'],
     ['-d', '--desugar-only', 'Apply Church desugaring without execution'],
-    ['-c', '--compile-only', 'Compile to Javascript without execution']
+    ['-c', '--compile-only', 'Compile to Javascript without execution'],
+    ['-e', '--disable-church-errors', 'Disable special Church error checking and see Javascript errors']
 ];
 
 var parser = new optparse.OptionParser(switches);
@@ -44,6 +45,10 @@ parser.on("desugar-only", function() {
 
 parser.on("compile-only", function() {
 	opts.compile = true;
+});
+
+parser.on("disable-church-errors", function() {
+	opts.disable_church_errors = true;
 });
 
 parser.parse(process.argv);
