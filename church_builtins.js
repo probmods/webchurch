@@ -1481,30 +1481,39 @@ var read_csv = $b({
            {name: "[sep]", type: "string", desc: ""}],
   fn: function(fileName, sep) {
 	  sep = sep || ",";
+    if (sep.indexOf('"') != -1) throw new Error("CSV separator cannot contain a double quote");
     var text = fs.readFileSync(fileName, "utf8");
     var data = [];
     var row = [];
     var begin = 0;
+    var i = 0;
+    var j = 0;
     var cell;
-    for (var i=0;i<text.length;i++) {
-      begin = i+1;
+    while (i<text.length) {
       if (text[i] == '"') {
-        for (i++; !(text[i] == '"' && text[i+1] != '"') && i < text.length; i++) {}
-        cell = text.slice(begin, i).replace(/""/g, '"');
-        i++;
-        if ([",", "\n"].indexOf(text[i]) == -1) throw new Error("Malformed CSV file");
-      } else {
-        begin = i;
-        for (; text[i] != "," && text[i] != "\n" && i < text.length; i++) {
-          if (text[i] == '"') throw new Error("Malformed CSV file");
+        for (j=i+1; !(text[j] == '"' && text[j+1] != '"'); j++) {
+          if (j >= text.length) throw new Error("Malformed CSV file");
         }
-        cell = text.slice(begin, i);
+        j++;
+        cell = text.slice(i+1, j-1).replace(/""/g, '"');
+      } else {
+        for (; j < text.length && text.slice(j, j + sep.length) != sep && text[j] != "\n"; j++) {
+          if (text[j] == '"') throw new Error("Malformed CSV file");
+        }
+        cell = text.slice(i, j);
       }
       row.push(cell);
-      if (text[i] == "\n" || i >= text.length) {
+      if (j >= text.length || text[j] == "\n") {
         data.push(arrayToList(row, true));
         row = [];
+        j++;
+      } else if (text.slice(j, j + sep.length) == sep) {
+        j += sep.length;
+      } else {
+        // Only reached if cell was quoted but not properly closed
+        throw new Error("Malformed CSV file");
       }
+      i = j;
     }
 	  return arrayToList(data, true);
   }
@@ -1519,7 +1528,6 @@ var write_csv = $b({
   fn: function(data, fileName, sep) {
     sep = sep || ",";
     var stream = fs.createWriteStream(fileName);
-    console.log(data)
     for (var i=0;i<data.length-1;i++) {
       var cells = [];
       for (var j=0;j<data[i].length-1;j++) {
@@ -1527,7 +1535,7 @@ var write_csv = $b({
         var modified = cell.toString().replace(/"/g, '""');
         cells.push(cell == modified ? cell : '"' + modified + '"');
       }
-      stream.write(cells.join(",") + "\n");
+      stream.write(cells.join(sep) + "\n");
     }
   }
 });
