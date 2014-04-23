@@ -173,7 +173,7 @@ var minus = $b({
     if (numArgs == 0) {
       return 0;
     } else if (numArgs == 1) {
-      return arguments[0];
+      return -arguments[0];
     } else {
       var r = arguments[0];
       for (var i = 1; i < numArgs; i++) {
