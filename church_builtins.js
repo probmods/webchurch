@@ -215,7 +215,7 @@ var div = $b({
     }
 
     if (numArgs == 1) {
-      return arguments[0];
+      return 1 / arguments[0];
     }
     var denominator = 1;
 
