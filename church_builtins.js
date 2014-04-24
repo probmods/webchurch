@@ -1204,10 +1204,11 @@ var wrapped_uniform_draw = $b({
   name: 'wrapped_uniform_draw',
   desc: 'Uniformly sample an element from a list',
   numArgs: [1,2],
-  params: [{name: "items", type: "list", desc: ""}],
+  params: [{name: "items", type: "list", desc: ""},
+           {name: "[conditionedValue]", type: "", desc: "", noexport: true}],
   erp: true,
-  fn: function(items, isStructural, conditionedValue) {
-    return uniformDraw(listToArray(items), isStructural, conditionedValue);
+  fn: function(items, conditionedValue) {
+    return uniformDraw(listToArray(items), conditionedValue);
   }
 });
 
