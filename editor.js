@@ -45,7 +45,7 @@ function makewebchurchrunner(engineOptions){
   return function(editorModel) {
     var cm = editorModel.get('codeMirror');
     var code = editorModel.get('code');
-    
+
     var $results = cm.$results;
 
     $results.show();
@@ -54,9 +54,9 @@ function makewebchurchrunner(engineOptions){
     }
 
     editorModel.trigger('run:start');
-    try {      
+    try {
       var runResult = evaluate(code, engineOptions);
-      
+
       var underlyingData;
 
       // render all side effects
@@ -68,18 +68,17 @@ function makewebchurchrunner(engineOptions){
           $results.append( $("<div></div>").append(e.data));
         }
         if (e.type == "table") {
-
           var tableString = wrap("table", e.data.map(function(row) {
             var cols = row.map(function(x) { return wrap('td', x); }).join("");
-            return wrap("tr", cols); 
+            return wrap("tr", cols);
           }).join("\n"));
-
           $results.append( $(tableString) );
-          
         }
-        
+        if (e.type == "function") {
+          e.data($results);
+        }
       });
-      
+
       underlyingData = runResult;
       runResult = format_result(runResult);
       if (!(runResult == "undefined")) {
@@ -87,39 +86,37 @@ function makewebchurchrunner(engineOptions){
       }
 
       editorModel.trigger('run:finish');
-      
+
     } catch (e) {
 
       editorModel.trigger('run:finish');
-      
+
       var error = e.message;
       $results
         .append( $("<p></p>")
                  .addClass('error')
                  .text(error) );
-      
+
       if (e.stackarray != undefined) {
         var churchStack = $("<pre></pre>");
         churchStack.text(e.stackarray
                          .map(function(x) { return _.template("{{text}}: {{start}}-{{end}}", x) })
                          .join("\n"))
-        
-        $results.append( '<div><u>Church stack array:</u></div>', churchStack); 
-        
+
+        $results.append( '<div><u>Church stack array:</u></div>', churchStack);
+
         var start=e.start.split(":"), end=e.end.split(":");
         cm.errormark = cm.markText({line: Number(start[0])-1, ch: Number(start[1])-1},
                                    {line: Number(end[0])-1, ch: Number(end[1])},
                                    {className: "CodeMirrorError", clearOnEnter: true});
 
       }
-      
+
       var jsStack = $("<pre></pre>");
       jsStack.text(e.jsStack.join('\n'));
 
       $results.append('<div><u>JS stack:</u></div>', jsStack );
-
-
-    } 
+    }
   };
 };
 
@@ -142,11 +139,11 @@ var inject = function(domEl, options) {
   options = _(options).defaults({
     code: $(domEl).text(),
     engine: "webchurch",
-    exerciseName: "" 
+    exerciseName: ""
   });
 
   var editorModel = new EditorModel(options);
-  
+
   // editor
   var cm = CodeMirror(
     // TODO: defer this - we might not want to display immediately...
@@ -167,9 +164,9 @@ var inject = function(domEl, options) {
 
   // when text in codemirror changes, update editormodel
   cm.on('change', function(cmInstance) {
-    editorModel.set('code', cmInstance.getValue()) 
+    editorModel.set('code', cmInstance.getValue())
   });
-  
+
   //fold ";;;fold:" parts:
   var lastLine = cm.lastLine();
   for(var i=0;i<=lastLine;i++) {
@@ -177,7 +174,7 @@ var inject = function(domEl, options) {
         pos = txt.indexOf(";;;fold:");
     if (pos==0) {cm.foldCode(CodeMirror.Pos(i,pos),folding.tripleCommentRangeFinder);}
   }
-  
+
   // results div
   var $results = $("<div class='results'>");
   $results.hide();
@@ -193,8 +190,8 @@ var inject = function(domEl, options) {
                 selectedString: engine == cm.engine ? "selected" : ""
               });
 
-          return str; 
-        } 
+          return str;
+        }
       ).join("\n") + "\n</select>",
       $engineSelector = $(engineSelectorString);
 
@@ -207,8 +204,8 @@ var inject = function(domEl, options) {
   var $resetButton = $("<button class='reset'>").html("Reset");
   $resetButton.click(function() {
     cm.setValue( editorModel.get('initialOptions').code );
-    cm.$engineSelector.val( editorModel.get('initialOptions').engine ); 
-    $results.hide.html(''); 
+    cm.$engineSelector.val( editorModel.get('initialOptions').engine );
+    $results.hide.html('');
   });
 
   // run button
@@ -219,11 +216,11 @@ var inject = function(domEl, options) {
 
     setTimeout(function() {
       editorModel.run();
-    }, 15); 
+    }, 15);
 
     editorModel.on('run:finish', function() {
       $runButton.removeAttr('disabled');
-    }) 
+    })
   });
 
   var $codeControls = $("<div class='code-controls'>");
@@ -243,23 +240,23 @@ var inject = function(domEl, options) {
   );
 
   $(cm.display.wrapper).prepend(
-    $cogMenu 
+    $cogMenu
   );
 
   // add code controls and results divs after codemirror
   $(cm.display.wrapper).prepend($codeControls);
 
   $(cm.display.wrapper).after($results);
-  
+
   $(cm.display.wrapper).attr("id", "ex-" + options.exerciseName);
-  
+
   cm.$runButton = $runButton;
   cm.$engineSelector = $engineSelector;
   cm.$resetButton = $resetButton;
   cm.$results = $results;
 
   return editorModel
-  
+
 };
 
 module.exports = {
