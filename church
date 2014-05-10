@@ -4,8 +4,8 @@ var sys = require('sys');
 var optparse = require('optparse');
 
 function abort(msg) {
-	console.log(msg)
-	process.exit(0);
+    console.log(msg)
+    process.exit(0);
 }
 
 global["evaluate"] = require('./evaluate.js').evaluate
@@ -28,27 +28,27 @@ var parser = new optparse.OptionParser(switches);
 
 
 parser.on('precompile', function(x) {
-	opts.pc = true;
+    opts.pc = true;
 });
 
 parser.on("program-args", function(opt, value) {
-	opts.argstring = value;
+    opts.argstring = value;
 });
 
 parser.on("timed", function() {
-	opts.timed = true;
+    opts.timed = true;
 });
 
 parser.on("desugar-only", function() {
-	opts.desugar = true;
+    opts.desugar = true;
 });
 
 parser.on("compile-only", function() {
-	opts.compile = true;
+    opts.compile = true;
 });
 
 parser.on("disable-church-errors", function() {
-	opts.disable_church_errors = true;
+    opts.disable_church_errors = true;
 });
 
 parser.parse(process.argv);
@@ -56,9 +56,9 @@ parser.parse(process.argv);
 code = require('fs').readFileSync(srcfile, "utf8");
 
 try {
-	result = format_result(evaluate(code, opts));
-	console.log(result);
+    result = format_result(evaluate(code, opts));
+    console.log(result);
 } catch (e) {
-	console.log(e.message)
+    console.log(e.message)
     throw e
 }
