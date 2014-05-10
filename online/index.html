@@ -12,6 +12,8 @@
       body {
         font-family: Helvetica;
         font-size: 120%;
+        width: 60%;
+        margin: auto;
       }
 
       button {
@@ -32,25 +34,25 @@
       }
       li code {
         border: 1px solid #aaa;
-        border-radius: 2px;
+        border-radius: 3px;
         padding: 1px 3px 1px 3px;
         background-color: #dfdfdf
       }
       li {
-        padding-top: 10px
+        padding-top: 8px
       }
       p.error {
         font-size: 120%;
       }
-      
+
       .code-controls {
       position: absolute;
-      bottom: 0; 
+      bottom: 0;
       right: 0;
       opacity: 0;
       z-index: 1000
       }
-      
+
       .code-settings {
       z-index: 999;
       position: absolute;
@@ -60,14 +62,14 @@
       list-style-type: none;
       margin: 2px
       }
-     
+
       .code-settings li {
       display: none;
       }
 
       .code-settings .settings-icon {
       display: inline;
-      opacity: 0.3; 
+      opacity: 0.3;
       }
 
       .code-settings:hover li {
@@ -78,30 +80,67 @@
       .CodeMirror:hover .code-controls, .CodeMirror-focused .code-controls {
       opacity: 1
       }
-      
+
     </style>
-    
+
   </head>
   <body>
     <h1>WebChurch</h1>
 
     Keyboard shortcuts:
     <ul>
-      <li> <code>Cmd + .</code> or <code>Ctrl + .</code> - Fold selected section (slightly buggy right now)</li>
-      <li> <code>Cmd + ;</code> or <code>Ctrl + ;</code> - Comment selection section</li>
-    </ul>
-    
-    
-    <pre id="codebox"><code>(hist (list 'a 'a 'a 'b 'c 'c 'c 'c 'd 'd))
-(density (repeat 200 gaussian) 'gaussian true)
+      <li> <code>Cmd + .</code>&nbsp; or &nbsp;<code>Ctrl + .</code> - Fold selected section (slightly buggy right now)</li>
+      <li> <code>Cmd + ;</code>&nbsp; or &nbsp;<code>Ctrl + ;</code> - Comment selection section</li>
+    </ul></br>
 
-(lineplot (repeat 50 (lambda () (repeat 2 gaussian))))
 
-(barplot '((a b c)
-           (5 3 9)
-           ))
+    <pre id="codebox"><code>
+;; (define (dim) (uniform 5 20))
+;; (define (staticDim) (uniform 10 50))
+;; (define (shape) (if (flip) "circle" "rect"))
+;; (define (xpos) (uniform 100 (- worldWidth 100)))
+;; (define (ypos) (uniform 100 (- worldHeight 100)))
 
-(plus 5 3)</code></pre>
+;; ;; an object in the word is a list of two things:
+;; ;;  shape properties: a list of SHAPE ("rect" or "circle"), IS_STATIC (#t or #f),
+;; ;;                    and dimensions (either (list WIDTH HEIGHT) for a rect or
+;; ;;                    (list RADIUS) for a circle
+;; ;;  position: (list X Y)
+;; (define (makeFallingShape) (list (list (shape) #f (list (dim) (dim)))
+;;                                        (list (xpos) 0)))
+
+;; (define (makeStaticShape) (list (list (shape) #t (list (staticDim) (staticDim)))
+;;                                       (list (xpos) (ypos))))
+
+;; (define ground (list (list "rect" #t (list worldWidth 10))
+;;                                      (list (/ worldWidth 2) worldHeight)))
+;; (define fallingWorld (list ground
+;;                            (makeFallingShape) (makeFallingShape) (makeFallingShape)
+;;                            (makeStaticShape) (makeStaticShape)))
+
+;; (runPhysics 1000 fallingWorld)
+
+(define (dim) (uniform 5 20))
+(define (staticDim) (uniform 10 50))
+(define (pos) (uniform 100 300))
+
+(define (aDim) (p$dim2D (dim) (dim)))
+(define (aStaticDim) (p$dim2D (staticDim) (staticDim))) ; static obstacles are generally larger than falling objects
+(define (aPos) (p$pos2D (pos) 0))                       ; start falling body from top
+(define (aStaticPos) (p$pos2D (pos) (pos)))
+
+(define (aShape) (uniform-draw (p$shapeTypes)))
+
+(define (fallingEntity) (p$simpleEntity2D (aShape) (aDim) p$dynamicBody (aPos) (p$noVelocity)))
+(define (staticEntity) (p$simpleEntity2D (aShape) (aStaticDim) p$staticBody (aStaticPos) (p$noVelocity)))
+(define ground (p$simpleEntity2D p$rectangle (p$dim2D 350 10) p$staticBody (p$pos2D 180 500) (p$noVelocity)))
+(define my_world (list ground
+                       (fallingEntity) (fallingEntity) (fallingEntity)
+                       (staticEntity) (staticEntity)))
+
+(define simResults (runPhysics 1000 my_world))
+(map p$entity2D_position (filter (lambda (e) (equal? (p$entity2D_type e)p$dynamicBody)) simResults))
+</code></pre>
 
   </body>
   <script>

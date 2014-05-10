@@ -12,6 +12,7 @@ var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
 var precompile = require('./precompile.js').precompile;
 var wctransform = require('./wctransform');
 var util = require('./util.js');
+var phys = require('./physics2D.js');
 
 var _ = require('underscore');
 
