@@ -2,7 +2,8 @@
 
 Dependencies
 ============
-- nodejs (see `package.json` for npm dependencies)
+- [nodejs](http://nodejs.org/download/) (see `package.json` for npm dependencies)
+
 
 Installation
 ============
