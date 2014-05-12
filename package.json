@@ -22,7 +22,7 @@
 	"underscore": "~1.6.0",
 	"codemirror": "4.0.3",
 	"d3": "3.4.4",
-	"backbone": "~1.1.2"
+	"backbone": "~1.1.2",
 	"box2dweb":">=2.1.0-b"
     },
     "author": {
