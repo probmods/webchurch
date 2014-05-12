@@ -15,6 +15,21 @@ with git (preferred method)
 		npm install
 		./compile.sh
 
+
+To pull-in and work in a particular branch (say `box2d`):
+
+lists all branches, local and remote to see what `box2d` is called on remote
+
+	   git branch -a
+
+setup local branch box2d to track remote branch box2d
+
+	   git branch -b box2d remote/origin/box2d
+
+switch to branch box2d
+
+	   git checkout box2d
+
 without git
 ------------
 
