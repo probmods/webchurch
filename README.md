@@ -8,11 +8,11 @@ with git (preferred method)
 
 1. install node by choosing your installer from [this page](http://nodejs.org/download/)
 2. install git (if neccessary) by following the instructions [here](http://git-scm.com/downloads)
-2. `git clone https://github.com/probmods/webchurch.git`
-2. `git submodule update --init --recursive`
-5. `npm install`
-6. `./compile.sh`
-7. run in the terminal: `./church NAME_OF_YOUR_CHURCH_FILE`
+2. in the terminal, go to wherever you want your webchurch folder to live. then run:
+		git clone https://github.com/probmods/webchurch.git
+		git submodule update --init --recursive
+		npm install
+		./compile.sh
 
 without git
 ------------
@@ -23,9 +23,9 @@ without git
 2. click on the Download ZIP button on the right (or on [this link](https://github.com/probmods/webchurch/archive/master.zip))
 3. unarchive the zip file and go to that directory (called `webchurch-master`)
 4. click [this link](https://github.com/dritchie/probabilistic-js/archive/15641a6e5d1e4d070767333521cc98eb8ec752ce.zip) to get the version of probabilistic-js we're using. unarchive this file, rename it to `probabilistic-js`, and move it into the `webchurch-master` folder (replacing the version of `probabilistic-js` that's there by default)
-5. `npm install`
-6. `./compile.sh`
-7. run in the terminal: `./church NAME_OF_YOUR_CHURCH_FILE`
+5. in terminal, go to `webchurch-master` folder and run the following commands:
+		npm install
+		./compile.sh
 
 Dependencies
 ============
