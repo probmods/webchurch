@@ -115,6 +115,8 @@
     }
     );
 
+    editor.supplant( $("#codebox")[0] )
+
     editor.on('run.start', function() {
     store.set('code', this.get('code'));
     })
