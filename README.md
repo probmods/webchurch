@@ -5,7 +5,10 @@ Simple webchurch setup
 1. install node by choosing your installer from [this page](http://nodejs.org/download/)
 2. click on the Download ZIP button on the right (or on [this link](https://github.com/probmods/webchurch/archive/master.zip))
 3. unarchive the zip file and go to that directory (called `webchurch-master`)
-4. run in the terminal: `./church NAME_OF_YOUR_CHURCH_FILE`
+4. click [this link](https://github.com/dritchie/probabilistic-js/archive/15641a6e5d1e4d070767333521cc98eb8ec752ce.zip) to get the version of probabilistic-js we're using. unarchive this file, rename it to `probabilistic-js`, and move it into the `webchurch-master` folder (replacing the version of `probabilistic-js` that's there by default)
+5. `npm install`
+6. `./compile.sh`
+7. run in the terminal: `./church NAME_OF_YOUR_CHURCH_FILE`
 
 Dependencies
 ============
