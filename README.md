@@ -14,11 +14,10 @@ with git (preferred method)
 6. `./compile.sh`
 7. run in the terminal: `./church NAME_OF_YOUR_CHURCH_FILE`
 
-webchurch setup
-============
-
-without git (not good for getting updates, but useful if you can't/don't want to get git installed)
+without git
 ------------
+
+(not good for getting updates, but useful if you can't/don't want to get git installed)
 
 1. install node by choosing your installer from [this page](http://nodejs.org/download/)
 2. click on the Download ZIP button on the right (or on [this link](https://github.com/probmods/webchurch/archive/master.zip))
