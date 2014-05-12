@@ -2,7 +2,6 @@
 
 webchurch setup WITH git (preferred method)
 ============
-for those who do want to install git (or already have it installed)
 1. install node by choosing your installer from [this page](http://nodejs.org/download/)
 2. install git (if neccessary) by following the instructions [here](http://git-scm.com/downloads)
 2. `git clone https://github.com/probmods/webchurch.git`
