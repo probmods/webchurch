@@ -1,6 +1,17 @@
 [![Build Status](https://travis-ci.org/probmods/webchurch.png?branch=master)](https://travis-ci.org/probmods/webchurch)
 
-Simple webchurch setup
+webchurch setup WITH git (preferred method)
+============
+for those who do want to install git (or already have it installed)
+1. install node by choosing your installer from [this page](http://nodejs.org/download/)
+2. install git (if neccessary) by following the instructions [here](http://git-scm.com/downloads)
+2. `git clone https://github.com/probmods/webchurch.git`
+2. `git submodule update --init --recursive`
+5. `npm install`
+6. `./compile.sh`
+7. run in the terminal: `./church NAME_OF_YOUR_CHURCH_FILE`
+
+webchurch setup WITHOUT git (not good for getting updates, but useful if you can't/don't want to get git installed)
 ============
 1. install node by choosing your installer from [this page](http://nodejs.org/download/)
 2. click on the Download ZIP button on the right (or on [this link](https://github.com/probmods/webchurch/archive/master.zip))
