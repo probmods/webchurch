@@ -230,7 +230,7 @@ var mod = $b({
     alias: 'modulo',
     desc: "Modulo. Returns x mod y",
     params: [{name: 'x', type: 'real'},
-             {name: 'x', type: 'real'}],
+             {name: 'y', type: 'real'}],
     fn: function(x,y) {
         return x % y;
     }
