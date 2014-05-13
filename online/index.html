@@ -8,6 +8,8 @@
     <script src="store.js"></script>
     <script src="jquery.js"></script>
     <script src="webchurch.js"></script>
+    <script src="d3.min.js"></script>
+    <script src="vega.min.js"></script>
     <style>
       body {
         font-family: Helvetica;
@@ -92,16 +94,18 @@
     </ul>
     
     
-    <pre id="codebox"><code>(hist (list 'a 'a 'a 'b 'c 'c 'c 'c 'd 'd))
-(density (repeat 200 gaussian) 'gaussian true)
+    <pre id="codebox"><code>
 
-(lineplot (repeat 50 (lambda () (repeat 2 gaussian))))
+(define (reject func p) (lambda () (rejection-query '() (func) (flip p))))
 
-(barplot '((a b c)
-           (5 3 9)
-           ))
+(define (geom p) (if (flip p) 0 (+ 1 (geom p))))
 
-(plus 5 3)</code></pre>
+(livehist 100 (reject (lambda () (geom 0.5)) 0.001))
+
+(livedensity 500 (reject gaussian 0.001) "" true)
+
+(livescatter 200 (reject (lambda () (repeat 2 gaussian)) 0.001))
+</code>
 
   </body>
   <script>

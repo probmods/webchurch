@@ -1,504 +1,374 @@
 /* global $, require */
 
-var d3 = require("d3");
+// var d3 = require("d3");
+// d3 = require("d3");
+// var vega = require("./vega.js");
 var format_result = require("./util").format_result;
-var _ = require("underscore");
+var _ = require("underscore"); 
 var typeUtils = require("./type-utils");
 var listToArray = typeUtils.listToArray;
-var arrayToList = typeUtils.arrayToList;
+var arrayToList = typeUtils.arrayToList; 
 
 var maxBins = 20;
-
-var erinSort = function(array) {
-    var firstElem = array[0];
-    if (typeof(firstElem) == "number") {
-        return array.sort(function(a,b) {return b-a});
-    }
-    if (typeof(firstElem) == "string") {
-        return array.sort();
-    }
-    if (Object.prototype.toString.call(firstElem) === '[object Array]') {
-        return array;
-    }
-    return array;
-};
-
-var formatPercent = d3.format(".0%");
+var titleOffset = 24;
+var liveDelay = 50;
 
 // input: list of rows. each row is itself a list
 table = function(rows, title) {
     var arrayRows = listToArray(rows).map(function(cols) { return listToArray(cols) });
 
     sideEffects.push({type: 'table', data: arrayRows});
-
 }
 
-// listXY: a list containing (1) a list of x axis labels and (2) a list containing
-// y axis values
-barplot = function(listXY, title) {
-    var arrayXY = listToArray(listXY, true),
-        xs = arrayXY[0].map(function(x) { return format_result(x) }),
-        ys = arrayXY[1],
-        maxY = Math.max.apply(this, ys),
-        n = xs.length,
-        counts = [],
-        continuous = false;
+var horz_rect_marks = {
+    type: "rect",
+    from: {data:"table"},
+    properties: {
+        enter: {
+            x: {scale:"x", field:"data.value"},
+            x2: {scale:"x", value:0},
+            y: {scale:"y", field:"data.item"},
+            height: {scale:"y", band:true}
+        },
+        update: {fill: {value: "steelblue"} },
+    }
+}
 
-    for(var i = 0; i < n; i++) {
-        counts.push({
-            value: xs[i],
-            freq:  ys[i]
+var make_spec = function(padding, width, height, data, scales, axes, marks, title) {
+    var spec = {padding: padding, width: width, height: height, data: data, scales: scales, axes: axes, marks: marks};
+    if (title) {
+        spec.marks.push({
+            type: "text",
+            properties: {
+                enter: {
+                    x: {value: spec.width * 0.5},
+                    y: {value: -titleOffset*0.5},
+                    fontSize: {value: 24},
+                    text: {value: title},
+                    align: {value: "center"},
+                    baseline: {value: "bottom"},
+                    fill: {value: "#000"}
+                }
+            }
         });
     }
+    return spec;
+}
 
-    //TODO: make left margin vary depending on how long the names of the elements in the list are
-    var margin = {top: 40, right: 20, bottom: 60, left: 60},
-        width = 0.85 * 600 - margin.left - margin.right,
-        height = 100 + (20 * counts.length) - margin.top - margin.bottom;
+var live_render = function(n, func, spec_maker, title) {
+    var el = create_and_append_result();
+    var i = 0;
+    var samps = [];
+    var time;
 
-    var x = d3.scale.linear()
-        .domain([0, maxY])
-        .range([0, width]);
+    var render = function() {
+        var tmp_title = (i == n) ? title : (title || "") + "("+i+"/"+n+")";
+        render_vega(spec_maker(samps, tmp_title), el);
+    }
 
-    var y = d3.scale.ordinal()
-        .domain(xs)
-        .rangeRoundBands([height, 0], .1);
+    var execute = function() {
+        var iterate = function() {
+            i++;
+            try {
+                samps.push(func());
+            } catch (e) {
+                kill();
+            }
+        }
+        time = Date.now();
+        while (Date.now() - time < liveDelay && i < n) {
+            iterate();
+        }
+        if (i >= n) kill();
+    }
 
-    var yAxis = d3.svg.axis()
-	.scale(y)
-	.orient("left");
+    var kill = function() {
+        clearInterval(render_pid);
+        clearInterval(execute_pid);
+        render();
+    }
+    render();
+    var render_pid = setInterval(render, liveDelay);
+    var execute_pid = setInterval(execute, liveDelay);  
+}
 
-    var svgContainer = document.createElementNS(d3.ns.prefix.svg,'svg');
+var render_vega = function(spec, element) {
+    vg.parse.spec(spec, function(chart) {chart({el:element, renderer:"svg"}).update();});
+}
 
-    var svg = d3
-        .select(svgContainer)
-        .attr("class", "chart")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height+ margin.top + margin.bottom)
-        .style('margin-left', '0')
-        .style('margin-top', '10px')
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+var create_and_append_result = function() {
+    var el = document.createElement("div");
+    $results.append(el);
+    return el;
+}
 
-    drawHist(svg, counts, xs, width, height, x, y, false);
-
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom");
-    // .tickFormat(formatPercent);
-
-    drawAxes(svg, xAxis, yAxis, height, 0, width, "hist");
-    drawTitle(svg, title, width, margin);
-
-    sideEffects.push({type: 'svg', data: svgContainer });
-
+function Counter(arr) {
+    this.counter = {};
+    this.total = 0;
+    this.type = "number";
+    this.min = Number.MAX_VALUE;
+    this.max = Number.MIN_VALUE;
+    if (arr) this.update_many(arr);
 };
+
+Counter.prototype.update = function(item) {
+    if (typeof item == "number") {
+        this.min = Math.min(this.min, item);
+        this.max = Math.max(this.max, item);
+    } else {
+        this.type = "string";
+    }
+    var key = format_result(item);
+    this.counter[key] = (this.counter[key] || 0) + 1;
+    this.total++;
+}
+
+Counter.prototype.update_many = function(arr) {
+    for (var i = 0; i < arr.length; i++) {this.update(arr[i]);}
+}
+
+Counter.prototype.sorted_keys = function() {
+    if (this.type == "number") {
+        return Object.keys(this.counter).sort(function(a,b) {return b-a});
+    } else {
+        return Object.keys(this.counter).sort();
+    }
+}
+
+Counter.prototype.keys = function() {
+    if (this.type == "number") {
+        return Object.keys(this.counter).map(Number);
+    } else {
+        return Object.keys(this.counter);
+    }
+}
+
+Counter.prototype.count = function(item) {
+    return this.counter[item];
+}
+
+Counter.prototype.bin = function() {
+    var sorted_keys = this.sorted_keys().map(Number);
+    var bin_size = (this.max - this.min) / maxBins;
+    var new_counter = {};
+    // TODO: A better binning system
+    for (var i = 0; i < sorted_keys.length; i++) {
+        var bin = Math.floor((sorted_keys[i] - this.min) / bin_size);
+        bin = Math.min(bin, maxBins - 1);
+        new_counter[bin*bin_size] = (new_counter[bin*bin_size] || 0) + this.count(sorted_keys[i]);
+    }
+    this.counter = new_counter;
+    this.binned = true;
+}
+
+barplot = function(data, title) {
+    var items = listToArray(data[0]).map(format_result);
+    var values = listToArray(data[1]);
+
+    var spec_values = [];
+    for (var i = 0; i < items.length; i++) {
+        spec_values.push({item: items[i], value: values[i]});
+    }
+
+    var padding = {
+        top: 30 + (title ? titleOffset : 0),
+        left: 20 + Math.max.apply(undefined, items.map(function(x) {return x.length;})) * 5,
+        bottom: 50, right: 30};
+    var height = 1 + items.length * 20;
+    var width = 600 - padding.left;
+    var data = [{name: "table", values: spec_values}];
+    var scales = [
+            {name: "x", range: "width", nice: true, domain: {data:"table", field:"data.value"}},
+            {name: "y", type: "ordinal", range: "height", domain: {data:"table", field:"data.item"}, padding: 0.1}];
+    var axes = [
+        {type:"x", scale:"x", ticks: 10},
+        {type:"y", scale:"y"}];
+    var marks = [horz_rect_marks];
+
+    render_and_append(make_spec(padding, width, height, data, scales, axes, marks, title));
+}
+
+var make_hist_spec = function(samps, title) {
+    var counter = new Counter(listToArray(samps));
+    if (counter.type == "number" && Object.keys(counter.counter).length > maxBins) counter.bin();
+
+    var sorted_keys = counter.sorted_keys();
+
+    var spec_values = sorted_keys.map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
+
+    var padding = {
+        top: 30 + (title ? titleOffset : 0),
+        left: 20 + Math.max.apply(undefined, sorted_keys.map(function(x) {return x.length;})) * 5,
+        bottom: 50,
+        right: 30};
+    var height = 1 + sorted_keys.length * 20;
+    var width = 600 - padding.left;
+    var data = [{name: "table", values: spec_values}];
+    var scales = [
+            {name: "x", range: "width", nice: true, domain: {data:"table", field:"data.value"}},
+            {name: "y", type: "ordinal", range: "height", domain: {data:"table", field:"data.item"}, padding: 0.1}];
+    var axes = [{type:"x", scale:"x", ticks: 10, format: "%"}]
+    var marks = [horz_rect_marks];
+    if (counter.binned) {
+        scales.push({name: "y_labels", nice: true, range: "height", domain: {data:"table", field:"data.item"}, padding: 0.1});
+        axes.push({type:"y", scale:"y_labels"});
+    } else {
+        axes.push({type:"y", scale:"y"});
+    }
+    return make_spec(padding, width, height, data, scales, axes, marks, title);
+}
 
 hist = function(samps, title) {
+    render_vega(make_hist_spec(samps, title), create_and_append_result());
+}
 
-    // TODO: this is a hack. we want proper conversion of data types
-    var values = erinSort(listToArray(samps));
-    var strvalues = values.map(function(x) {return format_result(x);});
-    var n = values.length;
-    var counts = _(strvalues)
-        .uniq()
-        .map(function(val) {
-            return {
-                value: val,
-                freq: _(strvalues).filter(function(x) {return x == val;}).length / n
-            };
-        });
+livehist = function(n, func, title) {
+    live_render(n, func, make_hist_spec, title);
+}
 
-    // console.log(strvalues);
-
-    var maxFreq = Math.max.apply(Math, counts.map(function(x) {return x.freq;}));
-    var continuous;
-    if (counts.length > maxBins  &&  counts.filter(function(x){return isNaN(x.value)}).length == 0) {
-  	var binnedData = binData(counts, values, maxBins);
-  	counts = binnedData.counts;
-  	values = binnedData.values;
-  	maxFreq = binnedData.maxFreq;
-  	continuous = true;
-    } else {
-  	continuous = false;
-    }
-
-    //  var $histDiv = $("<div></div>").appendTo($div);
-    // var div = $histDiv[0];
-
-    //TODO: make left margin vary depending on how long the names of the elements in the list are
-    // TODO: can we do this abstractly, without knowing beforehand how many pixels we have?
-    var margin = {top: 40, right: 20, bottom: 60, left: 60},
-        width = 0.85 * /* $div.width() */ 600 - margin.left - margin.right,
-        height = 100 + (20 * counts.length) - margin.top - margin.bottom;
-
-    var x = d3.scale.linear()
-        .domain([0, maxFreq])
-        .range([0, width]);
-    if (continuous) {
-	var yMin = Math.min.apply(Math, values);
-	var yMax = Math.max.apply(Math, values);
-	var y = d3.scale.ordinal()
-            .domain(values)
-            .rangeRoundBands([0, height], .1);
-	var yAxis = d3.svg.axis()
-	    .scale(d3.scale.linear()
-	           .domain([yMin, yMax])
-	           .range([height, 0]))
-	    .orient("left");
-    } else {
-	var y = d3.scale.ordinal()
-            .domain(strvalues)
-            .rangeRoundBands([height, 0], .1);
-	var yAxis = d3.svg.axis()
-	    .scale(y)
-	    .orient("left");
-    }
-
-    var svgContainer = document.createElementNS(d3.ns.prefix.svg,'svg');
-
-    var svg = d3
-        .select(svgContainer) // HT http://stackoverflow.com/a/21101552/351392
-        .attr("class", "chart")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height+ margin.top + margin.bottom)
-        .style('margin-left', '0')
-        .style('margin-top', '10px')
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    drawHist(svg, counts, strvalues, width, height, x, y, false);
-
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom")
-        .tickFormat(formatPercent);
-
-    drawAxes(svg, xAxis, yAxis, height, 0, width, "hist");
-    drawTitle(svg, title, width, margin);
-
-    sideEffects.push({type: 'svg', data: svgContainer});
-
-};
-
-density = function(samps, title, withHist) {
-
-    // TODO: this is a hack. we want proper conversion of data types
-    var values = erinSort(listToArray(samps)),
-        n = values.length,
-        counts = _(values)
-        .uniq()
-        .map(function(val) {
-            return {
-                value: val,
-                freq: _(values).filter(function(x) {return x == val;}).length / n
-            };
-        }),
-        maxFreq = _(counts).chain().map(function(x) { return x.freq}).max().value();
-
-    //TODO: make left margin vary depending on how long the names of the elements in the list are
-    var margin = {top: 40, right: 20, bottom: 30, left: 40},
-        width = 0.8 * /*$div.width() */ 600 - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
-
-    var svgContainer = document.createElementNS(d3.ns.prefix.svg,'svg');
-
-    var svg = d3
-        .select(svgContainer)
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height+ margin.top + margin.bottom)
-        .style('margin-left', '10%')
-        .style('margin-top', '20px')
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    var xMin = Math.min.apply(Math, values);
-    var xMax = Math.max.apply(Math, values);
-    /*    if (withHist) {
-          var binnedData = binData(counts, values);
-          if (binnedData.maxVal > xMax) {
-          xMax = Math.max(xMax, binnedData.maxVal);
-          }
-          if (binnedData.minVal < xMin) {
-          xMin = Math.min(xMin, binnedData.minVal);
-          }
-          }*/
-
-    var range = xMax - xMin;
-    var x = d3.scale.linear()
-        .domain([xMin, xMax])
-        .range([0, width]);
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom");
-
-    function kernelDensityEstimator(kernel, x) {
-        return function(sample) {
-            return x.map(function(x) {
-                return [x, d3.mean(sample, function(v) { return kernel(x - v); })];
-            });
-        };
-    }
-
-    function epanechnikovKernel(scale) {
-        return function(u) {
-            return Math.abs(u /= scale) <= 1 ? .75 * (1 - u * u) / scale : 0;
-        };
-    }
-
-    var kde = kernelDensityEstimator(epanechnikovKernel(3), x.ticks(100));
-
-    var densities = kde(values).map(function(x) {return x[1];});
-
-    var yMax = Math.max.apply(Math, densities);
-    if (withHist) {
-        var binnedData = binData(counts, values, maxBins);
-        if (binnedData.maxFreq > yMax) {
-            yMax = Math.max(yMax, binnedData.maxFreq);
+var make_density_spec = function(samps, title, with_hist) {
+    function kernelDensityEstimator(counter, kernel, scale) {
+        var density_values = [];
+        var keys = Object.keys(counter.counter);
+        for (var i = 0; i <= maxBins; i++) {
+            var x = counter.min + (counter.max - counter.min) / maxBins * i;
+            var kernel_sum = 0;
+            for (var j = 0; j < keys.length; j++) {
+                kernel_sum += kernel((x - keys[j]) / scale) * counter.count(keys[j]);
+            }
+            density_values.push({item: x, value: kernel_sum / samps.length / scale});
         }
+        return density_values;
     }
 
-    var y = d3.scale.linear()
-        .domain([0, yMax])
-        .range([height, 0]);
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .ticks(5)
-        .orient("left")
-        .tickFormat(d3.format("%"));
-
-    if (withHist) {
-        drawHist(svg, binnedData.counts, binnedData.values, width, height, x, y, true, yMax/binnedData.maxFreq);
+    function epanechnikovKernel(u) {
+            return Math.abs(u) <= 1 ? .75 * (1 - u * u) : 0;
     }
 
-    //density curve
-    var line = d3.svg.line()
-        .x(function(d) { return x(d[0]); })
-        .y(function(d) { return y(d[1]); });
-    svg.append("path")
-        .datum(kde(values))
-        .attr("class", "line")
-        .attr("d", line);
+    var counter = new Counter(listToArray(samps));
 
-    drawAxes(svg, xAxis, yAxis, height, 0, width, "density");
-    drawTitle(svg, title, width, margin);
+    var padding = {top: 30 + (title ? titleOffset : 0), left: 45, bottom: 50, right: 30};
+    var data = [{name: "density", values: kernelDensityEstimator(counter, epanechnikovKernel, 3)}];
+    var height = 300;
+    var width = 600 - padding.left;
+    var scales = [
+            {name: "x_density", type: "ordinal", range: "width", domain: {data:"density", field:"data.item"}, padding: 0.1},
+            {name: "x_labels", nice: true, range: "width", domain: {data:"density", field:"data.item"}, padding: 0.1},
+            {name: "y", range: "height", nice: true, domain: {data:"density", field:"data.value"}}];
+    var axes = [
+        {type:"x", scale:"x_labels"},
+        {type:"y", scale:"y", ticks: 10, format: "%"}];
+    var marks = [{
+            type: "line",
+            from: {data:"density"},
+            properties: {
+                enter: {
+                    x: {scale:"x_density", field: "data.item"},
+                    y: {scale:"y", field: "data.value"},
+                    strokeWidth: {value: 3},
+                    stroke: {value: "black"}
+                }
+            }
+    }];
 
-    sideEffects.push({type: 'svg', data: svgContainer});
+    if (with_hist) {
+        counter.bin();
+        var hist_data = counter.keys().map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
+        data.push({name: "hist", values: hist_data});
+        scales.push({name: "x_hist", type: "ordinal", range: "width", domain: {data:"hist", field:"data.item"}, padding: 0.1});
+        marks.unshift({
+            type: "rect",
+            from: {data: "hist"},
+            properties: {
+                enter: {
+                    x: {scale:"x_hist", field: "data.item"},
+                    width: {scale:"x_hist", band: true},
+                    y: {scale:"y", field: "data.value"},
+                    y2: {scale:"y", value: 0}
+                },
+                update: {fill: {value: "steelblue"}}
+            }
+        })
+    }
 
-};
+    return make_spec(padding, width, height, data, scales, axes, marks, title);
+}
+
+density = function(samps, title, with_hist) {
+    render_vega(make_density_spec(samps, title, with_hist), create_and_append_result());
+}
+
+livedensity = function(n, func, title, with_hist) {
+    live_render(n, func, function(samps, title) {return make_density_spec(samps, title, with_hist)}, title);
+}
+
+var make_plot_spec = function(data, title) {
+    var padding = {top: 30 + (title ? titleOffset : 0), left: 45, bottom: 50, right: 30};
+    var data_values = listToArray(data).map(function(datum) {return {x: datum[0], y: datum[1]}});
+    var data = [{name: "points", values: data_values}];
+    var height = 300;
+    var width = 600 - padding.left;
+    var scales = [
+            {name: "x", range: "width", nice: true, domain: {data:"points", field:"data.x"}},
+            {name: "y", range: "height", nice: true, domain: {data:"points", field:"data.y"}},
+            {name: "y_labels", reverse: true, range: "height", nice: true, domain: {data:"points", field:"data.y"}}];
+    var axes = [
+        {type:"x", scale:"x", offset: {scale: "y_labels", value: 0}},
+        {type:"y", scale:"y", offset: {scale: "x", value: 0}}];
+    var marks = [{
+        type: "symbol",
+        from: {data:"points"},
+        properties: {
+            enter: {
+                x: {scale:"x", field: "data.x"},
+                y: {scale:"y", field: "data.y"},
+                size: {value: 50},
+                fill: {value:"steelblue"},
+                fillOpacity: {value: 0.8}
+            }
+        }
+    }];
+    return make_spec(padding, width, height, data, scales, axes, marks, title);
+}
+
+scatter = function(samps, title) {
+    render_vega(make_plot_spec(samps, title), create_and_append_result());
+}
+
+livescatter = function(n, func, title) {
+    live_render(n, func, make_plot_spec, title);
+}
+
+var make_lineplot_spec = function(data, title) {
+    var spec = make_plot_spec(data, title);
+    spec.marks.push({
+        type: "line",
+        from: {data:"points", transform: [{type: "sort", by: "data.x"}]},
+        properties: {
+            enter: {
+                x: {scale:"x", field: "data.x"},
+                y: {scale:"y", field: "data.y"},
+                stroke: {value: "steelblue"},
+                strokeWidth: {value: 2}
+            }
+        }
+    });
+    // spec.axes.map(function(axis) {delete axis.offset})
+    return spec;
+}
+
+lineplot = function(samps, title) {
+    render_vega(make_plot_spec(samps, title), create_and_append_result());
+}
+
+livelineplot = function(n, func, title) {
+    live_render(n, func, make_lineplot_spec, title);
+}
 
 multiviz = function() {
 };
 
-scatter = function(samples, title) {
-    plot(samples, title, false);
-};
 
-lineplot = function(samples, title) {
-    plot(samples, title, true);
-};
-
-function plot(samples, title, lines) {
-    //samples is a list of pairs
-    var data = listToArray(samples);
-    var xVals = data.map(function(x) {return x[0];});
-    var yVals = data.map(function(x) {return x[1];});
-    var maxX = Math.max.apply(Math, xVals)
-    var maxY = Math.max.apply(Math, yVals)
-    var minX = Math.min.apply(Math, xVals)
-    var minY = Math.min.apply(Math, yVals)
-
-    var margin = {top: 40, right: 20, bottom: 30, left: 40},
-        width = 0.8 * /*$div.width()*/ 600 - margin.left - margin.right,
-        height = 300 - margin.top - margin.bottom;
-
-    var svgContainer = document.createElementNS(d3.ns.prefix.svg,'svg');
-
-    var svg = d3
-        .select(svgContainer)
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height+ margin.top + margin.bottom)
-        .style('margin-left', margin.left)
-        .style('margin-top', margin.top / 2)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-    var x = d3.scale.linear()
-        .domain([minX, maxX])
-        .range([0, width]);
-    var xAxis = d3.svg.axis()
-        .scale(x)
-        .orient("bottom");
-
-    var y = d3.scale.linear()
-        .domain([minY, maxY])
-        .range([height, 0]);
-    var yAxis = d3.svg.axis()
-        .scale(y)
-        .orient("left");
-
-    if (0 < maxY && 0 > minY) {
-        var xAxisPos = maxY / (maxY - minY) * height;
-    } else if (0 > maxY) {
-        var xAxisPos = 0;
-    } else {
-        var xAxisPos = height;
-    }
-
-    if (0 < maxX && 0 > minX) {
-        var yAxisPos = width - (maxX / (maxX - minX) * width);
-    } else if (0 > maxX) {
-        var yAxisPos = width;
-    } else {
-        var yAxisPos = 0;
-    }
-
-    drawAxes(svg, xAxis, yAxis, xAxisPos, yAxisPos, width, "plot");
-
-    if (lines) {
-        var sortedData = data.sort(function(a,b) {return a[0] - b[0];})
-        var previous = sortedData[0];
-        for (var i=1; i<sortedData.length; i++) {
-            var d = sortedData[i];
-            svg.append("line")
-                .attr("class", "lineplot")
-                .attr("x1", x(previous[0]))
-                .attr("x2", x(d[0]))
-                .attr("y1", y(previous[1]))
-                .attr("y2", y(d[1]));
-            previous = d;
-        }
-    }
-
-    svg.selectAll("circle").data(data)
-        .enter()
-        .append("circle")
-        .attr("class", "point")
-        .attr("cx", function(d) {return x(d[0]);})
-        .attr("cy", function(d) {return y(d[1]);})
-        .attr("r", 3);
-
-    drawTitle(svg, title, width, margin);
-    sideEffects.push({type: 'svg', data: svgContainer});
-}
-
-function binData(counts, values, maxBins) {
-    function approxEqual(a, b) {
-        var eps=0.000001;
-        return Math.abs(a-b) < eps;
-    }
-    var binnedValues;
-    var binnedCounts;
-    var xMin = Math.min.apply(Math, values);
-    var xMax = Math.max.apply(Math, values);
-    function getBinValue(binNumber) {
-        return ((binNumber + 0.5) * (xMax - xMin) / maxBins) + xMin;
-    }
-    if (counts.length > maxBins) {
-        binnedValues = values.map(function(val) {
-            if (approxEqual(val, xMax)) {
-                binNumber = maxBins - 1;
-            } else {
-                var fractionOfRange = (val - xMin) / (xMax - xMin);
-                var binNumber = Math.floor(fractionOfRange * maxBins);
-            }
-            return getBinValue(binNumber);
-        });
-        var n = binnedValues.length;
-        var binnedCounts = _(binnedValues)
-            .uniq()
-            .map(function(val) {
-                return {
-                    value: val,
-                    freq: _(binnedValues).filter(function(x) {
-                        return x == val;
-                    }).length / n
-                };
-            });
-        for (var i=0; i<maxBins; i++) {
-            var binValue = getBinValue(i);
-            if ((binnedValues).filter(function(x) {return approxEqual(x, binValue);}).length == 0) {
-                binnedCounts.push({value: binValue, freq: 0});
-            }
-        }
-    } else {
-        binnedValues = values;
-        binnedCounts = counts;
-    }
-    binnedCounts = binnedCounts.sort(function(a, b) {
-        return a.value - b.value;
-    })
-    var frequencies = binnedCounts.map(function(x) {return x.freq;});
-    var maxFreq = Math.max.apply(Math, frequencies);
-    var minVal = Math.min.apply(Math, binnedValues);
-    var maxVal = Math.max.apply(Math, binnedValues);
-    return {values: binnedValues, counts: binnedCounts, maxFreq: maxFreq,
-            minVal: minVal, maxVal: maxVal};
-}
-
-function drawHist(svg, binnedCounts, binnedValues, width, height, x, y, vertical, scale) {
-
-    if (vertical) {
-        function getFreq(d) {
-            if (d.freq) {
-                return d.freq;
-            } else {
-                return 0;
-            }
-        }
-        var histX = d3.scale.ordinal()
-            .domain(binnedCounts.map(function(x) {return x.value;}))
-            .rangeRoundBands([0, width], .1);
-        svg.selectAll(".bar")
-            .data(binnedCounts)
-            .enter().append("rect")
-            .attr("class", "bar")
-            .attr("fill", "none")
-            .attr("y", function(d) {return y(getFreq(d)*scale);})
-            .attr("x", function(d) {return histX(d.value);})
-            .attr("height", function(d) { return height - y(getFreq(d)*scale);})
-            .attr("width", histX.rangeBand());
-    } else {
-        svg.selectAll(".bar")
-            .data(binnedCounts)
-            .enter().append("rect")
-            .attr("class", "bar")
-            .attr("x", 0)
-            .attr("y", function(d) {return y(d.value);})
-            .attr("stroke","none")
-            .attr("width", function(d) { return x(d.freq); })
-            .attr("height", y.rangeBand());
-    }
-}
-
-function drawTitle(svg, title, width, margin) {
-    svg.append("text")
-        .attr("x", width / 2)
-        .attr("y", 0 - (margin.top / 2))
-        .attr("text-anchor", "middle")
-        .style("font-size", "24px")
-        .attr("stroke", "none")
-        .attr("fill", "black")
-        .text(title);
-}
-
-function drawAxes(svg, xAxis, yAxis, xAxisPos, yAxisPos, width, type) {
-    var xAxisGroup = svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + xAxisPos + ")")
-        .call(xAxis);
-
-    if (type == "hist") {
-        xAxisGroup.attr("class", "x axis")
-            .append("text")
-            .text("Frequency")
-            .attr("dy", "3em")
-            .attr("x", (width/2))
-            .attr("text-anchor", "middle");
-    }
-
-    svg.append("g")
-        .attr("class", "y axis")
-        .attr("transform", "translate(" + yAxisPos + ",0)")
-        .call(yAxis);
+module.exports = {
+    hist: hist
 }

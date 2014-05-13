@@ -52,7 +52,7 @@ function makewebchurchrunner(engineOptions){
 
         // make new $results div, which will replace
         // the old one stored in ed.display.$results
-        var $results = $("<div class='results'>");
+        $results = $("<div class='results'>");
 
         if (cm.errormark != undefined) {
             cm.errormark.clear();
