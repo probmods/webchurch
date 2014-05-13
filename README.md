@@ -1,24 +1,48 @@
 [![Build Status](https://travis-ci.org/probmods/webchurch.png?branch=master)](https://travis-ci.org/probmods/webchurch)
 
-webchurch setup WITH git (preferred method)
+webchurch setup
 ============
+
+with git (preferred method)
+------------
+
 1. install node by choosing your installer from [this page](http://nodejs.org/download/)
 2. install git (if neccessary) by following the instructions [here](http://git-scm.com/downloads)
-2. `git clone https://github.com/probmods/webchurch.git`
-2. `git submodule update --init --recursive`
-5. `npm install`
-6. `./compile.sh`
-7. run in the terminal: `./church NAME_OF_YOUR_CHURCH_FILE`
+2. in the terminal, go to wherever you want your webchurch folder to live. then run:
 
-webchurch setup WITHOUT git (not good for getting updates, but useful if you can't/don't want to get git installed)
-============
+		git clone https://github.com/probmods/webchurch.git
+		git submodule update --init --recursive
+		npm install
+		./compile.sh
+
+
+To pull-in and work in a particular branch (say `box2d`):
+
+lists all branches, local and remote to see what `box2d` is called on remote
+
+	   git branch -a
+
+setup local branch box2d to track remote branch box2d
+
+	   git branch -b box2d remote/origin/box2d
+
+switch to branch box2d
+
+	   git checkout box2d
+
+without git
+------------
+
+(not good for getting updates, but useful if you can't/don't want to get git installed)
+
 1. install node by choosing your installer from [this page](http://nodejs.org/download/)
 2. click on the Download ZIP button on the right (or on [this link](https://github.com/probmods/webchurch/archive/master.zip))
 3. unarchive the zip file and go to that directory (called `webchurch-master`)
 4. click [this link](https://github.com/dritchie/probabilistic-js/archive/15641a6e5d1e4d070767333521cc98eb8ec752ce.zip) to get the version of probabilistic-js we're using. unarchive this file, rename it to `probabilistic-js`, and move it into the `webchurch-master` folder (replacing the version of `probabilistic-js` that's there by default)
-5. `npm install`
-6. `./compile.sh`
-7. run in the terminal: `./church NAME_OF_YOUR_CHURCH_FILE`
+5. in terminal, go to `webchurch-master` folder and run the following commands:
+
+		npm install
+		./compile.sh
 
 Dependencies
 ============
