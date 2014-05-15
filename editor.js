@@ -21,6 +21,7 @@ CodeMirror.keyMap.default["Cmd-."] = function(cm){cm.foldCode(cm.getCursor(), fo
 CodeMirror.keyMap.default["Ctrl-;"] = "toggleComment";
 CodeMirror.keyMap.default["Ctrl-."] = function(cm){cm.foldCode(cm.getCursor(), folding.myRangeFinder); };
 
+
 var _ = require('underscore');
 _.templateSettings = {
     interpolate: /\{\{(.+?)\}\}/g
@@ -29,6 +30,10 @@ _.templateSettings = {
 var runners = {};
 runners['webchurch'] = makewebchurchrunner();
 runners['webchurch-opt'] = makewebchurchrunner({precompile: true});
+
+runners['cosh'] = function() { }
+runners['bher'] = function() { }
+runners['mit-church'] = function() { }
 
 function wrap(tag, content) {
     return _.template("<{{tag}}>{{content}}</{{tag}}>",
@@ -41,21 +46,21 @@ function makewebchurchrunner(engineOptions){
     if (engineOptions === undefined) {
         engineOptions = {}
     }
-    return function(editorModel) {
-        var cm = editorModel.get('codeMirror');
-        var code = editorModel.get('code');
+    return function(ed) {
+        var cm = ed.get('cm');
+        var code = ed.get('code');
 
-        var $results = cm.$results;
+        // make new $results div, which will replace
+        // the old one stored in ed.display.$results
+        $results = $("<div class='results'>");
 
-        $results.show();
         if (cm.errormark != undefined) {
             cm.errormark.clear();
         }
 
-        editorModel.trigger('run:start');
+        ed.trigger('run.start');
         try {
             var runResult = evaluate(code, engineOptions);
-
             var underlyingData;
 
             // render all side effects
@@ -77,44 +82,37 @@ function makewebchurchrunner(engineOptions){
                     e.data($results);
                 }
             });
-
+            
             underlyingData = runResult;
             runResult = format_result(runResult);
             if (!(runResult == "undefined")) {
                 $results.append($("<pre>"+runResult+'</pre>'));
-            }
-
-            editorModel.trigger('run:finish');
-
+            } 
         } catch (e) {
-
-            editorModel.trigger('run:finish');
-
             var error = e.message;
             $results
                 .append( $("<p></p>")
                          .addClass('error')
                          .text(error) );
-
             if (e.stackarray != undefined) {
                 var churchStack = $("<pre></pre>");
                 churchStack.text(e.stackarray
                                  .map(function(x) { return _.template("{{text}}: {{start}}-{{end}}", x) })
                                  .join("\n"))
-
                 $results.append( '<div><u>Church stack array:</u></div>', churchStack);
-
                 var start=e.start.split(":"), end=e.end.split(":");
                 cm.errormark = cm.markText({line: Number(start[0])-1, ch: Number(start[1])-1},
                                            {line: Number(end[0])-1, ch: Number(end[1])},
                                            {className: "CodeMirrorError", clearOnEnter: true});
-
             }
-
             var jsStack = $("<pre></pre>");
             jsStack.text(e.jsStack.join('\n'));
-
             $results.append('<div><u>JS stack:</u></div>', jsStack );
+        } finally {
+            ed.display.$results.replaceWith($results);
+            ed.display.$results = $results;
+
+            ed.trigger('run.finish');
         }
     };
 };
@@ -130,6 +128,12 @@ var EditorModel = Backbone.Model.extend({
     run: function() {
         var engine = runners[this.get('engine')];
         this.set('result', engine( this ));
+    },
+    supplant: function(domEl) {
+        $(domEl).replaceWith(this.display.wrapper);
+        // if we place the item ourselves, we have to call refresh() on the
+        // codemirror instance HT http://stackoverflow.com/q/10575833/351392 
+        this.get('cm').refresh();
     }
 });
 
@@ -138,16 +142,19 @@ var inject = function(domEl, options) {
     options = _(options).defaults({
         code: $(domEl).text(),
         engine: "webchurch",
-        exerciseName: ""
+        exerciseName: "" 
     });
 
-    var editorModel = new EditorModel(options);
-
+    var ed = new EditorModel(options);
+    // if (options.engine != 'webchurch') {
+    //   debugger;
+    // }
+    
     // editor
     var cm = CodeMirror(
-        // TODO: defer this - we might not want to display immediately...
         function(el) {
-            $(domEl).replaceWith(el);
+            // defer this - we might not want to display immediately...
+            // (e.g., when we want to first fetch network results)
         },
         {
             value: options.code,
@@ -159,13 +166,13 @@ var inject = function(domEl, options) {
             mode: 'scheme'
         });
 
-    editorModel.set('codeMirror', cm);
+    ed.set('cm', cm);
 
     // when text in codemirror changes, update editormodel
     cm.on('change', function(cmInstance) {
-        editorModel.set('code', cmInstance.getValue())
+        ed.set('code', cmInstance.getValue())
     });
-
+    
     //fold ";;;fold:" parts:
     var lastLine = cm.lastLine();
     for(var i=0;i<=lastLine;i++) {
@@ -173,7 +180,7 @@ var inject = function(domEl, options) {
             pos = txt.indexOf(";;;fold:");
         if (pos==0) {cm.foldCode(CodeMirror.Pos(i,pos),folding.tripleCommentRangeFinder);}
     }
-
+    
     // results div
     var $results = $("<div class='results'>");
     $results.hide();
@@ -189,38 +196,39 @@ var inject = function(domEl, options) {
                         selectedString: engine == cm.engine ? "selected" : ""
                     });
 
-                return str;
-            }
+                return str; 
+            } 
         ).join("\n") + "\n</select>",
         $engineSelector = $(engineSelectorString);
 
     // when engine selector changes, update model
     $engineSelector.change(function(e) {
-        editorModel.set('engine', $(this).val() );
+        ed.set('engine', $(this).val() );
     });
 
     // reset button
     var $resetButton = $("<button class='reset'>").html("Reset");
     $resetButton.click(function() {
-        cm.setValue( editorModel.get('initialOptions').code );
-        cm.$engineSelector.val( editorModel.get('initialOptions').engine );
+        cm.setValue( ed.get('initialOptions').code );
+        ed.$engineSelector.val( ed.get('initialOptions').engine ); 
         $results.hide.html('');
     });
 
     // run button
     var $runButton = $("<button class='run'>").html("Run");
     $runButton.click(function() {
-        $results.html('');
+        ed.display.$results.find('*').css('opacity','0.7');
         $runButton.attr('disabled','disabled');
 
-        setTimeout(function() {
-            editorModel.run();
-        }, 15);
+        // NB: can't write just ed.run
+        // because then "this" becomes window 
+        // and i don't wanna bother with function binding
+        setTimeout(function() { ed.run() }, 30);
 
-        editorModel.on('run:finish', function() {
+        ed.on('run.finish', function() {
             $runButton.removeAttr('disabled');
         })
-    });
+    }); 
 
     var $codeControls = $("<div class='code-controls'>");
     // HT http://somerandomdude.com/work/open-iconic/#
@@ -238,24 +246,30 @@ var inject = function(domEl, options) {
         $("<li></li>").append($resetButton[0])
     );
 
-    $(cm.display.wrapper).prepend(
-        $cogMenu
-    );
+    $(cm.display.wrapper).prepend($cogMenu);
 
-    // add code controls and results divs after codemirror
-    $(cm.display.wrapper).prepend($codeControls);
-
-    $(cm.display.wrapper).after($results);
+    // create wrapper element for editor
+    var wrapper = document.createElement('div');
 
     $(cm.display.wrapper).attr("id", "ex-" + options.exerciseName);
+    
+    // add code controls and results divs after codemirror 
+    $(cm.display.wrapper).prepend($codeControls);
 
-    cm.$runButton = $runButton;
-    cm.$engineSelector = $engineSelector;
-    cm.$resetButton = $resetButton;
-    cm.$results = $results;
+    $(wrapper)
+        .append(cm.display.wrapper)
+        .append($results); 
 
-    return editorModel
+    ed.display = {
+        wrapper: wrapper,
+        $runButton: $runButton,
+        $engineSelector: $engineSelector,
+        $results: $results
+    }
 
+    
+    return ed;
+    
 };
 
 module.exports = {

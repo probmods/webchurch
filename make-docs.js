@@ -40,20 +40,45 @@ function renderFunction(functionName, props) {
                           '{{table}}',
                           '</div>'].join('\n');
 
-    return _.template(templateString,
-                      {functionName: functionName,
-                       argList: _(args).pluck('name').join(' '),
-                       description: description,
-                       table: argsTable});
+    // convert name from js format to scheme format
+    functionName = functionName
+                .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
+                .replace(/is_(.+)/, function(m, p1) { return p1 + "?"})
+                .replace('_to_', '->')
+                .replace(/_/g, '-');
+
+    var tableString =  _.template(templateString,
+                                  {functionName: functionName,
+                                   argList: _(args).pluck('name').join(' '),
+                                   description: description,
+                                   table: argsTable});
+    
+
+    return {name: functionName, 
+            string: tableString};
 }
 
 function renderAllFunctions() {
     var rendered = _(annotations).map(function(props, functionName) {
         return renderFunction(functionName, props);
     });
-    return rendered.join('\n');
+    var entries = rendered.sort(function(x, y) {
+        var xn = x.name.toLowerCase();
+        var yn = y.name.toLowerCase();
+        if (xn < yn) {
+            return -1;
+        }
+        if (xn > yn) {
+            return 1;
+        }
+        return 0
+    });
+
+    return _(entries).pluck('string').join('\n');
 }
 
 var res = renderAllFunctions();
+
+console.log('<link rel="stylesheet" type="text/css" href="ref.css" />')
 
 console.log(res);
