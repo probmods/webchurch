@@ -12,9 +12,9 @@ var listToArray = $x.listToArray = function(list, recurse) {
 
 var arrayToList = $x.arrayToList = function(arr, mutate) {
     if (mutate) {
-	arr.push(null);
+        arr.push(null);
     } else {
-	arr = arr.concat(null);
+	      arr = arr.concat(null);
     }
     return arr;
 };
