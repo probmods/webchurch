@@ -47,7 +47,7 @@ without git
 Dependencies
 ============
 - [nodejs](http://nodejs.org/download/) (see `package.json` for npm dependencies)
-
+- Python (at least on Windows, version must be > 2.5 and < 3.0)
 
 Installation
 ============
