@@ -13,6 +13,7 @@ var precompile = require('./precompile.js').precompile;
 var wctransform = require('./wctransform');
 var util = require('./util.js');
 var phys = require('./physics2D.js');
+openModule(phys,"p");           // export module as p
 
 var _ = require('underscore');
 

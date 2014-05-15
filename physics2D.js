@@ -2,7 +2,8 @@
    Translation layer around Box2DWeb for webchurch
 
    Notes:
-   1. Should 'global' vars be prefixed? Done here with `p$`
+   1. implement scaling, everything in m is a bit painful for smaller domains
+      ideally, this is resolved internally based on sizes specified in code
    2. Look again into running worlds - Need a cleaner way to intervene among steps
    3. Look into controllers - way to add forces
 **/
@@ -96,11 +97,11 @@ function fromb2World (b2dWorld) {
         switch(body.GetFixtureList().GetShape().GetType()) {
         case b2Shape.e_circleShape:
             var r = body.GetFixtureList().GetShape().GetRadius();
-            shapeT = p_46shape2D(p_46circle, p_46dim2D(r, 0));
+            shapeT = shape2D(circle, dim2D(r, 0));
             break;
         case b2Shape.e_polygonShape:
             var vs = body.GetFixtureList().GetShape().GetVertices();
-            shapeT = p_46shape2D(p_46rectangle, p_46dim2D(vs[2].x, vs[2].y));
+            shapeT = shape2D(rectangle, dim2D(vs[2].x, vs[2].y));
             break;
         default: console.log("error: unknown shape!");
         }
@@ -115,15 +116,15 @@ function fromb2World (b2dWorld) {
         default:
             console.log("error: unknown entity type!");
         }
-        var b = p_46body2D(type,
-                         p_46pos2D(body.GetPosition().x, body.GetPosition().y),
-                         p_46vec2D(body.GetLinearVelocity().x, body.GetLinearVelocity().y),
+        var b = body2D(type,
+                         pos2D(body.GetPosition().x, body.GetPosition().y),
+                         vec2D(body.GetLinearVelocity().x, body.GetLinearVelocity().y),
                          body.GetAngularVelocity());
-        var f = p_46fix2D(body.GetFixtureList().GetDensity(),
+        var f = fix2D(body.GetFixtureList().GetDensity(),
                         body.GetFixtureList().GetFriction(),
                         body.GetFixtureList().GetRestitution());
 
-        entities.push(p_46entity2D(shapeT,b,f));
+        entities.push(entity2D(shapeT,b,f));
         body = body.GetNext();
     }
     return arrayToList(entities);
@@ -147,79 +148,78 @@ function clearWorld () {
 function matchType (array, type) { return array[0] === type }
 function assertType (array, type) { console.assert(array[0] === type) }
 
-global["p_46pos2D"] = function (a,b) { return tagArgs("position", arguments) }
-global["p_46vec2D"] = function (a,b) { return tagArgs("vector", arguments) }
-global["p_46dim2D"] = function (a,b) { return tagArgs("dimensions", arguments) }
-global["p_46x"] = function (v) { return v[1] }
-global["p_46y"] = function (v) { return v[2] }
+var pos2D = function (a,b) { return tagArgs("position", arguments) }
+var vec2D = function (a,b) { return tagArgs("vector", arguments) }
+var dim2D = function (a,b) { return tagArgs("dimensions", arguments) }
+var x = function (v) { return v[1] }
+var y = function (v) { return v[2] }
 
-global["p_46circle"] = "circle"
-global["p_46rectangle"] = "rectangle"
-global["p_46shapeTypes"] = function () { return arrayToList([p_46circle, p_46rectangle]) }
-global["p_46shape2D"] = function (shape, dimension) {
+var circle = "circle"
+var rectangle = "rectangle"
+var shapeTypes = function () { return arrayToList([circle, rectangle]) }
+var shape2D = function (shape, dimension) {
     assertType(dimension, "dimensions")
     return tagArgs("shape",arguments)
 }
 
-global["p_46staticBody"] = "static"
-global["p_46dynamicBody"] = "dynamic"
-global["p_46kinematicBody"] = "kinematic"
-global["p_46bodyTypes"] = function () {
-    return arrayToList([p_46staticBody, p_46dynamicBody, p_46kinematicBody])
+var staticBody = "static"
+var dynamicBody = "dynamic"
+var kinematicBody = "kinematic"
+var bodyTypes = function () {
+    return arrayToList([staticBody, dynamicBody, kinematicBody])
 }
 
-global["p_46body2D"] = function (type, pos, vel, a_vel) {
+var body2D = function (type, pos, vel, a_vel) {
     assertType(pos,"position");
     assertType(vel,"vector");
     return tagArgs("body",arguments)
 }
-global["p_46body2D_type"] = function (body) { return body[1] }
-global["p_46body2D_position"] = function (body) { return body[2] }
-global["p_46body2D_velocity"] = function (body) { return body[3] }
-global["p_46body2D_aVelocity"] = function (body) { return body[4] }
+var body2D_type = function (body) { return body[1] }
+var body2D_position = function (body) { return body[2] }
+var body2D_velocity = function (body) { return body[3] }
+var body2D_aVelocity = function (body) { return body[4] }
 
-global["p_46fix2D"] = function (den, fric, rest) { return tagArgs("fixture",arguments) }
-global["p_46fix2D_density"] = function (fix) { return fix[1] }
-global["p_46fix2D_friction"] = function (fix) { return fix[2] }
-global["p_46fix2D_restitution"] = function (fix) { return fix[3] }
+var fix2D = function (den, fric, rest) { return tagArgs("fixture",arguments) }
+var fix2D_density = function (fix) { return fix[1] }
+var fix2D_friction = function (fix) { return fix[2] }
+var fix2D_restitution = function (fix) { return fix[3] }
 
-global["p_46entity2D"] = function (shapeT, body, fix) {
+var entity2D = function (shapeT, body, fix) {
     assertType(shapeT, "shape")
     assertType(body, "body")
     assertType(fix, "fixture")
     return tagArgs("entity", arguments)
 }
-global["p_46entity2D_shapeT"] = function (entity) { return entity[1] }
-global["p_46entity2D_body"] = function (entity) { return entity[2] }
-global["p_46entity2D_fixture"] = function (entity) { return entity[3] }
-global["p_46entity2D_shape"] = function (entity) { return entity[1][1] }
-global["p_46entity2D_dimensions"] = function (entity) { return entity[1][2] }
-global["p_46entity2D_type"] = function (entity) { return entity[2][1] }
-global["p_46entity2D_position"] = function (entity) { return entity[2][2] }
-global["p_46entity2D_velocity"] = function (entity) { return entity[2][3] }
-global["p_46entity2D_aVelocity"] = function (entity) { return entity[2][4] }
-global["p_46entity2D_density"] = function (entity) { return entity[3][1] }
-global["p_46entity2D_friction"] = function (entity) { return entity[3][2] }
-global["p_46entity2D_restitution"] = function (entity) { return entity[3][3] }
+var entity2D_shapeT = function (entity) { return entity[1] }
+var entity2D_body = function (entity) { return entity[2] }
+var entity2D_fixture = function (entity) { return entity[3] }
+var entity2D_shape = function (entity) { return entity[1][1] }
+var entity2D_dimensions = function (entity) { return entity[1][2] }
+var entity2D_type = function (entity) { return entity[2][1] }
+var entity2D_position = function (entity) { return entity[2][2] }
+var entity2D_velocity = function (entity) { return entity[2][3] }
+var entity2D_aVelocity = function (entity) { return entity[2][4] }
+var entity2D_density = function (entity) { return entity[3][1] }
+var entity2D_friction = function (entity) { return entity[3][2] }
+var entity2D_restitution = function (entity) { return entity[3][3] }
 
-global["p_46noVelocity"] = function () { return p_46vec2D(0, 0) }
-global["p_46stdFixture"] = function () { return p_46fix2D(1.0, 0.2, 0.3)}
+var noVelocity = function () { return vec2D(0, 0) }
+var stdFixture = function () { return fix2D(1.0, 0.2, 0.3)}
 
-global["p_46simpleEntity2D"] = function (shape, dim, type, pos, vel) {
-    return p_46entity2D(p_46shape2D(shape,dim),
-                      p_46body2D(type, pos, vel, 0.0),
-                      p_46stdFixture())
+var simpleEntity2D = function (shape, dim, type, pos, vel) {
+    return entity2D(shape2D(shape,dim),
+                      body2D(type, pos, vel, 0.0),
+                      stdFixture())
 }
 // perhaps need a function to read back into scheme that keeps it 'simple'?
 // filp(0.1) at this point
 
-global["p_46setWorldG"] = function (gravity) {
+var setWorldG = function (gravity) {
     assertType(gravity, "vector")
-    defaultWorld.gravity = tob2Vec2(gravity);
+    defaultWorld.SetGravity(tob2Vec2(gravity));
 }
 
-// consider p_46 prefix
-global["runPhysics"] = function(steps, cWorld) {
+var runPhysics = function(steps, cWorld) {
     clearWorld();
     tob2World(cWorld);
     for (var s=0; s<steps; s++) {
@@ -261,10 +261,9 @@ if (typeof window !== 'undefined') {
     var b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
 
     // code to run animation in browser
-    global["animatePhysics"] = function(steps, cWorld) {
+    var animatePhysics = function(steps, cWorld) {
         function simulate(canvas, steps) {
             clearWorld();
-            console.log(typeof gravity);
             tob2World(cWorld);
             var debugDraw = new b2DebugDraw();
             debugDraw.SetSprite(canvas[0].getContext("2d"));
@@ -290,6 +289,7 @@ if (typeof window !== 'undefined') {
             };
             requestId = requestAnimationFrame(function() {update(0);});
         }
+
         disp = function($div) {
             stopAnim(); //stop previous update thread
             setTimeout(stopAnim, mspf); //make sure previous update thread is stopped
@@ -326,3 +326,54 @@ if (typeof window !== 'undefined') {
 
 // TODO: decide if a world ought to be a list of entities with histories
 //       or a list of world-steps with entities
+
+module.exports = {
+    pos2D: pos2D,
+    vec2D: vec2D,
+    dim2D: dim2D,
+    x: x,
+    y: y,
+
+    circle: circle,
+    rectangle: rectangle,
+    shapeTypes: shapeTypes,
+    shape2D: shape2D,
+
+    staticBody: staticBody,
+    dynamicBody: dynamicBody,
+    kinematicBody: kinematicBody,
+    bodyTypes: bodyTypes,
+
+    body2D: body2D,
+    body2D_type: body2D_type,
+    body2D_position: body2D_position,
+    body2D_velocity: body2D_velocity,
+    body2D_aVelocity: body2D_aVelocity,
+
+    fix2D: fix2D,
+    fix2D_density: fix2D_density,
+    fix2D_friction: fix2D_friction,
+    fix2D_restitution: fix2D_restitution,
+
+    entity2D: entity2D,
+    entity2D_shapeT: entity2D_shapeT,
+    entity2D_body: entity2D_body,
+    entity2D_fixture: entity2D_fixture,
+    entity2D_shape: entity2D_shape,
+    entity2D_dimensions: entity2D_dimensions,
+    entity2D_type: entity2D_type,
+    entity2D_position: entity2D_position,
+    entity2D_velocity: entity2D_velocity,
+    entity2D_aVelocity: entity2D_aVelocity,
+    entity2D_density: entity2D_density,
+    entity2D_friction: entity2D_friction,
+    entity2D_restitution: entity2D_restitution,
+
+    noVelocity: noVelocity,
+    stdFixture: stdFixture,
+
+    simpleEntity2D: simpleEntity2D,
+    setWorldG: setWorldG,
+    runPhysics: runPhysics,
+    animatePhysics: animatePhysics
+}

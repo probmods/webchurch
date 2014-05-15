@@ -138,7 +138,7 @@
                        (fallingEntity) (fallingEntity) (fallingEntity)
                        (staticEntity) (staticEntity)))
 
-(define simResults (runPhysics 1000 my_world))
+(define simResults (p.runPhysics 1000 my_world))
 (map p.entity2D_position (filter (lambda (e) (equal? (p.entity2D_type e) p.dynamicBody)) simResults))
 </code></pre>
 
