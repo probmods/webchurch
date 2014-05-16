@@ -363,7 +363,7 @@ function church_astify(tokens) {
 
 	if (query_fns.indexOf(ast.children[0].text) != -1) {
 	    var num_params = query_fns_to_num_params[ast.children[0].text];
-	    if (ast.children.length < num_params + 4) {
+	    if (ast.children.length < num_params + 3) {
 		throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
 	    }
 	    return {

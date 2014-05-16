@@ -8,15 +8,15 @@ var listToArray = $x.listToArray = function(list, recurse) {
             return Array.isArray(x) ? listToArray(x,recurse) : x
         });
     } else {
-	return list.slice(0, -1);
+	      return list.slice(0, -1);
     }
 };
 
 var arrayToList = $x.arrayToList = function(arr, mutate) {
     if (mutate) {
-	arr.push(null);
+        arr.push(null);
     } else {
-	arr = arr.concat(null);
+	      arr = arr.concat(null);
     }
     return arr;
 };
