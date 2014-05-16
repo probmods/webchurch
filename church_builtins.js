@@ -781,8 +781,7 @@ var take = $b({
     name: 'take',
     desc: 'Get the first n items in a list. If there are fewer than n items in the list, returns just the list.',
     params: [{name: 'lst', type: 'list'},
-             {name: 'n', type: 'nat'}
-            ],
+             {name: 'n', type: 'nat'}],
     fn: function(lst,n) {
         return arrayToList(listToArray(lst).slice(0,n));
     }
@@ -933,23 +932,37 @@ var flatten = $b({
     }
 });
 
-// // https://github.com/jashkenas/underscore/issues/1237
-// // in their infinite wisdom, this picks max length of lists
-// var zip = $b({
-//     name: 'zip',
-//     desc: 'Zip together lists',
-//     params: [{name: "lst", type: "list", desc: ""}],
-//     fn: function() {
-//         _.zip(arguments)
-//     }
-// });
+var zip = $b({
+    name: 'zip',
+    desc: 'Zip together lists using longest list as base -- is invertable',
+    params: [{name: "[lst ...]", type: "list", desc: ""}],
+    fn: function() {
+        var args = args_to_array(arguments).map(listToArray);
+        var cleanA2L = function(a) {
+            return arrayToList(a.map(function(v){return v == undefined ? null : v}));
+        }
+        return arrayToList(_.zip.apply(this,args).map(cleanA2L));
+    }
+});
+
+var zipT = $b({
+    name: 'zipT',
+    desc: 'Zip together lists using shortest list as base -- not invertable as it truncates',
+    params: [{name: "[lst ...]", type: "list", desc: ""}],
+    fn: function() {
+        var args = args_to_array(arguments).map(listToArray);
+        var mlen = Math.min.apply(this, args.map(function(e){return e.length;}));
+        args = args.map(function(a){return a.slice(0,mlen);});
+        return arrayToList(_.zip.apply(this,args).map(arrayToList));
+    }
+});
 
 var transpose = $b({
     name: 'transpose',
     desc: 'Transpose list of lists',
     params: [{name: "mat", type: "list", desc: ""}],
     fn: function(mat) {
-        return arrayToList(_.zip.apply(_,listToArray(mat)).map(arrayToList).slice(0,-1))
+        return arrayToList(_.zip.apply(this,listToArray(mat)).map(arrayToList).slice(0,-1))
     }
 });
 
@@ -1123,7 +1136,7 @@ var union = $b({
     [{name: '[lst ...]', type: 'list'}],
     fn: function () {
         var args = args_to_array(arguments).map(listToArray);
-        return arrayToList(_.union.apply(_,args));
+        return arrayToList(_.union.apply(this,args));
     }
 });
 
@@ -1134,7 +1147,7 @@ var intersection = $b({
     [{name: '[lst ...]', type: 'list'}],
     fn: function () {
         var args = args_to_array(arguments).map(listToArray);
-        return arrayToList(_.intersection.apply(_,args));
+        return arrayToList(_.intersection.apply(this,args));
     }
 });
 
@@ -1147,7 +1160,7 @@ var difference = $b({
     fn: function () {
         var args = args_to_array(arguments).map(listToArray);
         if (args.length <= 1) { return args[0] }
-        return arrayToList(_.difference.apply(_,args));
+        return arrayToList(_.difference.apply(this,args));
     }
 });
 
