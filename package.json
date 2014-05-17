@@ -1,33 +1,35 @@
 {
-    "name": "webchurch",
-    "version": "0.0.1",
-    "description": "A Church-to-Javascript compiler that works on the web",
-    "main": "evaluate.js",
-    "bin": {
-	"webchurch": "./compile.sh"
-    },
-    "scripts": {
-	"test": "node tester.js test/basic.church test/mh.church test/support-change.church test/probmods"
-    },
-    "repository": {
-	"type": "git",
-	"url": "https://github.com/probmods/webchurch.git"
-    },
-    "dependencies": {
-	"escodegen": "0.0.26",
-	"esprima": "1.0.4",
-	"source-map": "0.1.30",
-	"browserify": "3.38.0",
-	"optparse": "1.0.5",
-	"underscore": "~1.6.0",
-	"codemirror": "4.0.3",
-	"d3": "3.4.4",
-	"backbone": "~1.1.2"
-    },
-    "author": {
-	"name": "Julius Cheng",
-	"email": "juliusc@stanford.edu",
-	"url": "http://stanford.edu/~juliusc"
-    },
-    "license": "MIT"
+  "name": "webchurch",
+  "version": "0.0.1",
+  "description": "A Church-to-Javascript compiler that works on the web",
+  "main": "evaluate.js",
+  "bin": {
+    "webchurch": "./compile.sh"
+  },
+  "scripts": {
+    "test": "node tester.js test/load.church test/basic.church test/mh.church test/support-change.church test/probmods",
+    "server": "node node_modules/http-server/bin/http-server"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/probmods/webchurch.git"
+  },
+  "dependencies": {
+    "escodegen": "0.0.26",
+    "esprima": "1.0.4",
+    "source-map": "0.1.30",
+    "browserify": "3.38.0",
+    "optparse": "1.0.5",
+    "underscore": "~1.6.0",
+    "codemirror": "4.0.3",
+    "d3": "3.4.4",
+    "backbone": "~1.1.2",
+    "http-server": "^0.6.1"
+  },
+  "author": {
+    "name": "Julius Cheng",
+    "email": "juliusc@stanford.edu",
+    "url": "http://stanford.edu/~juliusc"
+  },
+  "license": "MIT"
 }

@@ -72,7 +72,8 @@ var churchToJs = function(churchCode, options) {
         compact: false,
         precompile: false,
         includePreamble: true,
-        returnCodeOnly: true
+        returnCodeOnly: true,
+        wrap: true
     })
 
     var tokens = tokenize(churchCode);
@@ -126,25 +127,27 @@ var churchToJs = function(churchCode, options) {
         }
     }
 
-    // wrap the whole thing in an immediately executed function
-    body = [
-        {type: 'ExpressionStatement',
-         expression: {
-             type: 'CallExpression',
-             callee: { type: 'FunctionExpression',
-                       id: null,
-                       params: [],
-                       defaults: [],
-                       body:
-                       { type: 'BlockStatement',
-                         body: body
-                       }
-                     },
-             arguments: []
+    if (options.wrap) {
+        // wrap the whole thing in an immediately executed function
+        body = [
+            {type: 'ExpressionStatement',
+             expression: {
+                 type: 'CallExpression',
+                 callee: { type: 'FunctionExpression',
+                           id: null,
+                           params: [],
+                           defaults: [],
+                           body:
+                           { type: 'BlockStatement',
+                             body: body
+                           }
+                         },
+                 arguments: []
 
-         }
-        }
-    ]
+             }
+            }
+        ];
+    }
 
     js_ast.body = body;
 

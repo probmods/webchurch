@@ -1750,6 +1750,50 @@ var sample = $b({
 
 // probability distribution is list<pair<_,positive real>>
 
+
+var load_url = $b({
+    name: 'load_url',
+    desc: 'Load a remote url',
+    params: [{name: 'path', type: 'string'}],
+    fn: function(path) {
+        var isChurch = true;
+        
+        var extension = path.split("/").pop().split(".").pop();
+
+        if (extension == 'js') {
+            isChurch = false;
+        }
+        
+        if (inBrowser) {
+            // by default, assume we're working with Church
+            
+            var jqxhr = $.ajax({
+                url: path + '?' + (new Date()).getTime(),
+                async: false,
+                error: function(response, textStatus, errorThrown) {
+                    throw new Error('Could not load library ' + path);
+                },
+                dataType: 'text' // needed so that js libraries aren't executed immediately by jquery
+            });
+
+            var code = jqxhr.responseText;
+        } else {
+            code = fs.readFileSync(path, 'utf8');
+        }
+        
+        if (isChurch) {
+            var churchToJs = require('./evaluate.js').churchToJs;
+            code = churchToJs(code,
+                              {
+                                  includePreamble: false,
+                                  returnCodeOnly: true,
+                                  wrap: false
+                              }); 
+        }
+        return code; 
+    }
+});
+
 // TODO: add a flag somewhere for turning on/off wrapping
 function wrapAsserts(annotation) {
 

@@ -1,22 +1,25 @@
 [![Build Status](https://travis-ci.org/probmods/webchurch.png?branch=master)](https://travis-ci.org/probmods/webchurch)
 
-webchurch setup
-============
+# Setup
 
-with git (preferred method)
-------------
+## With git (preferred method)
 
-1. install node by choosing your installer from [this page](http://nodejs.org/download/)
-2. install git (if neccessary) by following the instructions [here](http://git-scm.com/downloads)
-2. in the terminal, go to wherever you want your webchurch folder to live. then run:
+1. install node by choosing your installer from [the node homepage](http://nodejs.org/download/)
+2. if necessary, install git by following the instructions [at the git homepage](http://git-scm.com/downloads)
+3. on the command line, go to wherever you want your webchurch folder to live. On OS X, run:
 
-		git clone https://github.com/probmods/webchurch.git
-		git submodule update --init --recursive
-		npm install
-		./compile.sh
+~~~~
+git clone https://github.com/probmods/webchurch.git
+cd webchurch
+git init (only if you are on Windows)
+git submodule update --init --recursive
+npm install
+./compile.sh
+~~~~
 
+note that you only need to run `git init` on Windows.
 
-To pull-in and work in a particular branch (say `box2d`):
+to pull-in and work in a particular branch (say `box2d`):
 
 lists all branches, local and remote to see what `box2d` is called on remote
 
@@ -30,8 +33,7 @@ switch to branch box2d
 
 	   git checkout box2d
 
-without git
-------------
+## Without git
 
 (not good for getting updates, but useful if you can't/don't want to get git installed)
 
@@ -44,30 +46,27 @@ without git
 		npm install
 		./compile.sh
 
-Dependencies
-============
+# Dependencies
 - [nodejs](http://nodejs.org/download/) (see `package.json` for npm dependencies)
 - Python (at least on Windows, version must be > 2.5 and < 3.0)
 
-Installation
-============
 
-- `git submodule update --init --recursive`. This initializes the submodules (currently, just `probabilistic-js`)
-- `npm install`. This will create a `node_modules` folder and install node dependencies there.
-- `./compile.sh`. This makes a single js file and creates some symlinks.
+# Usage
 
-Usage
-=====
+## In a web browser
+You can run the browser-based version by pointing your browser to `online/index.html`. However, if you wish to use the `load` builtin for dynamically loading Church or Javascript libraries, you will need to access `online/index.html` from the `http://` protocol rather than the `file://` protocol. We provide a simple way to do this. First, run `npm run-script server` on the command line and then point your browser to `http://localhost:8080/online/index.html`
 
-- Local online demo: Point your browser to `./online/index.html`. If you make changes to the webchurch source code, you can recompile the browser binary by running `compile.sh`.
-- Command line: from the webchurch directory, run `church test/foo.church` to execute the contents of `test/foo.church`.
 
-Command line arguments
-======================
+- Command line: 
 
-- -p, --precompile: Turn on pre-compilation.
-- -a, --program-args [MESSAGE]: Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable.
-- -t, --timed: Print out timing information.
-- -d, --desugar-only: Apply Church desugaring without execution.
-- -c, --compile-only: Compile to Javascript without execution.
-- -e, --disable-church-errors: Disable special Church error checking and show Javascript errors instead.
+## On the command line
+`church [OPTIONS] [FILE]` will run the contents of `[FILE]`.
+
+Available options are:
+
+- `-p, --precompile`: Turn on pre-compilation (very experimental)
+- `-a, --program-args [MESSAGE]`: Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable.
+- `-t, --timed`: Print out timing information.
+- `-d, --desugar-only`: Apply Church desugaring without execution.
+- `-c, --compile-only`: Compile to Javascript without execution.
+- `-e, --disable-church-errors`: Disable special Church error checking and show Javascript errors instead.
