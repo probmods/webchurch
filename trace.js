@@ -22,6 +22,12 @@
 var escodegen = require('escodegen');
 var esprima = require('esprima');
 
+var pr = require('./probabilistic-js');
+pr.openModule(pr)//make probjs fns available.
+var builtins = require('./church_builtins');
+openModule(builtins)//make church builtins available.
+
+
 //wrapper to take code or ast and generate a trace (which is code).
 function trace(codeorast,env) {
     var ast = codeorast//FIXME: isAst(codeorast)?codeorast:esprima.parse(codeorast)
