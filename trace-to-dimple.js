@@ -67,8 +67,102 @@
 */
 
 
+var escodegen = require('escodegen');
+var esprima = require('esprima');
+
+var dimpleCode = ""
+function toDimpleFile(line) {
+//    console.log(line)
+    dimpleCode = dimpleCode + line +"\n"
+}
+
+function traceToDimple(code) {
+    var ast = esprima.parse(code)
+    
+    //generate dimple header:
+    toDimpleFile("FactorGraph myGraph = new FactorGraph();")
+    
+    for(var dec in ast.body) {
+        switch(ast.body[dec].type) {
+                case 'VariableDeclaration':
+                    //assume one declarator per declaration.
+                    dimpleAddVarDecl(ast.body[dec].declarations[0])
+                    break
+                case 'ExpressionStatement':
+                    //should be final statement which is return value. todo in dimple??
+                    break
+        }
+    }
+    
+    return dimpleCode
+}
+
+//most trace statements will be declarations of the form 'var ab0 = foo(ab1,const);'
+function dimpleAddVarDecl(ast) {
+    var id = ast.id.name
+    var init = ast.init
+    var callee = init.callee.name
+    //get args, which might each be literal, identifier, or array:
+    var args = []
+    for(var a in init.arguments) {
+        var arg = init.arguments[a]
+        switch(arg.type) {
+                case 'Literal':
+                    args.push(arg.value)
+                    break
+                
+                case 'Identifier':
+                    args.push(arg.name)
+                    break
+                
+                case 'ArrayExpression':
+                    args.push(["todo:arrays"])
+                    break
+        }
+    }
+    
+    if(callee=='random') {
+        callee = args[0]
+        args = args[1]
+    }
+    
+    //Generate Dimple statements
+    var d = new DimpleFactor(callee)
+    var type = d.type
+    var factor = d.factor
+    toDimpleFile( type+" "+id+" = new "+type+"();" )
+    toDimpleFile( "myGraph.addFactor("+factor+", "+id+","+ args.join(",") +");" )
+    
+}
 
 
+var DimpleFactor = function DimpleFactor(fn) {
+    
+    switch(fn) {
+        case 'or':
+            this.type = "Bit"
+            this.factor = "or" //fixme
+            break
+            
+        case 'wrapped_flip':
+            this.type = "Bit"
+            this.factor = "Bernoulli" //fixme
+            break
+            
+        case 'condition':
+            console.log("need to handle evidence!") //fixme
+            break
+            
+        default:
+            throw new Error("Can't yet translate function "+fn+".")
+    }
+}
 
 
+                 
+
+module.exports =
+{
+traceToDimple: traceToDimple
+}
 
