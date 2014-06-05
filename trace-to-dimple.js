@@ -61,8 +61,9 @@
 
  
  TODO:
-    -Implemeent top level translator. Should we do this from source or AST? Probably AST is more flexible. Can use the structure / functions from trace.js
-    -First pass should assume all variables are boolean, only erp is flip, and primitives are: and, or, not. From these can make basic models to test the pipeline.
+    -First pass assumes all variables are boolean, only erp is flip, and primitives are: and, or, not. 
+        -Need to do correct dimple translations.
+        -Make basic models to test the pipeline.
 
 */
 
@@ -84,23 +85,44 @@ function traceToDimple(code) {
     
     for(var dec in ast.body) {
         switch(ast.body[dec].type) {
-                case 'VariableDeclaration':
-                    //assume one declarator per declaration.
-                    dimpleAddVarDecl(ast.body[dec].declarations[0])
-                    break
-                case 'ExpressionStatement':
-                    //should be final statement which is return value. todo in dimple??
-                    break
+            case 'VariableDeclaration':
+                //assume one declarator per declaration.
+                var decl = ast.body[dec].declarations[0]
+                var id = decl.id.name
+                var init = decl.init
+                var callee = init.callee.name
+                if(callee == 'condition' || callee == 'factor') {
+                    dimpleEvidence(init)
+                } else {
+                    dimpleAddVarDecl(id, init)
+                }
+                break
+            case 'ExpressionStatement':
+                //should be final statement which is return value. todo: in dimple??
+                break
+            case 'IfStatement':
+                //todo..
+            default:
+                throw new Error("Haven't implemented translation for expression of type " + ast.body[dec].type)
         }
     }
     
     return dimpleCode
 }
 
+//evidence comes from condition and factor statements in the church code
+//assume the expression is an identifier for both cases.
+function dimpleEvidence(init) {
+    var evexp = init.arguments[0].name
+    if(init.callee.name == 'condition'){
+        toDimpleFile( evexp+ ".FixedValue = true;")
+    } else if (init.callee.name == 'factor') {
+        //todo: myGraph.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)>
+    }
+}
+
 //most trace statements will be declarations of the form 'var ab0 = foo(ab1,const);'
-function dimpleAddVarDecl(ast) {
-    var id = ast.id.name
-    var init = ast.init
+function dimpleAddVarDecl(id, init) {
     var callee = init.callee.name
     //get args, which might each be literal, identifier, or array:
     var args = []
@@ -116,7 +138,10 @@ function dimpleAddVarDecl(ast) {
                     break
                 
                 case 'ArrayExpression':
-                    args.push(["todo:arrays"])
+                    var a = []
+                    for (var i in arg.elements) {a.push(escodegen.generate(arg.elements[i]))}
+                    //console.log(escodegen.generate(arg))
+                    args.push(a)
                     break
         }
     }
@@ -147,10 +172,6 @@ var DimpleFactor = function DimpleFactor(fn) {
         case 'wrapped_flip':
             this.type = "Bit"
             this.factor = "Bernoulli" //fixme
-            break
-            
-        case 'condition':
-            console.log("need to handle evidence!") //fixme
             break
             
         default:
