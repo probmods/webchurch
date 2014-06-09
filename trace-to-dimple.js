@@ -61,6 +61,7 @@
 
  
  TODO:
+    -Update the above spec, given that i've changed the function signatures somewhat... ;)
     -First pass assumes all variables are boolean, only erp is flip, and primitives are: and, or, not. 
         -Need to do correct dimple translations.
         -Make basic models to test the pipeline.
@@ -98,7 +99,8 @@ function traceToDimple(code) {
                 }
                 break
             case 'ExpressionStatement':
-                //should be final statement which is return value. todo: in dimple??
+                //should be final statement which is return value.
+                //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
                 break
             case 'IfStatement':
                 //todo..
@@ -166,12 +168,12 @@ var DimpleFactor = function DimpleFactor(fn) {
     switch(fn) {
         case 'or':
             this.type = "Bit"
-            this.factor = "or" //fixme
+            this.factor = "Or" //fixme: check args
             break
             
         case 'wrapped_flip':
             this.type = "Bit"
-            this.factor = "Bernoulli" //fixme
+            this.factor = "Bernoulli" //fixme: check args
             break
             
         default:
