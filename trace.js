@@ -89,7 +89,9 @@ function Abstract() {
 }
 
 function isAbstract(a) {return a instanceof Abstract}
-function isClosure(fn) {return fn && fn.type && (fn.type == 'FunctionExpression')}
+function isClosure(fn) {
+    return fn && fn.type && (fn.type == 'FunctionExpression')
+}
 
 function random(){}
 
@@ -139,24 +141,29 @@ function extendTrace(line){
     global_trace.push(line)
 }
 
+
+
 //a normal interpreter except for certain cases where there is an abstract value. then emit a statement into the trace.
 function tracer(ast, env, depth) {
     env = (env==undefined?new Environment():env)
     depth = (depth==undefined?0:depth)
-    //        console.log("tracer: ",ast)
     //    console.log("tracer, trace so far: ",global_trace)
     //    console.log(env)
     switch (ast.type) {
         //First the statements:
     case 'Program':
+        // is an entire javascript program
+
     case 'BlockStatement':
+        // a BlockStatement is a sequence of statements surrounded by curly braces
         var ret
         for (a in ast.body) {
             ret = tracer(ast.body[a],env,depth)
         }
         return ret
 
-    case 'ExpressionStatement':
+    case 'ExpressionStatement': // a statement consisting of a single expression
+        
         return tracer(ast.expression, env,depth)
 
         //comment out because church compile uses ternary op, not if...
@@ -214,6 +221,7 @@ function tracer(ast, env, depth) {
     case 'CallExpression':
         var args = []
         var abstract_args=false
+        // console.log(ast.callee.name)
         for(var a in ast.arguments) { //TODO: after wctransform can assume args are immediate.. does this help?
             var val = tracer(ast.arguments[a], env,depth)
             args.push(val)
