@@ -1,3 +1,11 @@
+/* global require, module */
+
+/* TODOs
+
+- handle querying  
+
+ */
+
 /*
 
  Take a finite trace which is in simple form (eg output of trace.js) and convert into a set of Dimple calls to construct a factor graph.
@@ -71,6 +79,11 @@
 
 var escodegen = require('escodegen');
 var esprima = require('esprima');
+var _ = require('underscore');
+
+_.templateSettings = {
+  interpolate: /\{\{(.+?)\}\}/g
+};
 
 var dimpleCode = ""
 function toDimpleFile(line) {
@@ -80,17 +93,28 @@ function toDimpleFile(line) {
 
 function traceToDimple(code) {
     var ast = esprima.parse(code)
+
+    // TODO: add java includes
     
     //generate dimple header:
     toDimpleFile("FactorGraph myGraph = new FactorGraph();")
-    
+
+    // walk through the ast
     for(var dec in ast.body) {
         switch(ast.body[dec].type) {
             case 'VariableDeclaration':
+            // a VariableDeclaration is a node of the form
+            // var {id} = {init}
+            // where {id} will parse to an Identifier object
+            // and {init} will parse to an Expression object (I think this code currently assumes
+            // that it will be a CallExpression, in particular. this is to be contrasted with
+            // a BinaryExpression (e.g., 1 + x) or an ObjectExpression (e.g., x) 
+            
                 //assume one declarator per declaration.
                 var decl = ast.body[dec].declarations[0]
                 var id = decl.id.name
                 var init = decl.init
+            
                 var callee = init.callee.name
                 if(callee == 'condition' || callee == 'factor') {
                     dimpleEvidence(init)
@@ -114,70 +138,128 @@ function traceToDimple(code) {
 
 //evidence comes from condition and factor statements in the church code
 //assume the expression is an identifier for both cases.
+
+// conditioning on a boolean requires that we do
+// .setFixedValue(1)
+// since we apparently don't have true Booleans in dimple
 function dimpleEvidence(init) {
     var evexp = init.arguments[0].name
     if(init.callee.name == 'condition'){
-        toDimpleFile( evexp+ ".FixedValue = true;")
+        toDimpleFile( evexp+ ".setFixedValue(1);");
     } else if (init.callee.name == 'factor') {
         //todo: myGraph.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)>
     }
 }
 
 //most trace statements will be declarations of the form 'var ab0 = foo(ab1,const);'
+// id is the ab0 part
+// init is the foo(ab1, const) part
 function dimpleAddVarDecl(id, init) {
     var callee = init.callee.name
     //get args, which might each be literal, identifier, or array:
     var args = []
-    for(var a in init.arguments) {
-        var arg = init.arguments[a]
+    for(var i = 0, ii = init.arguments.length; i < ii; i++) {
+        var arg = init.arguments[i]
         switch(arg.type) {
-                case 'Literal':
-                    args.push(arg.value)
-                    break
-                
-                case 'Identifier':
-                    args.push(arg.name)
-                    break
-                
-                case 'ArrayExpression':
-                    var a = []
-                    for (var i in arg.elements) {a.push(escodegen.generate(arg.elements[i]))}
-                    //console.log(escodegen.generate(arg))
-                    args.push(a)
-                    break
+        case 'Literal':
+            args.push(arg.value)
+            break
+            
+        case 'Identifier':
+            args.push(arg.name)
+            break
+            
+        case 'ArrayExpression':
+            // unparse each esprima object into a javascript string
+            var arr = arg.elements.map(function(el) {
+                return escodegen.generate(el)
+            }) 
+            args.push(arr)
+            break
         }
     }
-    
+
+    // this is required because the tracer turns ERP calls like (flip 0.5)
+    // into javascript like:
+    // var ab0 = random('wrapped_flip',[0.5,JSON.parse('null')]);
+    // so the function call we'll be dealing with for ERPs is actually
+    // a call to random, rather than wrapped_flip. here, we just unwrap
+    // the random() call
     if(callee=='random') {
         callee = args[0]
         args = args[1]
     }
     
     //Generate Dimple statements
-    var d = new DimpleFactor(callee)
-    var type = d.type
-    var factor = d.factor
-    toDimpleFile( type+" "+id+" = new "+type+"();" )
-    toDimpleFile( "myGraph.addFactor("+factor+", "+id+","+ args.join(",") +");" )
+    var factor = new DimpleFactor(id, callee, args)
+
+    toDimpleFile( factor.java );
+    // toDimpleFile( "myGraph.addFactor(new {{factor}}(), {{id}}, {{factorArgString}""
     
 }
 
 
-var DimpleFactor = function DimpleFactor(fn) {
+// you call this by using the "new" keyword
+// e.g.,
+// var factor = new DimpleFactor("ab2", "or", ["ab0","ab1"])
+// TODO: this function will eventually get gigantic
+// so i need to move separate cases into their own files in a dimple/
+// directory
+var DimpleFactor = function(id, fn, args) {
+    this.id  = id;
     
+    var me = this; // alias for "this" that is safe to use inside map() 
+
+    if (fn === 'random') {
+        args = args.slice(); // copy the args array
+        args.pop(); // remove the last variable, which should be a string containing "JSON.parse('null')"
+    }
+
     switch(fn) {
-        case 'or':
-            this.type = "Bit"
-            this.factor = "Or" //fixme: check args
-            break
-            
-        case 'wrapped_flip':
-            this.type = "Bit"
-            this.factor = "Bernoulli" //fixme: check args
-            break
-            
-        default:
-            throw new Error("Can't yet translate function "+fn+".")
+    case 'or':
+        this.type = "Bit";
+        this.constructor = "Or";
+        
+        // TODO: fix the case when 
+        this.inputArgString = args.join(", ");
+
+        var lineTemplates = 
+                [
+                    "{{type}} {{id}} = new {{type}}();",
+                    "myGraph.addFactor(new {{constructor}}(), {{id}}, {{inputArgString}});"
+                ];
+        
+        this.java = lineTemplates.map(
+            function(t) {
+                return _.template(t)( me )
+            }
+        ).join("\n");
+        
+        break
+
+    case 'wrapped_flip':
+        this.type = "Bit";
+        this.constructor = "Bernoulli"; //fixme: check args 
+        this.weight = args[0];
+        this.id = id;
+
+        // define template
+        var lineTemplates = 
+                [
+                    "{{type}} {{id}} = new {{type}}();",
+                    "myGraph.addFactor(new {{constructor}}( {{weight}} ), {{id}});"
+                ];
+        
+        this.java = lineTemplates.map(
+            function(t) {
+                return _.template(t)( me )
+            }
+        ).join("\n");
+
+        break
+
+    default:
+        throw new Error("Can't yet translate function "+fn+".")
     }
 }
 
