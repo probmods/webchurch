@@ -93,8 +93,6 @@ function toDimpleFile(line) {
 
 function traceToDimple(code) {
     var ast = esprima.parse(code)
-
-    // TODO: add java includes
     
     //generate dimple header:
     toDimpleFile("FactorGraph myGraph = new FactorGraph();")
@@ -216,11 +214,32 @@ var DimpleFactor = function(id, fn, args) {
     }
 
     switch(fn) {
+    case 'and':
+        this.type = "Bit";
+        this.constructor = "And";
+        
+        // TODO: fix the case when there are no args, just (and)
+        this.inputArgString = args.join(", ");
+
+        var lineTemplates = 
+                [
+                    "{{type}} {{id}} = new {{type}}();",
+                    "myGraph.addFactor(new {{constructor}}(), {{id}}, {{inputArgString}});"
+                ];
+        
+        this.java = lineTemplates.map(
+            function(t) {
+                return _.template(t)( me )
+            }
+        ).join("\n");
+        
+        break
+        
     case 'or':
         this.type = "Bit";
         this.constructor = "Or";
         
-        // TODO: fix the case when 
+        // TODO: fix the case when there are no arguments, just (or)
         this.inputArgString = args.join(", ");
 
         var lineTemplates = 
