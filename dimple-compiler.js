@@ -18,7 +18,7 @@ church_codestring="\
     (define bar (flip 0.3))\
     (define baz (flip 0.9))\
     foo\
-    (condition (and foo bar baz))\
+    (condition (and (or foo (not bar)) (or (not foo) bar)))\
     "
 
 //church_codestring="(define foo (flip 0.5)) (define goo (or foo (flip 0.6)))"

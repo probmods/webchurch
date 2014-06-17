@@ -1,11 +1,5 @@
 /* global require, module */
 
-/* TODOs
-
-- handle querying  
-
- */
-
 /*
 
  Take a finite trace which is in simple form (eg output of trace.js) and convert into a set of Dimple calls to construct a factor graph.
@@ -73,6 +67,8 @@
     -First pass assumes all variables are boolean, only erp is flip, and primitives are: and, or, not. 
         -Need to do correct dimple translations.
         -Make basic models to test the pipeline.
+    - handle querying
+    - handle constructor arguments for Dimple variable types like Discrete and Real
 
 */
 
@@ -200,9 +196,18 @@ function dimpleAddVarDecl(id, init) {
 // you call this by using the "new" keyword
 // e.g.,
 // var factor = new DimpleFactor("ab2", "or", ["ab0","ab1"])
-// TODO: this function will eventually get gigantic
-// so i need to move separate cases into their own files in a dimple/
-// directory
+
+var primitiveToFactor = {};
+
+// NB: note that there is no comma between outputVariable and inputVariableStr in the template
+// this is because if inputVariableStr is empty, we don't want there to be an extraneous comma
+// before it, so we handle this in the computation of inputVariableStr itself
+// TODO: we eventually need to handle arguments for the variable constructor, e.g.,
+// Discrete ab0 = new Discrete(0, 1, 5);
+var factorTemplate = _.template(
+    "{{type}} {{id}} = new {{type}}();\n" + 
+        "myGraph.addFactor(new {{constructor}}( {{constructorArgStr}} ), {{outputVariable}} {{inputVariableStr}});")
+
 var DimpleFactor = function(id, fn, args) {
     this.id  = id;
     
@@ -213,76 +218,34 @@ var DimpleFactor = function(id, fn, args) {
         args.pop(); // remove the last variable, which should be a string containing "JSON.parse('null')"
     }
 
-    switch(fn) {
-    case 'and':
-        this.type = "Bit";
-        this.constructor = "And";
-        
-        // TODO: fix the case when there are no args, just (and)
-        this.inputArgString = args.join(", ");
+    this.args = args;
 
-        var lineTemplates = 
-                [
-                    "{{type}} {{id}} = new {{type}}();",
-                    "myGraph.addFactor(new {{constructor}}(), {{id}}, {{inputArgString}});"
-                ];
-        
-        this.java = lineTemplates.map(
-            function(t) {
-                return _.template(t)( me )
-            }
-        ).join("\n");
-        
-        break
-        
-    case 'or':
-        this.type = "Bit";
-        this.constructor = "Or";
-        
-        // TODO: fix the case when there are no arguments, just (or)
-        this.inputArgString = args.join(", ");
-
-        var lineTemplates = 
-                [
-                    "{{type}} {{id}} = new {{type}}();",
-                    "myGraph.addFactor(new {{constructor}}(), {{id}}, {{inputArgString}});"
-                ];
-        
-        this.java = lineTemplates.map(
-            function(t) {
-                return _.template(t)( me )
-            }
-        ).join("\n");
-        
-        break
-
-    case 'wrapped_flip':
-        this.type = "Bit";
-        this.constructor = "Bernoulli"; //fixme: check args 
-        this.weight = args[0];
-        this.id = id;
-
-        // define template
-        var lineTemplates = 
-                [
-                    "{{type}} {{id}} = new {{type}}();",
-                    "myGraph.addFactor(new {{constructor}}( {{weight}} ), {{id}});"
-                ];
-        
-        this.java = lineTemplates.map(
-            function(t) {
-                return _.template(t)( me )
-            }
-        ).join("\n");
-
-        break
-
-    default:
-        throw new Error("Can't yet translate function "+fn+".")
+    if (typeof primitiveToFactor[fn] == "undefined") {
+        try {
+            primitiveToFactor[fn] = require('./dimple/factors/' + fn + '.js');
+        } catch (e) {
+            throw new Error("Can't yet translate function \""+fn+"\" to Dimple.");
+        }
     }
+
+    // call the function for adding the current factor's metadata (e.g., type, constructor)
+    // to the this object
+    (primitiveToFactor[fn])( this );
+
+    if (typeof this.constructorArgs == 'undefined') {
+        this.constructorArgs = [];
+    } 
+    this.constructorArgStr = this.constructorArgs.join(",")
+
+    if (typeof this.inputVariables == 'undefined' || (Array.isArray(this.inputVariables) && this.inputVariables.length == 0)) {
+        this.inputVariableStr = "";
+    } else {
+        this.inputVariableStr = ", " + this.inputVariables.join(", ");
+    } 
+
+    this.java = factorTemplate(this);
+    
 }
-
-
                  
 
 module.exports =
