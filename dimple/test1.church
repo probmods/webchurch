@@ -1,0 +1,4 @@
+(define foo (flip 0.5))
+(define bar (flip 0.3))
+(condition (or foo bar))
+(and foo bar)
