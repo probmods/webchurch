@@ -1,3 +1,6 @@
+/* global require, process, fs */
+
+
 var tokenize = require('./tokenize.js').tokenize;
 var church_astify = require('./church_astify.js').church_astify;
 var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
@@ -5,31 +8,27 @@ var js_astify = require('./js_astify.js').church_tree_to_esprima_ast;
 var wctransform = require('./wctransform');
 var escodegen = require('escodegen');
 var esprima = require('esprima');
-var estraverse = require('escodegen/node_modules/estraverse');
+var estraverse = require('escodegen/node_modules/estraverse'); 
+var trace = require('./trace.js');
+var ttd = require('./trace-to-dimple.js');
+var fs = require('fs');
 
+var log = function(x) {
+    console.log(x)
+}
 
-var trace = require('./trace.js')
+var filename = process.argv[2];
 
-var ttd = require('./trace-to-dimple.js')
+if (filename === undefined) {
+    console.log('Usage: node dimple-compiler.js [filename]')
+    return 1;
+}
 
-
-church_codestring="\
-    (define foo (flip 0.5))\
-    (define bar (flip 0.3))\
-    (define baz (flip 0.9))\
-    foo\
-    (condition (and (or foo (not bar)) (or (not foo) bar)))\
-    "
-
-//church_codestring="(define foo (flip 0.5)) (define goo (or foo (flip 0.6)))"
-
-// church_codestring="(define foo (flip 0.5))"
+var church_codestring = fs.readFileSync(filename);
 
 ////Ising example:
 //(define sites (repeat 10 flip))
-//(define (constraints s) (if (null? s) )
-
- 
+//(define (constraints s) (if (null? s) ) 
 
 //preamble is an array of strings defining church functions for the precompile pass. these all overload built in functions from the church or probjs runtime.
 var preamble = []
@@ -47,8 +46,6 @@ for (var p in erps) {
 
 church_codestring = preamble.join("\n")+ "\n" + church_codestring
 
-
-
 var tokens = tokenize(church_codestring);
 var church_ast = church_astify(tokens);
 var js_ast = js_astify(church_ast);
@@ -59,7 +56,6 @@ js_ast = wctransform.probTransformAST(js_ast, true);
 // console.log(escodegen.generate(js_ast))
 // console.log('')
 
-
 //trace:
 var tracecode = trace.trace(js_ast);
 
@@ -68,7 +64,7 @@ var tracecode = trace.trace(js_ast);
 // console.log(tracecode)
 // console.log('')
 
-//to dimple:
+// // to dimple:
 // console.log('dimple code')
 // console.log('-----------\n')
 
@@ -80,9 +76,6 @@ var javaImports = [
     "com.analog.lyric.dimple.model.core.*"
 ];
 
-var log = function(x) {
-    console.log(x)
-}
 
 log(javaImports.map(function(imp) {
     return "import " + imp + ";";
@@ -93,6 +86,7 @@ log("{")
 log("public static void main(String[] args)");
 log("{")
 log("")
+log("FactorGraph myGraph = new FactorGraph();");
 log(ttd.traceToDimple(tracecode))
 
 
