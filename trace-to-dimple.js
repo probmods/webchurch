@@ -20,7 +20,7 @@
  header:
     FactorGraph myGraph = new FactorGraph();
  
- dimpleAddVarDecl(“var ab1 = foo(ab2, ab3)”)
+ dimpleVarDec(“var ab1 = foo(ab2, ab3)”)
     —>
         <dimpleReturnType(“foo”)> ab1 = new <dimpleReturnType(“foo”)>();
         myGraph.addFactor(<dimpleFactor(“foo”)>, ab1, ab2, ab3);
@@ -63,12 +63,14 @@
 
  
  TODO:
-    -Update the above spec, given that i've changed the function signatures somewhat... ;)
-    -First pass assumes all variables are boolean, only erp is flip, and primitives are: and, or, not. 
-        -Need to do correct dimple translations.
-        -Make basic models to test the pipeline.
-    - handle querying
-    - handle constructor arguments for Dimple variable types like Discrete and Real
+ 
+ -Update the above spec, given that i've changed the function signatures somewhat... ;)
+ -First pass assumes all variables are boolean, only erp is flip, and primitives are: and, or, not. 
+   -Need to do correct dimple translations.
+   -Make basic models to test the pipeline.
+   - handle querying
+ - handle constructor arguments for Dimple variable types like Discrete and Real
+ - handle If statements
 
 */
 
@@ -81,22 +83,28 @@ _.templateSettings = {
   interpolate: /\{\{(.+?)\}\}/g
 };
 
-var dimpleCode = ""
+//var dimpleCode = ""
 function toDimpleFile(line) {
 //    console.log(line)
-    dimpleCode = dimpleCode + line +"\n"
+//    dimpleCode = dimpleCode + line +"\n"
+}
+
+var log = function() {
+    var args = Array.prototype.slice.call(arguments);
+    console.log(args.join("\n"));
 }
 
 function traceToDimple(code) {
-    var ast = esprima.parse(code)
+    var ast = esprima.parse(code); 
+    var dimpleCode = "";
     
-    //generate dimple header:
-    toDimpleFile("FactorGraph myGraph = new FactorGraph();")
+    // TODO: we might have to create subgraphs
+    // i need to figure out how to name and keep track of these
 
     // walk through the ast
-    for(var dec in ast.body) {
-        switch(ast.body[dec].type) {
-            case 'VariableDeclaration':
+    ast.body.forEach(function(term) {
+        switch(term.type) {
+        case 'VariableDeclaration':
             // a VariableDeclaration is a node of the form
             // var {id} = {init}
             // where {id} will parse to an Identifier object
@@ -104,28 +112,70 @@ function traceToDimple(code) {
             // that it will be a CallExpression, in particular. this is to be contrasted with
             // a BinaryExpression (e.g., 1 + x) or an ObjectExpression (e.g., x) 
             
-                //assume one declarator per declaration.
-                var decl = ast.body[dec].declarations[0]
-                var id = decl.id.name
-                var init = decl.init
-            
+            //assume one declarator per declaration.
+            var decl = term.declarations[0]
+            var id = decl.id.name
+            var init = decl.init
+
+            if (init.type == "CallExpression") {
                 var callee = init.callee.name
                 if(callee == 'condition' || callee == 'factor') {
-                    dimpleEvidence(init)
+                    dimpleCode += "\n" + dimpleEvidence(init);
                 } else {
-                    dimpleAddVarDecl(id, init)
+                    dimpleCode += "\n" + dimpleVarDec(id, init);
                 }
-                break
-            case 'ExpressionStatement':
-                //should be final statement which is return value.
-                //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
-                break
-            case 'IfStatement':
-                //todo..
-            default:
-                throw new Error("Haven't implemented translation for expression of type " + ast.body[dec].type)
+            } else if (init.type == 'Literal') {
+                // TODO: fix this to 
+                dimpleCode += "\n" + escodegen.generate(term);
+                
+                //console.log(dimpleCode);
+            }
+            break
+        case 'ExpressionStatement': 
+            //should be final statement which is return value.
+            //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
+
+            dimpleCode += "myGraph.getSolver().setNumIterations(100);\n";
+            dimpleCode += "myGraph.solve();\n";
+            dimpleCode += "\n";
+
+            // TODO: figure out how to handle variables with infinite support 
+		        dimpleCode += "double [] belief = " + term.expression.name + ".getBelief();\n"
+		        dimpleCode += "System.out.println(Arrays.toString(belief));"
+            
+            break
+        // case 'BlockStatement':
+
+        //     dimpleCode += "{\n" 
+        //     dimpleCode += traceToDimple()
+            
+        //     break;
+        case 'IfStatement':
+            var string = "if (" + term.test.name + ")";
+            // change the type of the consequent node from BlockStatement
+            // to Program, in effect treating the consequent as its own little
+            // program
+            // not sure if this is necessary or even good - does java have blocks?
+            // note to self: javascript does not have block scope, nor does java
+            // var consequent = _({}).extend(term.consequent, {type: 'Program'});
+            // var alternate = _({}).extend(term.consequent, {type: 'Program'}); 
+            
+            // string += traceToDimple(escodegen.generate(consequent));
+            // string += "\n"
+            // string += "else"
+            // string += "\n"
+            // string += traceToDimple(escodegen.generate(alternate));
+
+            // dimpleCode += string;
+            // break
+            // render the consequent
+            
+            
+            //todo..
+        default:
+            throw new Error("Haven't implemented translation for expression of type " + term.type)
         }
-    }
+    })
     
     return dimpleCode
 }
@@ -139,7 +189,9 @@ function traceToDimple(code) {
 function dimpleEvidence(init) {
     var evexp = init.arguments[0].name
     if(init.callee.name == 'condition'){
-        toDimpleFile( evexp+ ".setFixedValue(1);");
+        // toDimpleFile( evexp+ ".setFixedValue(1);");
+        return evexp+ ".setFixedValue(1);";
+        
     } else if (init.callee.name == 'factor') {
         //todo: myGraph.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)>
     }
@@ -148,7 +200,7 @@ function dimpleEvidence(init) {
 //most trace statements will be declarations of the form 'var ab0 = foo(ab1,const);'
 // id is the ab0 part
 // init is the foo(ab1, const) part
-function dimpleAddVarDecl(id, init) {
+function dimpleVarDec(id, init) {
     var callee = init.callee.name
     //get args, which might each be literal, identifier, or array:
     var args = []
@@ -187,7 +239,7 @@ function dimpleAddVarDecl(id, init) {
     //Generate Dimple statements
     var factor = new DimpleFactor(id, callee, args)
 
-    toDimpleFile( factor.java );
+    return factor.java;
     // toDimpleFile( "myGraph.addFactor(new {{factor}}(), {{id}}, {{factorArgString}""
     
 }
