@@ -135,13 +135,12 @@ function traceToDimple(code) {
             //should be final statement which is return value.
             //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
 
-            dimpleCode += "myGraph.getSolver().setNumIterations(100);\n";
-            dimpleCode += "myGraph.solve();\n";
-            dimpleCode += "\n";
+            dimpleCode += "\nmyGraph.getSolver().setNumIterations(10000);";
+            dimpleCode += "\nmyGraph.solve();\n";
 
             // TODO: figure out how to handle variables with infinite support 
-		        dimpleCode += "double [] belief = " + term.expression.name + ".getBelief();\n"
-		        dimpleCode += "System.out.println(Arrays.toString(belief));"
+		        dimpleCode += "\ndouble [] belief = " + term.expression.name + ".getBelief();"
+		        dimpleCode += "\nSystem.out.println(Arrays.toString(belief));"
             
             break
         // case 'BlockStatement':
