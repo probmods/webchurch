@@ -47,7 +47,10 @@ switch to branch box2d
 		./compile.sh
 
 # Dependencies
-- [nodejs](http://nodejs.org/download/) (see `package.json` for npm dependencies)
+- [nodejs](http://nodejs.org/download/) v0.10.26 (see `package.json` for npm dependencies)
+
+Some people have reported that v0.10.28 doesn't work but that switching to v0.10.26 does
+
 - Python (at least on Windows, version must be > 2.5 and < 3.0)
 
 
