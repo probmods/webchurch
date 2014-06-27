@@ -33,7 +33,7 @@ var bodyDef = new b2BodyDef;
 var fixDef = new b2FixtureDef;
 
 /** Helpers **/
-function tob2Vec2 (svec) { return new b2Vec2(svec[1], svec[2]) }
+function tob2Vec2 (svec) { return new b2Vec2(svec[0], svec[1]) }
 function arrayToList (arr, mutate) {
     if (mutate) { arr.push(null) }
     else { arr = arr.concat(null) }
@@ -68,13 +68,23 @@ function tob2World(cWorld) {
         bodyDef.linearVelocity.y = body[3][2];
         bodyDef.angularVelocity = body[4];
 
+        // doesn't yet support oriented shapes, but trivial to do so
         switch (shapeT[1]) {
         case "circle":          // only radius from dims
             fixDef.shape = new b2CircleShape(shapeT[2][1]);
             break;
-        case "rectangle":
+        case "rectangle":       // half-width and half-height
             fixDef.shape = new b2PolygonShape;
             fixDef.shape.SetAsBox(shapeT[2][1], shapeT[2][2]);
+            break;
+        case "ngon":            // radius and number of vertices
+            fixDef.shape = new b2PolygonShape;
+            vs = [];
+            da = 2*Math.PI/Math.round(shapeT[2][2])
+            for (var a=0; a<2*Math.PI; a+=da) {
+                vs.push(tob2Vec2([Math.cos(a)*shapeT[2][1], Math.sin(a)*shapeT[2][1]]));
+            }
+            fixDef.shape.SetAsVector(vs, Math.round(shapeT[2][2]));
             break;
         default:
             console.log("error: unknown shape type!");
@@ -156,7 +166,8 @@ var y = function (v) { return v[2] }
 
 var circle = "circle"
 var rectangle = "rectangle"
-var shapeTypes = function () { return arrayToList([circle, rectangle]) }
+var ngon = "ngon"
+var shapeTypes = function () { return arrayToList([circle, rectangle, ngon]) }
 var shape2D = function (shape, dimension) {
     assertType(dimension, "dimensions")
     return tagArgs("shape",arguments)
@@ -216,7 +227,7 @@ var simpleEntity2D = function (shape, dim, type, pos, vel) {
 
 var setWorldG = function (gravity) {
     assertType(gravity, "vector")
-    defaultWorld.SetGravity(tob2Vec2(gravity));
+    defaultWorld.SetGravity(tob2Vec2(gravity.slice(1)));
 }
 
 var runPhysics = function(steps, cWorld) {
