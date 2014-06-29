@@ -12,24 +12,8 @@ var esprima = require('esprima');
 var estraverse = require('escodegen/node_modules/estraverse'); 
 var trace = require('./trace.js');
 var ttd = require('./trace-to-dimple.js');
+
 var fs = require('fs');
-
-var optparse = require('optparse');
-
-var switches = [
-    ['-q', '--quiet', "Don't emit code (only shows errors and warning)"]
-];
-
-var parser = new optparse.OptionParser(switches);
-
-var opts = {
-    quiet: false
-};
-
-parser.on('quiet', function(x) {
-    opts.quiet = true;
-});
-
 
 var logStr = "";
 var log = function(x) {
@@ -43,10 +27,26 @@ function abort(msg) {
 
 var filename = process.argv.length > 2 ? process.argv[process.argv.length-1] : abort("Usage: dimplify [OPTIONS]... [FILE]");
 
-if (filename === undefined) {
-    console.log('Usage: node dimple-compiler.js [filename]')
-    return 1;
-}
+process.argv = process.argv.slice(0, -1);
+
+var optparse = require('optparse');
+
+var switches = [
+    ['-q', '--quiet', "Don't emit code (only shows errors and warning)"] 
+];
+
+var parser = new optparse.OptionParser(switches);
+
+var opts = {
+    quiet: false
+};
+
+parser.on('quiet', function() {
+    opts.quiet = true;
+});
+
+parser.parse(process.argv);
+
 
 var church_codestring = fs.readFileSync(filename);
 
