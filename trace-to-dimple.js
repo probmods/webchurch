@@ -94,87 +94,80 @@ var log = function() {
     console.log(args.join("\n"));
 }
 
-function traceToDimple(code) {
-    var ast = esprima.parse(code); 
+// works on either ast or strings
+function traceToDimple(x) {
+    var ast = (typeof x == 'string') ? ast = esprima.parse(x) : x
     var dimpleCode = "";
+
+    function add(code) {
+        dimpleCode += "\n" + code;
+    }
     
     // TODO: we might have to create subgraphs
     // i need to figure out how to name and keep track of these
 
-    // walk through the ast
-    ast.body.forEach(function(term) {
-        switch(term.type) {
-        case 'VariableDeclaration':
-            // a VariableDeclaration is a node of the form
-            // var {id} = {init}
-            // where {id} will parse to an Identifier object
-            // and {init} will parse to an Expression object (I think this code currently assumes
-            // that it will be a CallExpression, in particular. this is to be contrasted with
-            // a BinaryExpression (e.g., 1 + x) or an ObjectExpression (e.g., x) 
-            
-            //assume one declarator per declaration.
-            var decl = term.declarations[0]
-            var id = decl.id.name
-            var init = decl.init
+    if (ast.type == 'Identifier') {
+        return ast.name;
+    } else if (ast.type == 'ExpressionStatement') { 
+        //should be final statement which is return value.
+        //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
 
-            if (init.type == "CallExpression") {
-                var callee = init.callee.name
-                if(callee == 'condition' || callee == 'factor') {
-                    dimpleCode += "\n" + dimpleEvidence(init);
-                } else {
-                    dimpleCode += "\n" + dimpleVarDec(id, init);
-                }
-            } else if (init.type == 'Literal') {
-                // TODO: fix this to 
-                dimpleCode += "\n" + escodegen.generate(term);
-                
-                //console.log(dimpleCode);
+        add( "myGraph.getSolver().setNumIterations(10000);" );
+        add( "myGraph.solve();\n");
+
+        // TODO: figure out how to handle variables with infinite support 
+		    add( "double [] belief = " + ast.expression.name + ".getBelief();" );
+		    add( "System.out.println(Arrays.toString(belief));"); 
+    } else if (ast.type == 'VariableDeclaration') {
+        // a VariableDeclaration is a node of the form
+        // var {id} = {init}
+        // where {id} will parse to an Identifier object
+        // and {init} will parse to an Expression object (I think this code currently assumes
+        // that it will be a CallExpression, in particular. this is to be contrasted with
+        // a BinaryExpression (e.g., 1 + x) or an ObjectExpression (e.g., x) 
+        
+        //assume one declarator per declaration.
+        var decl = ast.declarations[0]
+        var id = decl.id.name
+        var init = decl.init
+
+        if (init.type == "CallExpression") {
+            var callee = init.callee.name
+            if(callee == 'condition' || callee == 'factor') {
+                add( dimpleEvidence(init) );
+            } else {
+                add( dimpleVarDec(id, init) );
             }
-            break
-        case 'ExpressionStatement': 
-            //should be final statement which is return value.
-            //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
-
-            dimpleCode += "\nmyGraph.getSolver().setNumIterations(10000);";
-            dimpleCode += "\nmyGraph.solve();\n";
-
-            // TODO: figure out how to handle variables with infinite support 
-		        dimpleCode += "\ndouble [] belief = " + term.expression.name + ".getBelief();"
-		        dimpleCode += "\nSystem.out.println(Arrays.toString(belief));"
+        } else if (init.type == 'Literal') {
+            // TODO: fix this to 
+            add( + escodegen.generate(ast) );
             
-            break
-        // case 'BlockStatement':
-
-        //     dimpleCode += "{\n" 
-        //     dimpleCode += traceToDimple()
-            
-        //     break;
-        case 'IfStatement':
-            var string = "if (" + term.test.name + ")";
-            // change the type of the consequent node from BlockStatement
-            // to Program, in effect treating the consequent as its own little
-            // program
-            // not sure if this is necessary or even good - does java have blocks?
-            // note to self: javascript does not have block scope, nor does java
-            // var consequent = _({}).extend(term.consequent, {type: 'Program'});
-            // var alternate = _({}).extend(term.consequent, {type: 'Program'}); 
-            
-            // string += traceToDimple(escodegen.generate(consequent));
-            // string += "\n"
-            // string += "else"
-            // string += "\n"
-            // string += traceToDimple(escodegen.generate(alternate));
-
-            // dimpleCode += string;
-            // break
-            // render the consequent
-            
-            
-            //todo..
-        default:
-            throw new Error("Haven't implemented translation for expression of type " + term.type)
         }
-    })
+    } else if (ast.type == 'IfStatement') {
+
+        // TODO: singleton object pattern for decreasing memory usage
+        // if we've got a ton of if statements
+
+        var dat = {
+            // create a variable for the selector string
+            selector: traceToDimple(ast.test),
+            consequent: traceToDimple(ast.consequent),
+            alternate: traceToDimple(ast.alternate)
+        };
+
+        var t = "myGraph.addFactor(new Multiplexer(), [out1], {{selector}}, {{consequent}}, {{alternate}})";
+
+        add(_.template(t, dat)); 
+    } else if (ast.type == 'Program') {
+        // walk through the ast
+        var lines = ast.body
+                .map(function(subast) {
+                    return traceToDimple(subast)
+                });
+        add(lines.join("\n")); 
+    } else {
+        throw new Error("Haven't implemented translation for expression of type " + ast.type)
+    }
     
     return dimpleCode
 }
