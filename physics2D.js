@@ -6,6 +6,7 @@
       ideally, this is resolved internally based on sizes specified in code
    2. Look again into running worlds - Need a cleaner way to intervene among steps
    3. Look into controllers - way to add forces
+   4. http://www.iforce2d.net/b2dtut/collision-anatomy
 **/
 
 /** imports and requires **/
@@ -29,10 +30,9 @@ var scale = 30;                 // 1 meter = 30 pixels
 /** variables **/
 // with g = 10 and 'sleeping' permitted
 var defaultWorld = new b2World(new b2Vec2(0, 60), true);
-var bodyDef = new b2BodyDef;
-var fixDef = new b2FixtureDef;
 
 /** Helpers **/
+function genID() {return '_' + Math.random().toString(36).substr(2, 9);}
 function tob2Vec2 (svec) { return new b2Vec2(svec[0], svec[1]) }
 function arrayToList (arr, mutate) {
     if (mutate) { arr.push(null) }
@@ -43,14 +43,29 @@ function tagArgs(tag, args) {
     var a =  Array.prototype.slice.call(args,0);
     return arrayToList([tag].concat(a));
 }
+// modifies fixDef
+function setPolygon(fixDef, r, v) {
+    // radius and number of vertices
+    fixDef.shape = new b2PolygonShape;
+    vs = [];
+    da = 2*Math.PI/Math.round(v)
+    for (var a=0; a<2*Math.PI; a+=da) {
+        vs.push(tob2Vec2([Math.cos(a)*r, Math.sin(a)*r]));
+    }
+    fixDef.shape.SetAsVector(vs, Math.round(v));
+}
 
 /** Procedures **/
-//church world -> box2D world
-function tob2World(cWorld) {
-    for (var i=0; i<cWorld.length-1; i++) {
-        var shapeT = cWorld[i][1];
-        var body = cWorld[i][2];
-        var fix = cWorld[i][3];
+function bodyID(body) {return body.GetUserData().id;}
+//box2d default, church world -> box2D world
+function tob2World(world, entities) {
+    var bodyDef = new b2BodyDef;
+    var fixDef = new b2FixtureDef;
+    for (var i=0; i<entities.length-1; i++) {
+        var name = entities[i][1]
+        var shapeT = entities[i][2];
+        var body = entities[i][3];
+        var fix = entities[i][4];
 
         switch (body[1]) {
         case "static":
@@ -67,6 +82,7 @@ function tob2World(cWorld) {
         bodyDef.linearVelocity.x = body[3][1];
         bodyDef.linearVelocity.y = body[3][2];
         bodyDef.angularVelocity = body[4];
+        bodyDef.userData = {parentObject: this, shapeName: shapeT[1], id: name};
 
         // doesn't yet support oriented shapes, but trivial to do so
         switch (shapeT[1]) {
@@ -77,25 +93,20 @@ function tob2World(cWorld) {
             fixDef.shape = new b2PolygonShape;
             fixDef.shape.SetAsBox(shapeT[2][1], shapeT[2][2]);
             break;
-        case "ngon":            // radius and number of vertices
-            fixDef.shape = new b2PolygonShape;
-            vs = [];
-            da = 2*Math.PI/Math.round(shapeT[2][2])
-            for (var a=0; a<2*Math.PI; a+=da) {
-                vs.push(tob2Vec2([Math.cos(a)*shapeT[2][1], Math.sin(a)*shapeT[2][1]]));
-            }
-            fixDef.shape.SetAsVector(vs, Math.round(shapeT[2][2]));
-            break;
-        default:
-            console.log("error: unknown shape type!");
+        case "triangle": setPolygon(fixDef,shapeT[2][1],3); break;
+        case "square": setPolygon(fixDef,shapeT[2][1],4); break;
+        case "pentagon": setPolygon(fixDef,shapeT[2][1],5); break;
+        case "hexagon": setPolygon(fixDef,shapeT[2][1],6); break;
+        case "ngon": setPolygon(fixDef,shapeT[2][1],shapeT[2][2]); break;
+        default: console.log("error: unknown shape type!");
         }
         fixDef.density = fix[1];
         fixDef.friction = fix[2];
         fixDef.restitution = fix[3];
 
-        defaultWorld.CreateBody(bodyDef).CreateFixture(fixDef);
+        world.CreateBody(bodyDef).CreateFixture(fixDef);
     }
-    return defaultWorld;
+    return world;
 }
 
 // box2D world -> church world
@@ -104,6 +115,7 @@ function fromb2World (b2dWorld) {
     var entities = [];
     while (body) {
         var shapeT;
+        var ud = body.GetUserData();
         switch(body.GetFixtureList().GetShape().GetType()) {
         case b2Shape.e_circleShape:
             var r = body.GetFixtureList().GetShape().GetRadius();
@@ -111,7 +123,7 @@ function fromb2World (b2dWorld) {
             break;
         case b2Shape.e_polygonShape:
             var vs = body.GetFixtureList().GetShape().GetVertices();
-            shapeT = shape2D(rectangle, dim2D(vs[2].x, vs[2].y));
+            shapeT = shape2D(ud.shapeName, dim2D(vs[2].x, vs[2].y));
             break;
         default: console.log("error: unknown shape!");
         }
@@ -127,27 +139,27 @@ function fromb2World (b2dWorld) {
             console.log("error: unknown entity type!");
         }
         var b = body2D(type,
-                         pos2D(body.GetPosition().x, body.GetPosition().y),
-                         vec2D(body.GetLinearVelocity().x, body.GetLinearVelocity().y),
-                         body.GetAngularVelocity());
+                       pos2D(body.GetPosition().x, body.GetPosition().y),
+                       vec2D(body.GetLinearVelocity().x, body.GetLinearVelocity().y),
+                       body.GetAngularVelocity());
         var f = fix2D(body.GetFixtureList().GetDensity(),
-                        body.GetFixtureList().GetFriction(),
-                        body.GetFixtureList().GetRestitution());
+                      body.GetFixtureList().GetFriction(),
+                      body.GetFixtureList().GetRestitution());
 
-        entities.push(entity2D(shapeT,b,f));
+        entities.push(entity2D(ud.id,shapeT,b,f));
         body = body.GetNext();
     }
     return arrayToList(entities);
 }
 
 // function clearWorld () {
-function clearWorld () {
-    var count = defaultWorld.GetBodyCount();
+function clearWorld (world) {
+    var count = world.GetBodyCount();
     for (var i=0; i<count; i++) {
-        var body = defaultWorld.GetBodyList();
-        defaultWorld.DestroyBody(body);
+        var body = world.GetBodyList();
+        world.DestroyBody(body);
     }
-    return defaultWorld;
+    return world;
 }
 
 /** Scheme-exposed functions for construction and type-checking **/
@@ -165,19 +177,25 @@ var x = function (v) { return v[1] }
 var y = function (v) { return v[2] }
 
 var circle = "circle"
+var triangle = "triangle"
+var square = "square"
 var rectangle = "rectangle"
+var pentagon = "pentagon"
+var hexagon = "hexagon"
 var ngon = "ngon"
-var shapeTypes = function () { return arrayToList([circle, rectangle, ngon]) }
+var shapeTypes = function () {
+    return arrayToList([circle, triangle, square, rectangle, pentagon, hexagon])
+}
 var shape2D = function (shape, dimension) {
     assertType(dimension, "dimensions")
     return tagArgs("shape",arguments)
 }
 
-var staticBody = "static"
-var dynamicBody = "dynamic"
-var kinematicBody = "kinematic"
+var staticType = "static"
+var dynamicType = "dynamic"
+var kinematicType = "kinematic"
 var bodyTypes = function () {
-    return arrayToList([staticBody, dynamicBody, kinematicBody])
+    return arrayToList([staticType, dynamicType, kinematicType])
 }
 
 var body2D = function (type, pos, vel, a_vel) {
@@ -195,52 +213,73 @@ var fix2D_density = function (fix) { return fix[1] }
 var fix2D_friction = function (fix) { return fix[2] }
 var fix2D_restitution = function (fix) { return fix[3] }
 
-var entity2D = function (shapeT, body, fix) {
+var entity2D = function (id, shapeT, body, fix) {
     assertType(shapeT, "shape")
     assertType(body, "body")
     assertType(fix, "fixture")
     return tagArgs("entity", arguments)
 }
-var entity2D_shapeT = function (entity) { return entity[1] }
-var entity2D_body = function (entity) { return entity[2] }
-var entity2D_fixture = function (entity) { return entity[3] }
-var entity2D_shape = function (entity) { return entity[1][1] }
-var entity2D_dimensions = function (entity) { return entity[1][2] }
-var entity2D_type = function (entity) { return entity[2][1] }
-var entity2D_position = function (entity) { return entity[2][2] }
-var entity2D_velocity = function (entity) { return entity[2][3] }
-var entity2D_aVelocity = function (entity) { return entity[2][4] }
-var entity2D_density = function (entity) { return entity[3][1] }
-var entity2D_friction = function (entity) { return entity[3][2] }
-var entity2D_restitution = function (entity) { return entity[3][3] }
+var entity2D_id = function (entity) { return entity[1] }
+var entity2D_shapeT = function (entity) { return entity[2] }
+var entity2D_body = function (entity) { return entity[3] }
+var entity2D_fixture = function (entity) { return entity[4] }
+var entity2D_shape = function (entity) { return entity[2][1] }
+var entity2D_dimensions = function (entity) { return entity[2][2] }
+var entity2D_type = function (entity) { return entity[3][1] }
+var entity2D_position = function (entity) { return entity[3][2] }
+var entity2D_velocity = function (entity) { return entity[3][3] }
+var entity2D_aVelocity = function (entity) { return entity[3][4] }
+var entity2D_density = function (entity) { return entity[4][1] }
+var entity2D_friction = function (entity) { return entity[4][2] }
+var entity2D_restitution = function (entity) { return entity[4][3] }
 
 var noVelocity = function () { return vec2D(0, 0) }
 var stdFixture = function () { return fix2D(1.0, 0.2, 0.3)}
 
-var simpleEntity2D = function (shape, dim, type, pos, vel) {
-    return entity2D(shape2D(shape,dim),
-                      body2D(type, pos, vel, 0.0),
-                      stdFixture())
-}
-// perhaps need a function to read back into scheme that keeps it 'simple'?
-// filp(0.1) at this point
+var simpleBody = function(type, pos, vel) {return body2D(type, pos, vel, 0.0);}
+var staticBody = function(pos) {return body2D(staticType, pos, noVelocity(), 0.0);}
+var dynamicBody = function(pos) {return body2D(dynamicType, pos, noVelocity(), 0.0);}
+var kinematicBody = function(pos) {return body2D(kinematicType, pos, noVelocity(), 0.0);}
 
-var setWorldG = function (gravity) {
+var simpleEntity = function (shapeT, body) {return entity2D(genID(), shapeT, body, stdFixture());}
+var staticEntity = function (shapeT, pos) {return simpleEntity(shapeT, staticBody(pos));}
+var dynamicEntity = function (shapeT, pos) {return simpleEntity(shapeT, dynamicBody(pos));}
+var kinematicEntity = function (shapeT, pos) {return simpleEntity(shapeT, kinematicBody(pos));}
+
+var namedSimpleEntity = function (id, shapeT, body) {return entity2D(id, shapeT, body, stdFixture());}
+var namedStaticEntity = function (id, shapeT, pos) {
+    return namedsimpleEntity(id, shapeT, staticBody(pos));}
+var namedDynamicEntity = function (id, shapeT, pos) {
+    return namedsimpleEntity(id, shapeT, dynamicBody(pos));}
+var namedKinematicEntity = function (id, shapeT, pos) {
+    return namedsimpleEntity(id, shapeT, kinematicBody(pos));}
+
+var makeWorld = function (gravity, entities) {
+    var world = new b2World(tob2Vec2(gravity.slice(1)), true);
+    // really annoying - new world starts off with a 'null' body, so clear it
+    world = clearWorld(world);
+    return tob2World(world, entities);
+}
+// for normal gravity domain
+var makeFallingWorld = function (entities) {return makeWorld(vec2D(0, 60), entities);}
+// for the billiards domain
+var makeFlatWorld = function (entities) {return makeWorld(vec2D(0, 0), entities);}
+// use this only if you want to intervene, else use makeWorld
+var setWorldG = function (b2World, gravity) {
     assertType(gravity, "vector")
-    defaultWorld.SetGravity(tob2Vec2(gravity.slice(1)));
+    b2World.SetGravity(tob2Vec2(gravity.slice(1)));
+    return b2World;
 }
 
-var runPhysics = function(steps, cWorld) {
-    clearWorld();
-    tob2World(cWorld);
+var runPhysics = function(steps, b2World) {
     for (var s=0; s<steps; s++) {
-        defaultWorld.Step(
+        b2World.Step(
             1 / fps   //frame-rate
             ,  10       //velocity iterations
             ,  10       //position iterations
         );
     }
-    return fromb2World(defaultWorld);
+    return fromb2World(b2World);
 }
 
 /** specifically for in-browser running **/
@@ -272,31 +311,29 @@ if (typeof window !== 'undefined') {
     var b2DebugDraw = Box2D.Dynamics.b2DebugDraw;
 
     // code to run animation in browser
-    var animatePhysics = function(steps, cWorld) {
+    var animatePhysics = function(steps, b2World) {
         function simulate(canvas, steps) {
-            clearWorld();
-            tob2World(cWorld);
             var debugDraw = new b2DebugDraw();
             debugDraw.SetSprite(canvas[0].getContext("2d"));
             debugDraw.SetDrawScale(1); // was 'scale' before
             debugDraw.SetFillAlpha(0.3);
             debugDraw.SetLineThickness(1.0);
             debugDraw.SetFlags(b2DebugDraw.e_shapeBit | b2DebugDraw.e_jointBit);
-            defaultWorld.SetDebugDraw(debugDraw);
+            b2World.SetDebugDraw(debugDraw);
 
             function update(stepsSoFar) {
 	        stepsSoFar++;
 	        var currTime = new Date().getTime();
 	        requestId = requestAnimationFrame(function(time) {update(stepsSoFar);});
 	        if (stepsSoFar < steps) {
-	            defaultWorld.Step(
+	            b2World.Step(
 	                1 / fps,  //frame-rate
 	                10,       //velocity iterations
 	                10        //position iterations
 	            );
 	        }
-	        defaultWorld.DrawDebugData();
-	        defaultWorld.ClearForces();
+	        b2World.DrawDebugData();
+	        b2World.ClearForces();
             };
             requestId = requestAnimationFrame(function() {update(0);});
         }
@@ -346,13 +383,18 @@ module.exports = {
     y: y,
 
     circle: circle,
+    triangle: triangle,
+    square: square,
     rectangle: rectangle,
+    pentagon: pentagon,
+    hexagon: hexagon,
+    ngon: ngon,
     shapeTypes: shapeTypes,
     shape2D: shape2D,
 
-    staticBody: staticBody,
-    dynamicBody: dynamicBody,
-    kinematicBody: kinematicBody,
+    staticType: staticType,
+    dynamicType: dynamicType,
+    kinematicType: kinematicType,
     bodyTypes: bodyTypes,
 
     body2D: body2D,
@@ -367,6 +409,7 @@ module.exports = {
     fix2D_restitution: fix2D_restitution,
 
     entity2D: entity2D,
+    entity2D_id: entity2D_id,
     entity2D_shapeT: entity2D_shapeT,
     entity2D_body: entity2D_body,
     entity2D_fixture: entity2D_fixture,
@@ -383,8 +426,26 @@ module.exports = {
     noVelocity: noVelocity,
     stdFixture: stdFixture,
 
-    simpleEntity2D: simpleEntity2D,
+    simpleBody: simpleBody,
+    staticBody: staticBody,
+    dynamicBody: dynamicBody,
+    kinematicBody: kinematicBody,
+
+    simpleEntity: simpleEntity,
+    staticEntity: staticEntity,
+    dynamicEntity: dynamicEntity,
+    kinematicEntity: kinematicEntity,
+
+    namedSimpleEntity: namedSimpleEntity,
+    namedStaticEntity: namedStaticEntity,
+    namedDynamicEntity: namedDynamicEntity,
+    namedKinematicEntity: namedKinematicEntity,
+
+    makeWorld: makeWorld,
+    makeFallingWorld: makeFallingWorld,
+    makeFlatWorld: makeFlatWorld,
     setWorldG: setWorldG,
+
     runPhysics: runPhysics,
     animatePhysics: animatePhysics
 }

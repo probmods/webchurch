@@ -128,20 +128,22 @@
 
 (define (aDim) (p.dim2D (dim) (dim)))
 (define (aStaticDim) (p.dim2D (staticDim) (staticDim))) ; static obstacles are generally larger than falling objects
-(define (aPos) (p.pos2D (pos) 0))                       ; start falling body from top
+(define (aPos) (p.pos2D (pos) 0))                       ; start falling-body from top
 (define (aStaticPos) (p.pos2D (pos) (pos)))
 
 (define (aShape) (uniform-draw (p.shapeTypes)))
 
-(define (fallingEntity) (p.simpleEntity2D (aShape) (aDim) p.dynamicBody (aPos) (p.noVelocity)))
-(define (staticEntity) (p.simpleEntity2D (aShape) (aStaticDim) p.staticBody (aStaticPos) (p.noVelocity)))
-(define ground (p.simpleEntity2D p.rectangle (p.dim2D 350 10) p.staticBody (p.pos2D 180 500) (p.noVelocity)))
-(define my_world (list ground
-                       (fallingEntity) (fallingEntity) (fallingEntity)
-                       (staticEntity) (staticEntity)))
+(define (fallingEntity) (p.dynamicEntity (p.shape2D (aShape) (aDim)) (aPos)))
+(define (staticEntity) (p.staticEntity (p.shape2D (aShape) (aStaticDim)) (aStaticPos)))
+(define ground (p.staticEntity (p.shape2D p.rectangle (p.dim2D 350 10)) (p.pos2D 180 500)))
+(define my_world
+        (p.makeFallingWorld
+          (list ground
+                (fallingEntity) (fallingEntity) (fallingEntity)
+                (staticEntity) (staticEntity))))
 
 (define simResults (p.runPhysics 1000 my_world))
-(map p.entity2D_position (filter (lambda (e) (equal? (p.entity2D_type e) p.dynamicBody)) simResults))
+(map p.entity2D_position (filter (lambda (e) (equal? (p.entity2D_type e) p.dynamicType)) simResults))
 </code></pre>
 
   </body>
