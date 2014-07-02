@@ -89,7 +89,7 @@ _.templateSettings = {
   interpolate: /\{\{(.+?)\}\}/g
 };
 
-var section = require('./debug.js').section;
+var h1 = require('./debug.js').section;
 
 function toDimpleFile(line) {
 //    console.log(line)
@@ -218,22 +218,11 @@ function traceToDimple(x) {
         // (the variable name should be the same)
         datMux.out = c.body[c.body.length - 1].declarations[0].id.name;
         
-        // c and a may declare variables with overlapping names
-        // walk through all the lines in each and, for each declaration, add a proper suffix (T or F)
-        // so that the dimple factor graph has distinct variables for each branch
-        // TODO: if the if branch contains call expressions, do we need to revise the names of
-        // referenced variables? more generally, how complex can the branches get?
-        c.body.forEach(function(line) {
-            if (line.type == 'VariableDeclaration') {
-                line.declarations[0].id.name += "T";
-            }
-        })
-
-        a.body.forEach(function(line) {
-            if (line.type == 'VariableDeclaration') {
-                line.declarations[0].id.name += "F";
-            }
-        }) 
+        // c and a declare variables with different names, except
+        // for the last var, which is the same
+        // add a suffix (T for c, F for a) to distinguish them 
+        c.body[c.body.length - 1].declarations[0].id.name += "T"; 
+        a.body[a.body.length - 1].declarations[0].id.name += "F";
 
         // each branch is a BlockStatement
         // walk through all the lines in a block, adding it to our current factor graph
@@ -319,7 +308,7 @@ function dimpleVarDec(id, init) {
     // so the function call we'll be dealing with for ERPs is actually
     // a call to random, rather than wrapped_flip. here, we just unwrap
     // the random() call
-    if(callee=='random') {
+    if ( callee=='random' ) {
         callee = args[0]
         args = args[1]
     }
@@ -368,13 +357,13 @@ var DimpleFactor = function(id, fn, args) {
     this.id  = id;
     
     var me = this; // alias for "this" that is safe to use inside map() 
-
-    if (fn === 'random') {
-        args = args.slice(); // copy the args array
-        args.pop(); // remove the last variable, which should be a string containing "JSON.parse('null')"
+    
+    // if it's an erp, omit the last argument, which should be "JSON.parse('null')"
+    if (fn === 'wrapped_flip') {
+        args = args.slice(0, args.length - 1);
     }
 
-    this.args = args;
+    this.args = args; 
 
     if (typeof primitiveToFactor[fn] == "undefined") {
         try {
