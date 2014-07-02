@@ -1,6 +1,6 @@
 module.exports = function(x) {
     x.type = "Real";
-    x.constructor = "Greater"; 
+    x.constructor = "GreaterThan"; 
     x.outputVariable = x.id; 
     x.inputVariables = x.args; 
 }
