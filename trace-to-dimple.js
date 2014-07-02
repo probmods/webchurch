@@ -353,13 +353,24 @@ var factorTemplate = _.template(
 //     - x.outputVariable (the Dimple builtin )
 //     - x.inputVariable (the Dimple builtin ) 
 
+var isErp = function(name) {
+    var erps = ['wrapped_flip'];
+    var i = erps.length;
+    while(i--) {
+        if (erps[i] === name) {
+            return true
+        }
+    }
+    return false
+}
+
 var DimpleFactor = function(id, fn, args) {
     this.id  = id;
     
     var me = this; // alias for "this" that is safe to use inside map() 
     
     // if it's an erp, omit the last argument, which should be "JSON.parse('null')"
-    if (fn === 'wrapped_flip') {
+    if (isErp(fn)) {
         args = args.slice(0, args.length - 1);
     }
 
