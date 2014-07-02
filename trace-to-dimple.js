@@ -71,6 +71,7 @@
    - handle querying
  - handle constructor arguments for Dimple variable types like Discrete and Real
  - handle If statements
+ - source maps (longer term)
 
 */
 
@@ -78,6 +79,8 @@
 var escodegen = require('escodegen');
 var esprima = require('esprima');
 var _ = require('underscore');
+
+var section = require('./debug.js').section;
 
 _.templateSettings = {
   interpolate: /\{\{(.+?)\}\}/g
@@ -108,11 +111,18 @@ function traceToDimple(x) {
 
     if (ast.type == 'Identifier') {
         return ast.name;
-    } else if (ast.type == 'ExpressionStatement') { 
+    } else if (ast.type == 'BlockStatement') {
+        add("{");
+        var lines = ast.body.map(function(x) { return traceToDimple(x) });
+        add(lines.join("\n"));
+        add("}") 
+        
+    }
+    else if (ast.type == 'ExpressionStatement') { 
         //should be final statement which is return value.
         //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
 
-        add( "myGraph.getSolver().setNumIterations(10000);" );
+        add( "myGraph.getSolver().setNumIterations(50);" );
         add( "myGraph.solve();\n");
 
         // TODO: figure out how to handle variables with infinite support 
@@ -139,25 +149,80 @@ function traceToDimple(x) {
                 add( dimpleVarDec(id, init) );
             }
         } else if (init.type == 'Literal') {
-            // TODO: fix this to 
-            add( + escodegen.generate(ast) );
+            // TODO: fix this to
+
+            // dictionary that maps js literal types onto Dimple literal types
+            // TODO: how to handle strings?
+            // TODO: Dimple has other types that don't have analogues in church yet (see p29 of dimple java manual)
+            // - discrete (though this is the output of a uniform-draw)
+            // - realjoint
+            // - complex
+            // - finitefieldvaraible
+            var typeLiteralMappings = {
+                'number': "Real",
+                'boolean': "Bit"
+            }
+
+            var value = init.value;
+            
+            var str = DimpleConstant({
+                type: typeLiteralMappings[typeof value],
+                name: id,
+                value: value
+            }); 
+            
+            add( str );
             
         }
     } else if (ast.type == 'IfStatement') {
 
         // TODO: singleton object pattern for decreasing memory usage
         // if we've got a ton of if statements
+        
+        // template and template data for the multiplexer
+        var tplMux = "myGraph.addFactor(new Multiplexer(), {{out}}, {{selector}}, {{consequent}}, {{alternate}})"; 
+        var datMux = {};
+        
+        datMux.selector = traceToDimple(ast.test);
 
-        var dat = {
-            // create a variable for the selector string
-            selector: traceToDimple(ast.test),
-            consequent: traceToDimple(ast.consequent),
-            alternate: traceToDimple(ast.alternate)
-        };
+        // clone (c)onsequent c and (a) branches
+        var c = _({}).extend(ast.consequent);
+        var a = _({}).extend(ast.alternate);
 
-        var t = "myGraph.addFactor(new Multiplexer(), [out1], {{selector}}, {{consequent}}, {{alternate}})";
+        // get the name of the output wire in the multiplexer
+        // it's the final variable declaration from the consequent and alternate branches
+        // (which should be the same)
+        datMux.out = c.body[c.body.length - 1].declarations[0].id.name; 
+        
+        // c and a may declare variables with overlapping names
+        // walk through all the lines and, for each declaration, add a distinguishing suffix (T or F)
+        // so that the dimple factor graph has distinct variables for each branch
+        // TODO: if the if branch contains call expressions, do we need to revise the names of
+        // relevant variables? more generally, how complex can the branches get?  
+        c.body.forEach(function(line) {
+            if (line.type == 'VariableDeclaration') {
+                line.declarations[0].id.name += "T";
+            }
+        })
 
-        add(_.template(t, dat)); 
+        a.body.forEach(function(line) {
+            if (line.type == 'VariableDeclaration') {
+                line.declarations[0].id.name += "F";
+            }
+        }) 
+
+        // each branch is a BlockStatement
+        // walk through all the lines in a block, adding it to our current factor graph
+        var cLines = c.body.map(traceToDimple);
+        var aLines = a.body.map(traceToDimple); 
+        add(cLines.join("\n"));
+        add(aLines.join("\n"));
+
+        // get the variable names for two input lines to the multiplexer 
+        datMux.consequent = c.body[c.body.length - 1].declarations[0].id.name;
+        datMux.alternate = a.body[a.body.length - 1].declarations[0].id.name;
+
+        add(_.template(tplMux, datMux)); 
     } else if (ast.type == 'Program') {
         // walk through the ast
         var lines = ast.body
@@ -237,9 +302,14 @@ function dimpleVarDec(id, init) {
 }
 
 
-// you call this by using the "new" keyword
-// e.g.,
-// var factor = new DimpleFactor("ab2", "or", ["ab0","ab1"])
+var constantTemplate = _.template(
+    "{{type}} {{name}} = new {{type}}({{value}});"
+);
+
+var DimpleConstant = function(opts) {
+    return constantTemplate(opts);
+}
+
 
 var primitiveToFactor = {};
 
@@ -252,6 +322,12 @@ var factorTemplate = _.template(
     "{{type}} {{id}} = new {{type}}();\n" + 
         "myGraph.addFactor(new {{constructor}}( {{constructorArgStr}} ), {{outputVariable}} {{inputVariableStr}});")
 
+// return the java code for adding a factor
+// - id: name of the factor
+// - fn: the (traced) church primitive used to define this variable (the transformations for each church primitives lives in dimple/factors  ).
+// - args: the (traced) js arguments provided to fn
+// you call this by using the "new" keyword, e.g.,
+// var factor = new DimpleFactor("ab2", "or", ["ab0","ab1"])
 var DimpleFactor = function(id, fn, args) {
     this.id  = id;
     
