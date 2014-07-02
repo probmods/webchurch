@@ -2,59 +2,65 @@
 
 /*
 
- Take a finite trace which is in simple form (eg output of trace.js) and convert into a set of Dimple calls to construct a factor graph.
- Call a dimple solver. (What's the right church abstraction? 'dimple-query'? needs access to traced source, not just thunk though.)
+ Overview
+ ========
  
- Input langauge (in SSA except that the final var in an 'if' is assigned in each branch):
- assignment: var = function(var, ...)
- conditional: if(var){...; assignment} else {...; assignment}
- evidence: condition(var) | factor(var)
- 
- Translation to dimple is pretty straightforward, except that a bunch of information is needed about primitive functions:
-    dimpleReturnType maps from a function to the return type, 
-    dimpleFactor maps from a function to the corresponding dimple factor function.
+ Take a finite trace which is in simple form (namely, the output of trace.js) and convert into a set of Dimple calls to construct a factor graph.
+ Then call a Dimple solver. (What's the right Church abstraction? 'dimple-query'? needs access to traced source, not just thunk though).
 
+ Translation
+ ===========
  
- overall the translation is something like (using <> as unquote):
+ Input language spec: Single-static assignment (SSA), except that the final var in an 'if' is assigned in each branch.
+ - assignment: var = function(var, ...)
+ - conditional: if(var){...; assignment} else {...; assignment}
+ - evidence: condition(var) | factor(var)
  
- header:
-    FactorGraph myGraph = new FactorGraph();
+ Translation is pretty straightforward, except that a bunch of information is needed about primitive functions. The transformation metadata is defined for each Church primitive inside the dimple/factors/ directory. Files in this directory are named after the canonical JS version of Church primitives. For example: 
+ - Info for `flip` lives in `wrapped_flip.js`, because wc compiles church erp calls named x to JS calls named wrapped_x
+ - Info for `+` lives in `plus.js`, because wc defines + as an alias for the canonical name `plus`.
+ - Info for `pow` lives in `expt.js`, because wc defines `pow` as an alias for the canonical name `expt`.
+
+ For more on the metadata files, see the comments for DimpleFactor further down
+
+ Header
+ ------
+ FactorGraph myGraph = new FactorGraph();
+
+ Declaring variables
+ -------------------
+ IN:
+ var ab1 = foo(ab2, ab3)
  
- dimpleVarDec(“var ab1 = foo(ab2, ab3)”)
-    —>
-        <dimpleReturnType(“foo”)> ab1 = new <dimpleReturnType(“foo”)>();
-        myGraph.addFactor(<dimpleFactor(“foo”)>, ab1, ab2, ab3);
- dimpleEvidence("condition(ab1)")
-    ->
-        ab1.FixedValue = true;
- dimpleEvidence("factor(ab1)")
-    ->
-        myGraph.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)>
- 
- 
- 
- 
- dimpleReturnType is basically a table mapping functions to dimple types. according to the dimple manual, dimple supports the following types for variables:
-    Discrete (i.e. enumerated), 
-    Bit (i.e. enum [0,1]), 
-    Real, 
-    RealJoint (more or less a vector of Reals?),
-    FiniteFieldVariable
- 
- dimpleFactor has mappings like:
-    flip —> Bernoulli
-    and -> And
- notes:
-    -most dimple built-in factors have church/js equivalents.
-    -if we handle church_buitlins and erps we'll get most cases.
-    -sometimes the arg patterns mismatch. need to wrap them up.
+ OUT:
+ <dimpleReturnType("foo")> ab1 = new <dimpleReturnType("foo")>();
+ myGraph.addFactor(<dimpleFactor("foo")>, ab1, ab2, ab3); 
+
+ Conditioning
+ ------------
+ IN: 
+ condition(ab1)
+
+ OUT:
+ ab1.FixedValue = true;
+
+ (Church) factor statements
+ --------------------------
+ IN:
+ factor(ab1)
+
+ OUT:
+ myGraph.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)
+
+ Notes
+ ======
+ - most dimple built-in factors have church/js equivalents.
+ - sometimes the arg patterns mismatch. need to wrap them up.
     -for ERPs without dimple builtins we could wrap up scoring code (or ask dimple team to add them…).
-    -are there (common) church/js deterministic functions that don’t have dimple builtins? can we translate to java directly? (is it possible to automatically generate java functions for deterministic parts using Rhino or another js->java compiler?)
+    -are there (common) church/js deterministic functions that don't have dimple builtins? can we translate to java directly? (is it possible to automatically generate java functions for deterministic parts using Rhino or another js->java compiler?)
  
  treatment for condition and factor statements:
     -factor statements can get directly translated into dimple factor statements. (note we may eventually want to intercept the expression computing score before it gets traced, because otherwise we generate a ton of variables with deterministic dependencies. i don't know how well dimple deals with these.)
-    -condition statements translate fixed values of variables: condition(var) --> var.FixedValue = T;
-    -directly conditioned erps get that as the var.FixedValue.
 
  inference and execution:
     how flexible should the dimple solver call be? maybe start by just choosing one, later can pass control args that setup the solver.
@@ -74,7 +80,6 @@
  - source maps (longer term)
 
 */
-
 
 var escodegen = require('escodegen');
 var esprima = require('esprima');
@@ -324,10 +329,17 @@ var factorTemplate = _.template(
 
 // return the java code for adding a factor
 // - id: name of the factor
-// - fn: the (traced) church primitive used to define this variable (the transformations for each church primitives lives in dimple/factors  ).
+// - fn: the (traced) church primitive used to define this variable (the transformations for each church primitives lives in the dimple/factors directory).
 // - args: the (traced) js arguments provided to fn
 // you call this by using the "new" keyword, e.g.,
 // var factor = new DimpleFactor("ab2", "or", ["ab0","ab1"])
+
+// These metadata files must define a module.exports variable that is a function f of a single variable x. f mutates x, setting:
+//     - x.type (the Dimple type that the church function returns)
+//     - x.constructor (the Dimple builtin )
+//     - x.outputVariable (the Dimple builtin )
+//     - x.inputVariable (the Dimple builtin ) 
+
 var DimpleFactor = function(id, fn, args) {
     this.id  = id;
     
