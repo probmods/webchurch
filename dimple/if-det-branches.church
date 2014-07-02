@@ -6,6 +6,6 @@
 
 (define result (+ r1 r2))
 
-r2
-
 (condition (> result 0.4))
+
+r2
