@@ -32,21 +32,22 @@ process.argv = process.argv.slice(0, -1);
 var optparse = require('optparse');
 
 var switches = [
-    ['-q', '--quiet', "Don't emit code (only shows errors and warning)"] 
+    ['-q', '--quiet', "Don't emit code (only shows errors and warning)"] ,
+    ['-t', '--traced', "Show traced JS"]
 ];
 
 var parser = new optparse.OptionParser(switches);
 
 var opts = {
-    quiet: false
+    quiet: false,
+    traced: false,
+    dimplified: true
 };
 
-parser.on('quiet', function() {
-    opts.quiet = true;
-});
+parser.on('quiet', function() { opts.quiet = true; });
+parser.on('traced', function() { opts.traced = true; });
 
-parser.parse(process.argv);
-
+parser.parse(process.argv); 
 
 var church_codestring = fs.readFileSync(filename);
 
@@ -83,11 +84,13 @@ js_ast = wctransform.probTransformAST(js_ast, true);
 //trace:
 var tracecode = trace.trace(js_ast);
 
-console.log('traced code')
-console.log('-----------\n')
-console.log(tracecode)
-console.log('')
-
+if (opts.traced) {
+    console.log('traced code')
+    console.log('-----------\n')
+    console.log(tracecode)
+    console.log('')
+}
+    
 // to dimple:
 console.log('dimple code')
 console.log('-----------\n')
@@ -97,7 +100,8 @@ var javaImports = [
     "com.analog.lyric.dimple.factorfunctions.*",
     "com.analog.lyric.dimple.model.variables.*",
     "com.analog.lyric.dimple.model.domains.*",
-    "com.analog.lyric.dimple.model.core.*"
+    "com.analog.lyric.dimple.model.core.*",
+    "com.analog.lyric.dimple.solvers.gibbs.*;"
 ];
 
 
@@ -110,13 +114,17 @@ log("{")
 log("public static void main(String[] args)");
 log("{")
 log("")
-log("FactorGraph myGraph = new FactorGraph();");
-log(ttd.traceToDimple(tracecode))
 
+// use gibbs
+log("FactorGraph fg = new FactorGraph();"); 
+log("SFactorGraph solver = fg.setSolverFactory(new GibbsSolver());");
+log("solver.setNumSamples(5);");
+
+log(ttd.traceToDimple(tracecode))
 
 log("}")
 log("}")
 
 if (!opts.quiet) {
-    console.log(logStr)
+   console.log(logStr)
 }

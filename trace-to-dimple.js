@@ -25,7 +25,7 @@
 
  Header
  ------
- FactorGraph myGraph = new FactorGraph();
+ FactorGraph fg = new FactorGraph();
 
  Declaring variables
  -------------------
@@ -34,7 +34,7 @@
  
  OUT:
  <dimpleReturnType("foo")> ab1 = new <dimpleReturnType("foo")>();
- myGraph.addFactor(<dimpleFactor("foo")>, ab1, ab2, ab3); 
+ fg.addFactor(<dimpleFactor("foo")>, ab1, ab2, ab3); 
 
  Conditioning
  ------------
@@ -50,7 +50,7 @@
  factor(ab1)
 
  OUT:
- myGraph.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)
+ fg.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)
 
  Notes
  ======
@@ -75,23 +75,22 @@
    -Need to do correct dimple translations.
    -Make basic models to test the pipeline.
    - handle querying
- - handle constructor arguments for Dimple variable types like Discrete and Real
- - handle If statements
  - source maps (longer term)
 
 */
 
 var escodegen = require('escodegen');
 var esprima = require('esprima');
-var _ = require('underscore');
-
-var section = require('./debug.js').section;
+var _ = require('underscore'); 
+// HT http://blog.elliotjameschong.com/2012/10/10/underscore-js-deepclone-and-deepextend-mix-ins/
+_.mixin({ deepClone: function (p_object) { return JSON.parse(JSON.stringify(p_object)); } });
 
 _.templateSettings = {
   interpolate: /\{\{(.+?)\}\}/g
 };
 
-//var dimpleCode = ""
+var section = require('./debug.js').section;
+
 function toDimpleFile(line) {
 //    console.log(line)
 //    dimpleCode = dimpleCode + line +"\n"
@@ -127,12 +126,27 @@ function traceToDimple(x) {
         //should be final statement which is return value.
         //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
 
-        add( "myGraph.getSolver().setNumIterations(50);" );
-        add( "myGraph.solve();\n");
 
-        // TODO: figure out how to handle variables with infinite support 
-		    add( "double [] belief = " + ast.expression.name + ".getBelief();" );
-		    add( "System.out.println(Arrays.toString(belief));"); 
+        
+        // TODO: compute proper type
+        var tplQuery = ["SRealVariable queryVar = (SRealVariable){{name}}.getSolver();",
+                        "queryVar.saveAllSamples();",
+                        "solver.solve();",
+                        "double [] allSamples = queryVar.getAllSamples();",
+                        "System.out.println(Arrays.toString(allSamples));"
+                       ].join("\n")
+
+        var datQuery = {
+            name : ast.expression.name
+        };
+
+        add( _.template(tplQuery, datQuery) ); 
+
+        // notes on Belief
+        // what the Belief property is for different types
+        // Bit: a single number that represents the marginal probability of the value 1.
+        // Real variables when using the SumProduct solver, the Belief is represented the mean and precision parameters of a Normal distribution
+
     } else if (ast.type == 'VariableDeclaration') {
         // a VariableDeclaration is a node of the form
         // var {id} = {init}
@@ -185,25 +199,30 @@ function traceToDimple(x) {
         // if we've got a ton of if statements
         
         // template and template data for the multiplexer
-        var tplMux = "myGraph.addFactor(new Multiplexer(), {{out}}, {{selector}}, {{consequent}}, {{alternate}})"; 
+        var tplMux = [
+            "{{outputType}} {{outputName}} = new {{outputType}}();",
+            "{{consequentLines}}",
+            "{{alternateLines}}",
+            "fg.addFactor(new Multiplexer(), {{outputName}}, {{selector}}, {{consequent}}, {{alternate}});"
+        ].join("\n")
         var datMux = {};
         
         datMux.selector = traceToDimple(ast.test);
 
-        // clone (c)onsequent c and (a) branches
-        var c = _({}).extend(ast.consequent);
-        var a = _({}).extend(ast.alternate);
+        // clone (c)onsequent and (a)lternate branches
+        var c = _(ast.consequent).deepClone();
+        var a = _(ast.alternate).deepClone();
 
-        // get the name of the output wire in the multiplexer
+        // get the name of the output variable for the multiplexer.
         // it's the final variable declaration from the consequent and alternate branches
-        // (which should be the same)
-        datMux.out = c.body[c.body.length - 1].declarations[0].id.name; 
+        // (the variable name should be the same)
+        datMux.out = c.body[c.body.length - 1].declarations[0].id.name;
         
         // c and a may declare variables with overlapping names
-        // walk through all the lines and, for each declaration, add a distinguishing suffix (T or F)
+        // walk through all the lines in each and, for each declaration, add a proper suffix (T or F)
         // so that the dimple factor graph has distinct variables for each branch
         // TODO: if the if branch contains call expressions, do we need to revise the names of
-        // relevant variables? more generally, how complex can the branches get?  
+        // referenced variables? more generally, how complex can the branches get?
         c.body.forEach(function(line) {
             if (line.type == 'VariableDeclaration') {
                 line.declarations[0].id.name += "T";
@@ -220,12 +239,19 @@ function traceToDimple(x) {
         // walk through all the lines in a block, adding it to our current factor graph
         var cLines = c.body.map(traceToDimple);
         var aLines = a.body.map(traceToDimple); 
-        add(cLines.join("\n"));
-        add(aLines.join("\n"));
 
-        // get the variable names for two input lines to the multiplexer 
-        datMux.consequent = c.body[c.body.length - 1].declarations[0].id.name;
-        datMux.alternate = a.body[a.body.length - 1].declarations[0].id.name;
+        _(datMux).extend({
+            // get output name from last line of (unmodified) consequent
+            outputName: ast.consequent.body[ast.consequent.body.length - 1].declarations[0].id.name,
+            // get output type by munging the emitted java code for the
+            // modified consequent (hack)
+            outputType: _(cLines).last().split(" ")[0].trim(),
+            consequentLines: cLines.join("\n"),
+            alternateLines: aLines.join("\n"),
+            // get the variable names for two input lines to the multiplexer 
+            consequent: c.body[c.body.length - 1].declarations[0].id.name,
+            alternate: a.body[a.body.length - 1].declarations[0].id.name 
+        }); 
 
         add(_.template(tplMux, datMux)); 
     } else if (ast.type == 'Program') {
@@ -255,7 +281,7 @@ function dimpleEvidence(init) {
         return evexp+ ".setFixedValue(1);";
         
     } else if (init.callee.name == 'factor') {
-        //todo: myGraph.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)>
+        //todo: fg.addFactor(<some-dimple-factor-that-just-returns-the-input-value, ab1)>
     }
 }
 
@@ -302,19 +328,17 @@ function dimpleVarDec(id, init) {
     var factor = new DimpleFactor(id, callee, args)
 
     return factor.java;
-    // toDimpleFile( "myGraph.addFactor(new {{factor}}(), {{id}}, {{factorArgString}""
+    // toDimpleFile( "fg.addFactor(new {{factor}}(), {{id}}, {{factorArgString}""
     
-}
-
+} 
 
 var constantTemplate = _.template(
-    "{{type}} {{name}} = new {{type}}({{value}});"
+    "{{type}} {{name}} = new {{type}}();\n{{name}}.setFixedValue({{value}});"
 );
 
 var DimpleConstant = function(opts) {
     return constantTemplate(opts);
-}
-
+} 
 
 var primitiveToFactor = {};
 
@@ -325,7 +349,7 @@ var primitiveToFactor = {};
 // Discrete ab0 = new Discrete(0, 1, 5);
 var factorTemplate = _.template(
     "{{type}} {{id}} = new {{type}}();\n" + 
-        "myGraph.addFactor(new {{constructor}}( {{constructorArgStr}} ), {{outputVariable}} {{inputVariableStr}});")
+        "fg.addFactor(new {{constructor}}( {{constructorArgStr}} ), {{outputVariable}} {{inputVariableStr}});")
 
 // return the java code for adding a factor
 // - id: name of the factor
@@ -384,4 +408,3 @@ module.exports =
 {
 traceToDimple: traceToDimple
 }
-
