@@ -101,13 +101,16 @@ var log = function() {
     console.log(args.join("\n"));
 }
 
+// a global store of dimple variable types
+var varTypeStore = {};
+
 // works on either ast or strings
 function traceToDimple(x) {
     var ast = (typeof x == 'string') ? ast = esprima.parse(x) : x
-    var dimpleCode = "";
+    var java = "";
 
     function add(code) {
-        dimpleCode += "\n" + code;
+        java += "\n" + code;
     }
     
     // TODO: we might have to create subgraphs
@@ -123,24 +126,22 @@ function traceToDimple(x) {
         
     }
     else if (ast.type == 'ExpressionStatement') { 
-        //should be final statement which is return value.
-        //todo: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
+        // should be final statement which is return value.
+        // TODO: make a dimple-query in webchurch that runs a solver and returns the marginal on this final statement??
+        if (ast.expression.name !== 'undefined') {
+            var tplQuery = ["SRealVariable queryVar = (SRealVariable){{name}}.getSolver();",
+                            "queryVar.saveAllSamples();",
+                            "solver.solve();",
+                            "double [] allSamples = queryVar.getAllSamples();",
+                            "System.out.println(Arrays.toString(allSamples));"
+                           ].join("\n")
 
+            var datQuery = {
+                name : ast.expression.name
+            };
 
-        
-        // TODO: compute proper type
-        var tplQuery = ["SRealVariable queryVar = (SRealVariable){{name}}.getSolver();",
-                        "queryVar.saveAllSamples();",
-                        "solver.solve();",
-                        "double [] allSamples = queryVar.getAllSamples();",
-                        "System.out.println(Arrays.toString(allSamples));"
-                       ].join("\n")
-
-        var datQuery = {
-            name : ast.expression.name
-        };
-
-        add( _.template(tplQuery, datQuery) ); 
+            add( _.template(tplQuery, datQuery) );
+        }
 
         // notes on Belief
         // what the Belief property is for different types
@@ -156,19 +157,21 @@ function traceToDimple(x) {
         // a BinaryExpression (e.g., 1 + x) or an ObjectExpression (e.g., x) 
         
         //assume one declarator per declaration.
-        var decl = ast.declarations[0]
-        var id = decl.id.name
-        var init = decl.init
+        var decl = ast.declarations[0];
+        var id = decl.id.name;
+        var init = decl.init;
+        var type;
 
         if (init.type == "CallExpression") {
             var callee = init.callee.name
-            if(callee == 'condition' || callee == 'factor') {
-                add( dimpleEvidence(init) );
+            if ( callee == 'condition' || callee == 'factor' ) {
+                add( evidence(init) );
             } else {
-                add( dimpleVarDec(id, init) );
+                var factor = varDec(id, init);
+                varTypeStore[id] = factor.type;
+                add( factor.java );
             }
         } else if (init.type == 'Literal') {
-            // TODO: fix this to
 
             // dictionary that maps js literal types onto Dimple literal types
             // TODO: how to handle strings?
@@ -183,16 +186,38 @@ function traceToDimple(x) {
             }
 
             var value = init.value;
-            
-            var str = DimpleConstant({
+
+            var constantParams = {
                 type: typeLiteralMappings[typeof value],
                 name: id,
                 value: value
-            }); 
+            };
+            
+            var str = DimpleConstant(constantParams);
+
+            varTypeStore[id] = constantParams.type;
             
             add( str );
             
+        } else if (init.type == 'Identifier') {
+            // defining a new variable in terms of an already existing variable
+            // (at least i hope it's already existing)
+            
+            var tpl = "{{type}} {{name}} = {{existingName}};";
+
+            var name = id;
+            var existingName = decl.init.name;
+            var dat = {name: name,
+                       existingName: existingName,
+                       type: varTypeStore[existingName]
+                      };
+
+            var str = _.template(tpl, dat)
+            add( str );
+
+            varTypeStore[name] = varTypeStore[existingName];
         }
+        
     } else if (ast.type == 'IfStatement') {
 
         // TODO: singleton object pattern for decreasing memory usage
@@ -226,8 +251,11 @@ function traceToDimple(x) {
 
         // each branch is a BlockStatement
         // walk through all the lines in a block, adding it to our current factor graph
-        var cLines = c.body.map(traceToDimple);
-        var aLines = a.body.map(traceToDimple); 
+        var cLines = c.body.map(function(x) { return traceToDimple(x) });
+        var aLines = a.body.map(function(x) { return traceToDimple(x) });
+
+        // h1('consequent js', escodegen.generate(c));
+        // h1('c.body dimplified', cLines);
 
         _(datMux).extend({
             // get output name from last line of (unmodified) consequent
@@ -240,7 +268,11 @@ function traceToDimple(x) {
             // get the variable names for two input lines to the multiplexer 
             consequent: c.body[c.body.length - 1].declarations[0].id.name,
             alternate: a.body[a.body.length - 1].declarations[0].id.name 
-        }); 
+        });
+
+        var str = _.template(tplMux, datMux);
+
+        h1('cLines', cLines);
 
         add(_.template(tplMux, datMux)); 
     } else if (ast.type == 'Program') {
@@ -254,7 +286,7 @@ function traceToDimple(x) {
         throw new Error("Haven't implemented translation for expression of type " + ast.type)
     }
     
-    return dimpleCode
+    return java;
 }
 
 //evidence comes from condition and factor statements in the church code
@@ -263,7 +295,7 @@ function traceToDimple(x) {
 // conditioning on a boolean requires that we do
 // .setFixedValue(1)
 // since we apparently don't have true Booleans in dimple
-function dimpleEvidence(init) {
+function evidence(init) {
     var evexp = init.arguments[0].name
     if(init.callee.name == 'condition'){
         // toDimpleFile( evexp+ ".setFixedValue(1);");
@@ -274,10 +306,11 @@ function dimpleEvidence(init) {
     }
 }
 
-//most trace statements will be declarations of the form 'var ab0 = foo(ab1,const);'
+// construct a DimpleFactor object based on (ast) arguments id and init
+// most trace statements will be declarations of the form 'var ab0 = foo(ab1,const);'
 // id is the ab0 part
 // init is the foo(ab1, const) part
-function dimpleVarDec(id, init) {
+function varDec(id, init) {
     var callee = init.callee.name
     //get args, which might each be literal, identifier, or array:
     var args = []
@@ -316,7 +349,7 @@ function dimpleVarDec(id, init) {
     //Generate Dimple statements
     var factor = new DimpleFactor(id, callee, args)
 
-    return factor.java;
+    return factor;
     // toDimpleFile( "fg.addFactor(new {{factor}}(), {{id}}, {{factorArgString}""
     
 } 
@@ -329,6 +362,7 @@ var DimpleConstant = function(opts) {
     return constantTemplate(opts);
 } 
 
+// lookup table mapping church primitives onto Dimple factor built-ins  
 var primitiveToFactor = {};
 
 // NB: note that there is no comma between outputVariable and inputVariableStr in the template
@@ -340,21 +374,9 @@ var factorTemplate = _.template(
     "{{type}} {{id}} = new {{type}}();\n" + 
         "fg.addFactor(new {{constructor}}( {{constructorArgStr}} ), {{outputVariable}} {{inputVariableStr}});")
 
-// return the java code for adding a factor
-// - id: name of the factor
-// - fn: the (traced) church primitive used to define this variable (the transformations for each church primitives lives in the dimple/factors directory).
-// - args: the (traced) js arguments provided to fn
-// you call this by using the "new" keyword, e.g.,
-// var factor = new DimpleFactor("ab2", "or", ["ab0","ab1"])
-
-// These metadata files must define a module.exports variable that is a function f of a single variable x. f mutates x, setting:
-//     - x.type (the Dimple type that the church function returns)
-//     - x.constructor (the Dimple builtin )
-//     - x.outputVariable (the Dimple builtin )
-//     - x.inputVariable (the Dimple builtin ) 
-
 var isErp = function(name) {
-    var erps = ['wrapped_flip'];
+    // bizarre: if i defined this as a global, it broke stuff
+    var erps = ["wrapped_uniform_draw", "wrapped_multinomial", "wrapped_flip", "wrapped_uniform", "wrapped_random_integer", "wrapped_gaussian", "wrapped_gamma", "wrapped_beta", "wrapped_dirichlet"];
     var i = erps.length;
     while(i--) {
         if (erps[i] === name) {
@@ -364,8 +386,22 @@ var isErp = function(name) {
     return false
 }
 
+// return the java code for adding a factor
+// - id: name of the factor
+// - fn: the (traced) church primitive used to define this variable (the transformations for each church primitives lives in the dimple/factors directory).
+// - args: the (traced) js arguments provided to fn
+// you call this by using the "new" keyword, e.g.,
+// var factor = new DimpleFactor("ab2", "or", ["ab0","ab1"])
+
+// These metadata files must define a module.exports variable that is a function f of a single variable x. f mutates x, setting:
+//     - x.type (the Dimple type that the church function returns)
+//     - x.constructor (the constructor for the dimple variable)
+//     - x.outputVariable (the dimple output variable)
+//     - x.inputVariables (the dimple input variables)
+
+
 var DimpleFactor = function(id, fn, args) {
-    this.id  = id;
+    this.id = id;
     
     var me = this; // alias for "this" that is safe to use inside map() 
     

@@ -1,3 +1,5 @@
+var util = require('util');
+
 function section(header, content) {
     console.log(header)
 
@@ -7,7 +9,11 @@ function section(header, content) {
     }
 
     console.log(hrule)
-    console.log(content)
+    if (typeof content == 'object') {
+        console.log(util.inspect(content, false, null));
+    } else {
+        console.log(content);
+    }
     console.log(hrule)
     console.log("")
 }
