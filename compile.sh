@@ -24,6 +24,7 @@ node node_modules/browserify/bin/cmd.js --fast \
     -r ./cm-church \
     -r ./cm-comments \
     -r ./util.js \
+    -r d3 \
     -o online/webchurch.js
 
 echo "- Add webworkers stub"

@@ -30,7 +30,7 @@ var horz_rect_marks = {
             y: {scale:"y", field:"data.item"},
             height: {scale:"y", band:true}
         },
-        update: {fill: {value: "steelblue"} },
+        update: {fill: {value: "steelblue"} }
     }
 }
 
