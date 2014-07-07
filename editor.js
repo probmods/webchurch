@@ -31,9 +31,18 @@ var runners = {};
 runners['webchurch'] = makewebchurchrunner();
 runners['webchurch-opt'] = makewebchurchrunner({precompile: true});
 
-runners['cosh'] = function() { }
-runners['bher'] = function() { }
-runners['mit-church'] = function() { }
+runners['cosh'] = function(ed) {
+    alert('cosh engine down right now :(')
+    ed.trigger('run.finish')
+}
+runners['bher'] = function(ed) {
+    alert('bher engine down right now :(')
+    ed.trigger('run.finish')
+}
+runners['mit-church'] = function() {
+    alert('mit-church engine down right now :(')
+    ed.trigger('run.finish')
+}
 
 function wrap(tag, content) {
     return _.template("<{{tag}}>{{content}}</{{tag}}>",
@@ -176,7 +185,7 @@ var EditorModel = Backbone.Model.extend({
 
         // engine selector
 
-        var engines = ["webchurch", "webchurch-opt"],
+        var engines = _(runners).keys(),
             engineSelectorString = "<select>\n" + _(engines).map(
                 function(engine) {
                     var tmpl = _.template('<option value="{{ engine }}" {{ selectedString }}> {{ engine }} </option>'),
