@@ -52,7 +52,9 @@ function makewebchurchrunner(engineOptions){
 
         // make new $results div, which will replace
         // the old one stored in ed.display.$results
-        var $results = $("<div class='results'>");
+        // NB: it is correct (though hacky) that $results is global
+        // (we modify this for vega-consistency in viz.js)
+        $results = $("<div class='results'>");
 
         if (cm.errormark != undefined) {
             cm.errormark.clear();
