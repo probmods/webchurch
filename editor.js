@@ -1,4 +1,4 @@
-/* global require, CodeMirror, $ */
+/* global require, CodeMirror, $, setTimeout */
 
 var evaluate = require('./evaluate').evaluate,
     format_result = require('./evaluate').format_result;
@@ -52,7 +52,7 @@ function makewebchurchrunner(engineOptions){
 
         // make new $results div, which will replace
         // the old one stored in ed.display.$results
-        $results = $("<div class='results'>");
+        var $results = $("<div class='results'>");
 
         if (cm.errormark != undefined) {
             cm.errormark.clear();
@@ -89,6 +89,10 @@ function makewebchurchrunner(engineOptions){
                 $results.append($("<pre>"+runResult+'</pre>'));
             } 
         } catch (e) {
+            ed.set('error',
+                   e
+                  );
+            
             var error = e.message;
             $results
                 .append( $("<p></p>")
@@ -105,9 +109,11 @@ function makewebchurchrunner(engineOptions){
                                            {line: Number(end[0])-1, ch: Number(end[1])},
                                            {className: "CodeMirrorError", clearOnEnter: true});
             }
-            var jsStack = $("<pre></pre>");
-            jsStack.text(e.jsStack.join('\n'));
-            $results.append('<div><u>JS stack:</u></div>', jsStack );
+            if (typeof e.jsStack !== "undefined") {
+                var jsStack = $("<pre></pre>");
+                jsStack.text(e.jsStack.join('\n'));
+                $results.append('<div><u>JS stack:</u></div>', jsStack );
+            }
         } finally {
             ed.display.$results.replaceWith($results);
             ed.display.$results = $results;
@@ -119,17 +125,157 @@ function makewebchurchrunner(engineOptions){
 
 var EditorModel = Backbone.Model.extend({
     initialize: function(options) {
-        this.set('initialOptions', options);
+
+        var ed = this;
+        
+        ed.set('initialOptions', options);
+
+        var cm = CodeMirror(
+            function(el) {
+                // defer this - we might not want to display immediately...
+                // (e.g., when we want to first fetch network results)
+            },
+            {
+                value: options.code,
+                lineNumbers: false,
+                matchBrackets: true,
+                continueComments: "Enter",
+                viewportMargin: Infinity,
+                autoCloseBrackets: true,
+                mode: 'scheme'
+            });
+
+        ed.set('cm', cm);
+
+        // when text in codemirror changes, update editormodel
+        cm.on('change', function(cmInstance) {
+            ed.codeChangedFromUser = true; 
+            ed.set({code: cmInstance.getValue() });
+        });
+
+        // when code changes programmatically, update text
+        ed.on('change:code', function(instance, newCode, options) {
+            if (options.programmatic) {
+                cm.setValue(newCode); 
+            }
+        })
+        
+        //fold ";;;fold:" parts:
+        var lastLine = cm.lastLine();
+        for(var i=0;i<=lastLine;i++) {
+            var txt = cm.getLine(i),
+                pos = txt.indexOf(";;;fold:");
+            if (pos==0) {cm.foldCode(CodeMirror.Pos(i,pos),folding.tripleCommentRangeFinder);}
+        }
+        
+        // results div
+        var $results = $("<div class='results'>");
+        $results.hide();
+
+        // engine selector
+
+        var engines = ["webchurch", "webchurch-opt"],
+            engineSelectorString = "<select>\n" + _(engines).map(
+                function(engine) {
+                    var tmpl = _.template('<option value="{{ engine }}" {{ selectedString }}> {{ engine }} </option>'),
+                        str = tmpl({
+                            engine: engine,
+                            selectedString: engine == cm.engine ? "selected" : ""
+                        });
+
+                    return str; 
+                } 
+            ).join("\n") + "\n</select>",
+            $engineSelector = $(engineSelectorString);
+
+        // when user modifies engine selector, update model
+        $engineSelector.change(function(e) {
+            ed.set('engine', $(this).val() );
+        });
+
+        // for programmatic changes to engine, update engine selector widget
+        ed.on('change:engine', function(instance, newEngine, options) {
+            if (options.programmatic) {
+                // strange: i can't reference $engineSelector here
+                // but i could reference $
+                ed.display.$engineSelector.val(newEngine);
+            }
+        })
+
+        // reset button
+        var $resetButton = $("<button class='reset'>").html("Reset");
+        $resetButton.click(function() {
+            ed.set(ed.get('initialOptions'),
+                   {programmatic: true}); 
+            ed.trigger('reset');
+            ed.display.$results.hide().html('');
+        });
+
+        // run button
+        var $runButton = $("<button class='run'>").html("Run");
+        $runButton.click(function() {
+            ed.display.$results.find('*').css('opacity','0.7');
+            $runButton.attr('disabled','disabled');
+
+            // NB: can't write just this.run
+            // because then "this" becomes window 
+            // and i don't wanna bother with function binding
+            setTimeout(function() { ed.run() }, 30);
+
+            ed.on('run.finish', function() {
+                $runButton.removeAttr('disabled');
+            })
+        }); 
+
+        var $codeControls = $("<div class='code-controls'>");
+        // HT http://somerandomdude.com/work/open-iconic/#
+
+        $codeControls.append(
+            // $resetButton[0],
+            // $engineSelector[0],
+            $runButton
+        );
+
+        var $cogMenu = $("<ul class='code-settings'></ul>");
+        $cogMenu.append(
+            "<li class='settings-icon'>&#x2630;</li>",
+            $("<li></li>").append($engineSelector[0]),
+            $("<li></li>").append($resetButton[0])
+        );
+
+        $(cm.display.wrapper).prepend($cogMenu);
+
+        // create wrapper element for editor
+        var wrapper = document.createElement('div');
+
+        $(cm.display.wrapper).attr("id", "ex-" + options.exerciseName);
+        
+        // add code controls and results divs after codemirror 
+        $(cm.display.wrapper).prepend($codeControls);
+
+        $(wrapper)
+            .append(cm.display.wrapper)
+            .append($results); 
+
+        ed.display = {
+            wrapper: wrapper,
+            $runButton: $runButton,
+            $resetButton: $resetButton,
+            $engineSelector: $engineSelector,
+            $results: $results
+        }
+        
     },
     defaults: {
         code: "",
         engine: "webchurch"
+        // ,exerciseName: "" // necessary?
     },
     run: function() {
         var engine = runners[this.get('engine')];
         this.set('result', engine( this ));
     },
-    supplant: function(domEl) {
+    replaceDomEl: function(domEl) {
         $(domEl).replaceWith(this.display.wrapper);
         // if we place the item ourselves, we have to call refresh() on the
         // codemirror instance HT http://stackoverflow.com/q/10575833/351392 
@@ -137,141 +283,6 @@ var EditorModel = Backbone.Model.extend({
     }
 });
 
-// return a backbone model
-var inject = function(domEl, options) {
-    options = _(options).defaults({
-        code: $(domEl).text(),
-        engine: "webchurch",
-        exerciseName: "" 
-    });
-
-    var ed = new EditorModel(options);
-    // if (options.engine != 'webchurch') {
-    //   debugger;
-    // }
-    
-    // editor
-    var cm = CodeMirror(
-        function(el) {
-            // defer this - we might not want to display immediately...
-            // (e.g., when we want to first fetch network results)
-        },
-        {
-            value: options.code,
-            lineNumbers: false,
-            matchBrackets: true,
-            continueComments: "Enter",
-            viewportMargin: Infinity,
-            autoCloseBrackets: true,
-            mode: 'scheme'
-        });
-
-    ed.set('cm', cm);
-
-    // when text in codemirror changes, update editormodel
-    cm.on('change', function(cmInstance) {
-        ed.set('code', cmInstance.getValue())
-    });
-    
-    //fold ";;;fold:" parts:
-    var lastLine = cm.lastLine();
-    for(var i=0;i<=lastLine;i++) {
-        var txt = cm.getLine(i),
-            pos = txt.indexOf(";;;fold:");
-        if (pos==0) {cm.foldCode(CodeMirror.Pos(i,pos),folding.tripleCommentRangeFinder);}
-    }
-    
-    // results div
-    var $results = $("<div class='results'>");
-    $results.hide();
-
-    // engine selector
-
-    var engines = ["webchurch", "webchurch-opt"],
-        engineSelectorString = "<select>\n" + _(engines).map(
-            function(engine) {
-                var tmpl = _.template('<option value="{{ engine }}" {{ selectedString }}> {{ engine }} </option>'),
-                    str = tmpl({
-                        engine: engine,
-                        selectedString: engine == cm.engine ? "selected" : ""
-                    });
-
-                return str; 
-            } 
-        ).join("\n") + "\n</select>",
-        $engineSelector = $(engineSelectorString);
-
-    // when engine selector changes, update model
-    $engineSelector.change(function(e) {
-        ed.set('engine', $(this).val() );
-    });
-
-    // reset button
-    var $resetButton = $("<button class='reset'>").html("Reset");
-    $resetButton.click(function() {
-        cm.setValue( ed.get('initialOptions').code );
-        ed.$engineSelector.val( ed.get('initialOptions').engine ); 
-        $results.hide.html('');
-    });
-
-    // run button
-    var $runButton = $("<button class='run'>").html("Run");
-    $runButton.click(function() {
-        ed.display.$results.find('*').css('opacity','0.7');
-        $runButton.attr('disabled','disabled');
-
-        // NB: can't write just ed.run
-        // because then "this" becomes window 
-        // and i don't wanna bother with function binding
-        setTimeout(function() { ed.run() }, 30);
-
-        ed.on('run.finish', function() {
-            $runButton.removeAttr('disabled');
-        })
-    }); 
-
-    var $codeControls = $("<div class='code-controls'>");
-    // HT http://somerandomdude.com/work/open-iconic/#
-
-    $codeControls.append(
-        // $resetButton[0],
-        // $engineSelector[0],
-        $runButton
-    );
-
-    var $cogMenu = $("<ul class='code-settings'></ul>");
-    $cogMenu.append(
-        "<li class='settings-icon'>&#x2630;</li>",
-        $("<li></li>").append($engineSelector[0]),
-        $("<li></li>").append($resetButton[0])
-    );
-
-    $(cm.display.wrapper).prepend($cogMenu);
-
-    // create wrapper element for editor
-    var wrapper = document.createElement('div');
-
-    $(cm.display.wrapper).attr("id", "ex-" + options.exerciseName);
-    
-    // add code controls and results divs after codemirror 
-    $(cm.display.wrapper).prepend($codeControls);
-
-    $(wrapper)
-        .append(cm.display.wrapper)
-        .append($results); 
-
-    ed.display = {
-        wrapper: wrapper,
-        $runButton: $runButton,
-        $engineSelector: $engineSelector,
-        $results: $results
-    }
-
-    
-    return ed;
-    
-};
-
 module.exports = {
-    injector: inject
+    EditorModel: EditorModel
 };
