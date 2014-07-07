@@ -112,14 +112,15 @@
     var savedCode = store.get('code');
     var code = savedCode || $("#codebox > code").text();
 
-    var editor = require('./editor').injector($("#codebox")[0],
+    var EditorModel = require('./editor').EditorModel;
+    var editor = new EditorModel(
     {
     code: code,
     engine: "webchurch",
     }
     );
 
-    editor.supplant( $("#codebox")[0] )
+    editor.replaceDomEl( $("#codebox")[0] )
 
     editor.on('run.start', function() {
     store.set('code', this.get('code'));
