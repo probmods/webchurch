@@ -47,30 +47,35 @@ renameIdentifiers = {
 
 Object.keys(builtinAnnotations).forEach(function(name) {
     var annotation = builtinAnnotations[name];
-    var alias;
+    // var alias;
 
     // if the annotation contains an explicit alias
     // or array of aliases, set those
-    if (annotation.alias) {
-        alias = annotation.alias;
-        if (typeof alias == 'string') {
-            rename_map[alias] = name;
-        }
-        if (Array.isArray(alias)) {
-            alias.forEach(function(a) {
-                rename_map[a] = name;
-            });
-        }
 
-    } else {
-        alias = name
-            .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
-            .replace(/is_(.+)/, function(m, p1) { return p1 + "?"})
-            .replace('_to_', '->')
-            .replace(/_/g, '-');
+    annotation.alias.forEach(function(a) {
+        rename_map[a] = name
+    }); 
+    
+    // if (annotation.alias) {
+    //     alias = annotation.alias;
+    //     if (typeof alias == 'string') {
+    //         rename_map[alias] = name;
+    //     }
+    //     if (Array.isArray(alias)) {
+    //         alias.forEach(function(a) {
+    //             rename_map[a] = name;
+    //         });
+    //     }
 
-        rename_map[alias] = name;
-    }
+    // } else {
+    //     alias = name
+    //         .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
+    //         .replace(/is_(.+)/, function(m, p1) { return p1 + "?"})
+    //         .replace('_to_', '->')
+    //         .replace(/_/g, '-');
+
+    //     rename_map[alias] = name;
+    // }
 });
 
 var program_node = {

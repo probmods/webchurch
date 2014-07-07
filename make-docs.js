@@ -26,7 +26,7 @@ function renderFunction(functionName, props) {
     var description = props.desc || "";
     var args = props.params || [];
 
-    var renderArg = _.template("<tr><td><code>{{name}}</code></td><td>{{type}}</td><td>{{desc}}</td></tr>");
+    var renderArg = _.template("<tr><td><code>{{name}}</code><td>{{type}}</td><td>{{desc}}</td></tr>");
 
     var argsTable = _.template("<table>\n{{tbody}}\n</table>",
                                {tbody: args.map(function(arg) {
@@ -36,23 +36,37 @@ function renderFunction(functionName, props) {
 
     var templateString = ['<div class="function">',
                           '<code class="function-name">({{functionName}} {{argList}})</code>',
+                          '<code class="aliases">{{aliases}}</code>',
                           '<div class="description">{{description}}</div>',
                           '{{table}}',
                           '</div>'].join('\n');
 
-    // convert name from js format to scheme format
+    // compute canonical scheme name from js name
     functionName = functionName
                 .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
                 .replace(/is_(.+)/, function(m, p1) { return p1 + "?"})
                 .replace('_to_', '->')
                 .replace(/_/g, '-');
 
+    // must be an array
+    var aliases = props.alias;
+
+    // strip out the canonical scheme name from the list of aliases
+    aliases = _(aliases).without(functionName)
+
+    if (aliases.length > 0) {
+        aliases =  Array.isArray(aliases) ? aliases.join(",") : aliases;
+        aliases = "<br />&nbsp;Aliases: " + aliases + "";
+    } else {
+        aliases = "";
+    }
+
     var tableString =  _.template(templateString,
                                   {functionName: functionName,
+                                   aliases: aliases,
                                    argList: _(args).pluck('name').join(' '),
                                    description: description,
-                                   table: argsTable});
-    
+                                   table: argsTable}); 
 
     return {name: functionName, 
             string: tableString};

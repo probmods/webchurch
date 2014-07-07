@@ -119,8 +119,31 @@ if (typeof document !== 'undefined') {
 
 module.exports.__annotations__ = {};
 
+// add a Church builtin
+// note: this transforms the alias property into
+// an array containg zero or more aliases
 var addBuiltin = function(dict) {
     var fWrapped = wrapAsserts(dict);
+
+    // if alias is just a single string, embed it in an array
+    if (typeof dict.alias == "string") {
+        dict.alias = [dict.alias];
+    } 
+    
+    if (!dict.alias) {
+        dict.alias = [];
+    } 
+    
+    // add the automated alias
+    var autoAlias = dict.name
+        .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
+        .replace(/is_(.+)/, function(m, p1) { return p1 + "?"})
+        .replace('_to_', '->')
+        .replace(/_/g, '-');
+
+    if (dict.name !== autoAlias) {
+        dict.alias.push(autoAlias);
+    }
 
     module.exports[dict.name] = fWrapped;
     module.exports.__annotations__[dict.name] = dict;
@@ -332,7 +355,7 @@ var prod = $b({
 // check whether y \in (x - tol, x + tol)
 var soft_equal = $b({
     name: 'soft_equal',
-    alias: ['soft-equal','soft='],
+    alias: ['soft='],
     desc: 'Check whether y is in the interval [x - tol, x + tol]',
     params: [{name: 'y', type: 'real'},
              {name: 'x', type: 'real'},
@@ -552,7 +575,8 @@ var pw_leq = $b({
 var eq = $b({
     name: 'eq',
     alias: '=',
-    desc: 'Test whether all arguments are equal',
+    canonical: '=',
+    desc: 'Test whether all (numeric) arguments are equal', 
     params: [{name: '[x ...]', type: 'real'}],
     fn: function() {
         var numArgs = arguments.length;
@@ -568,7 +592,6 @@ var eq = $b({
 
 var is_null = $b({
     name: 'is_null',
-    alias: 'null?',
     desc: 'Test whether x is null',
     params: [{name: 'x'}],
     fn: function(x) {
@@ -589,7 +612,6 @@ var List = $b({
 
 var is_list = $b({
     name: 'is_list',
-    alias: 'list?',
     desc: 'Test whether x is a list',
     params: [{name: 'x'}],
     fn: function(x) {
@@ -611,7 +633,6 @@ var Pair = $b({
 
 var is_pair = $b({
     name: 'is_pair',
-    alias: 'pair?',
     desc: 'Test whether x is a pair',
     params: [{name: 'x'}],
     fn: function(x) {
@@ -730,7 +751,7 @@ var rest = $b({
 
 var but_last = $b({
     name: 'but_last',
-    alias: ['initial','but-last'],
+    alias: 'initial',
     desc: 'Get everything except the last item in a list',
     params: [{name: 'lst', type: 'list'}],
     fn: function (lst) {
@@ -749,7 +770,6 @@ var last = $b({
 
 var list_ref = $b({
     name: 'list_ref',
-    alias: 'list-ref',
     desc: 'Get the nth item of a list (0-indexed)',
     params: [{name: 'lst', type: 'list'},
              {name: 'n', type: 'nat'}],
@@ -765,7 +785,6 @@ var list_ref = $b({
 
 var list_elt = $b({
     name: 'list_elt',
-    alias: 'list-elt',
     desc: 'Get the nth item of a list (1-indexed)',
     params: [{name: 'lst', type: 'list'},
              {name: 'n', type: 'nat'}],
@@ -854,7 +873,7 @@ var nub = $b({
 
 var list_index = $b({
     name: 'list_index',
-    alias: ['list-index','position'],
+    alias: 'position',
     desc: '',
     params: [{name: "lst", type: "list"},
              {name: "x"}],
@@ -866,7 +885,7 @@ var list_index = $b({
 
 var map_at = $b({
     name: 'map_at',
-    alias: ['map-at','f-at'],
+    alias: 'f-at',
     desc: '',
     params: [{name: "lst", type: "list"},
              {name: "i", type: "nat"},
@@ -1045,7 +1064,6 @@ var repeat = $b({
 
 var for_each = $b({
     name: 'for_each',
-    alias: 'for-each',
     desc: 'Apply a function to every member of a list, but don\'t return anything',
     params: [
         {name: 'fn', type: 'function'},
@@ -1220,7 +1238,6 @@ var compose = $b({
 // http://jsperf.com/best-init-array/3
 var make_list = $b({
     name: 'make_list',
-    alias: 'make-list',
     desc: 'Make a list of length n where all elements are x',
     params: [{name: "n", type: "nat", desc: ""},
              {name: "x"}],
@@ -1237,16 +1254,16 @@ var make_list = $b({
 
 var is_eq = $b({
     name: 'is_eq',
-    desc: 'TODO',
+    desc: "Type-strict and reference-based equality check (e.g., (eq? '(1 2) '(1 2)) returns #f)",
     params: [{name: "x", type: "", desc: ""}, {name: "y", type: "", desc: ""}],
     fn: function(x, y) {
-	return x === y;
+	      return x === y;
     }
 });
 
 var is_equal = $b({
     name: 'is_equal',
-    desc: 'TODO',
+    desc: "Less strict and value-based equality check (e.g., (equal? '(1 2) '(1 2)) returns #f)",
     params: [{name: "x", type: "", desc: ""}, {name: "y", type: "", desc: ""}],
     fn: function(x, y) {
         if (typeof(x) == typeof(y)) {
@@ -1292,7 +1309,7 @@ var member = $b({
 
 var apply = $b({
     name: 'apply',
-    desc: 'TODO',
+    desc: 'If lst is (x1 x2 x3 ...), returns the function call (fn x1 x2 x3 ...)',
     params: [{name: "fn", type: "function", desc: ""},
              {name: "lst", type: "list", desc: ""}],
     fn: function(fn, lst) {
@@ -1319,7 +1336,7 @@ var assoc = $b({
 var regexp_split = $b({
     name: 'regexp_split',
     desc: 'Split a string into a list of substrings based on a separator',
-    alias: ['regexp-split','string-split'],
+    alias: 'string-split',
     params: [{name: "s", type: "string", desc: ""},
              {name: "sep", type: "string", desc: ""}],
     fn: function(str, sep) {
@@ -1484,7 +1501,7 @@ var wrapped_uniform = $b({
 var wrapped_random_integer = $b({
     name: 'wrapped_random_integer',
     desc: '',
-    alias: ['random-integer','sample-integer'],
+    alias: 'sample-integer',
     numArgs: [1,2],
     params: [{name: "n", type: "nat", desc: ""},
              {name: "[conditionedValue]", type: "", desc: "", noexport: true}
