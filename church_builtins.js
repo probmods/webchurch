@@ -1679,7 +1679,7 @@ var wrapped_rejection_query = $b({
 
 var wrapped_enumeration_query = $b({
     name: 'wrapped_enumeration_query',
-    desc: '',
+    desc: 'Do enumeration query on a model',
     params: [{name: 'comp'}],
     fn: function(comp) {
 	var d = enumerateDist(comp);

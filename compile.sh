@@ -30,4 +30,7 @@ node node_modules/browserify/bin/cmd.js --fast \
 echo "- Add webworkers stub"
 cat online/webchurch.js ww-stub.js > online/webchurch-ww.js
 
+echo "- Make docs"
+node make-docs.js > refs.html
+
 echo "Done"
