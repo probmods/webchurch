@@ -161,9 +161,15 @@ Counter.prototype.bin = function() {
     this.binned = true;
 }
 
+// barplot (data should be a list with two elements)
+// first element is items, second element is values
+// e.g., (barplot '((1 2 3) (4 5 6)))
 barplot = function(data, title) {
-    var items = listToArray(data[0]).map(format_result);
-    var values = listToArray(data[1]);
+    var myData = listToArray(data, true);
+    
+    
+    var items = myData[0].map(format_result);
+    var values = myData[1];
 
     var spec_values = [];
     for (var i = 0; i < items.length; i++) {
@@ -185,7 +191,9 @@ barplot = function(data, title) {
         {type:"y", scale:"y"}];
     var marks = [horz_rect_marks];
 
-    render_and_append(make_spec(padding, width, height, data, scales, axes, marks, title));
+    render_vega(make_spec(padding, width, height, data, scales, axes, marks, title),
+                create_and_append_result()
+               );
 }
 
 var make_hist_spec = function(samps, title) {
