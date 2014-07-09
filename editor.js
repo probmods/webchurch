@@ -191,7 +191,7 @@ var EditorModel = Backbone.Model.extend({
                     var tmpl = _.template('<option value="{{ engine }}" {{ selectedString }}> {{ engine }} </option>'),
                         str = tmpl({
                             engine: engine,
-                            selectedString: engine == cm.engine ? "selected" : ""
+                            selectedString: engine == ed.get('engine') ? "selected" : ""
                         });
 
                     return str; 
