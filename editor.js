@@ -39,7 +39,7 @@ runners['bher'] = function(ed) {
     alert('bher engine down right now :(')
     ed.trigger('run.finish')
 }
-runners['mit-church'] = function() {
+runners['mit-church'] = function(ed) {
     alert('mit-church engine down right now :(')
     ed.trigger('run.finish')
 }
