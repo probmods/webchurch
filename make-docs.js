@@ -94,5 +94,5 @@ function renderAllFunctions() {
 var res = renderAllFunctions();
 
 console.log('<link rel="stylesheet" type="text/css" href="ref.css" />')
-
+console.log('<p><b>Work in progress: email probmods@gmail.com with corrections (or send a pull request on Github)</b></p><p></p>')
 console.log(res);
