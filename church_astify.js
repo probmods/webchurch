@@ -11,6 +11,7 @@ var query_fns_to_num_params = {
     "conditional": 1,
     "mh-query": 2
 }
+var query_decls = ["define", "condition", "factor", "condition-repeat-equals"];
 var condition_fns = ["condition", "factor", "condition-repeat-equals"];
 
 function make_generic_node(head, children) {
@@ -364,40 +365,54 @@ function church_astify(tokens) {
 
     
     function dsgr_query(ast) {
-	// Makes the lambda that's passed to the query function
-	function query_helper(statements, condition, args) {
-	    if (util.is_leaf(condition) || condition_fns.indexOf(condition.children[0].text) == -1) {
-		condition = {
-		    children: [{text: "condition"}, condition],
-		    start: condition.start,
-		    end: condition.end
-		};
-	    }
-	    args = args || {children: []};
-	    return {
-		children: [
-		    {text: "lambda"},
-		    args
-		].concat(statements.slice(0, -1)).concat(condition).concat(statements[statements.length-1])
-	    };
-	}
+		// Makes the lambda that's passed to the query function
+		function query_helper(statements, args) {
+			// The final output of the query
+			var query_exp;
+			var query_exp_index;
+			for (var i = 0; i < statements.length; i++) {
+				// If query_exp is set, then any statement after that which is not a define, factor, or condition
+				// is implicitly a condition
+				if (util.is_leaf(statements[i]) || query_decls.indexOf(statements[i].children[0].text) == -1) {
+					if (query_exp) {
+						statements[i] = {
+						    children: [{text: "condition"}, statements[i]],
+						    start: condition.start,
+						    end: condition.end
+						};
+					} else {
+						query_exp = statements[i];
+						query_exp_index = i;
+					}
+				}
+			}
+		    args = args || {children: []};
+			return {
+				children: [
+					{text: "lambda"},
+					args
+				].concat(statements.slice(0, query_exp_index))
+					.concat(statements.slice(query_exp_index+1))
+					.concat(query_exp)
+			}
+		}
 
-	if (query_fns.indexOf(ast.children[0].text) != -1) {
-	    var num_params = query_fns_to_num_params[ast.children[0].text];
-	    if (ast.children.length < num_params + 3) {
-		throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
-	    }
-	    return {
-		children: [
-		    ast.children[0],
-		    query_helper(ast.children.slice(num_params+1, -1), ast.children[ast.children.length-1])
-		].concat(ast.children.slice(1, num_params+1)),
-		start: ast.start,
-		end: ast.end
-	    };
-	}
+		if (query_fns.indexOf(ast.children[0].text) != -1) {
+		    var num_params = query_fns_to_num_params[ast.children[0].text];
+		    if (ast.children.length < num_params + 3) {
+				throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has the wrong number of arguments");
+		    }
+		    return {
+				children: [
+				    ast.children[0],
+				    query_helper(ast.children.slice(num_params+1))
+				].concat(ast.children.slice(1, num_params+1)),
+				start: ast.start,
+				end: ast.end
+		    };
+		}
 
-	return ast;
+		return ast;
     }
 
     function validate_if(ast) {
