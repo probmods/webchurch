@@ -1793,13 +1793,15 @@ var display = $b({
     params: [{name: "[s ...]", type: "", desc: ""}],
     fn: function() {
         var args = args_to_array(arguments);
-        var str = args.map(util.format_result).join(" ");
+        var strs = args.map(util.format_result);
         if (inBrowser) {
-            var el = document.createElement("div");
-            el.innerHTML = str;
-            $results.append(el);
+            for (var i = 0; i < strs.length; i++) {
+                var el = document.createElement("div");
+                el.innerHTML = strs[i];
+                $results.append(el);
+            }
         } else {
-            console.log(str);
+            console.log(strs.join("\n"));
         }
     }
 });
