@@ -263,9 +263,8 @@
         (equal? (choose-action goal? vending-machine 'state) 'b) )))
 
 (define samples (repeat 500 sample))
-(multiviz
- "mean: " (mean samples)
- (hist samples "Probability that b gives cookie"))
+(display (list "mean:" (mean samples)))
+(hist samples "Probability that b gives cookie")
 ~~~~
 
 ~~~~ {test_id="10"}
@@ -296,9 +295,8 @@
    ))
 
 (define samples (repeat 500 sample))
-(multiviz
- (hist (map first samples) "Probability that (a a) gives cookie")
- (hist (map second samples) "Probability that (a) gives cookie"))
+(hist (map first samples) "Probability that (a a) gives cookie")
+(hist (map second samples) "Probability that (a) gives cookie")
 ~~~~
 
 ~~~~ {test_id="11"}
@@ -330,10 +328,9 @@
    ))
 
 (define samples (repeat 500 sample))
-(multiviz
- (hist (map first samples) "Probability that (a a) gives cookie")
- (hist (map second samples) "Probability that (a) gives cookie")
- (hist (map third samples) "Goal probabilities"))
+(hist (map first samples) "Probability that (a a) gives cookie")
+(hist (map second samples) "Probability that (a) gives cookie")
+(hist (map third samples) "Goal probabilities")
 ~~~~
 
 ~~~~ {test_id="12"}
@@ -493,9 +490,8 @@
 
 (define utility-function '(1 2 3 4 5))
 (define b 1)
-(multiviz
 (hist (repeat 1000 (lambda () (match utility-function))) "matching")
-(hist (repeat 1000 (lambda () (softmax utility-function 1))) "softmax"))
+(hist (repeat 1000 (lambda () (softmax utility-function 1))) "softmax")
 ~~~~
 
 ~~~~ {test_id="22"}

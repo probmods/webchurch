@@ -63,11 +63,10 @@
       state
       (chain (transition state) (- n 1))))
 
-(multiviz
- (hist (repeat 2000 (lambda () (chain 'a 10))) "10 steps, starting at a.")
- (hist (repeat 2000 (lambda () (chain 'c 10))) "10 steps, starting at c.")
- (hist (repeat 2000 (lambda () (chain 'a 30))) "30 steps, starting at a.")
- (hist (repeat 2000 (lambda () (chain 'c 30))) "30 steps, starting at c."))
+(hist (repeat 2000 (lambda () (chain 'a 10))) "10 steps, starting at a.")
+(hist (repeat 2000 (lambda () (chain 'c 10))) "10 steps, starting at c.")
+(hist (repeat 2000 (lambda () (chain 'a 30))) "30 steps, starting at a.")
+(hist (repeat 2000 (lambda () (chain 'c 30))) "30 steps, starting at c.")
 ~~~~
 
 ~~~~ {test_id="4"}
@@ -79,11 +78,10 @@
       state
       (chain (transition state) (- n 1))))
 
-(multiviz 
- (hist (repeat 2000 (lambda () (chain 'a 2))) "a 2")
- (hist (repeat 2000 (lambda () (chain 'c 2))) "c 2")
- (hist (repeat 2000 (lambda () (chain 'a 10))) "a 10")
- (hist (repeat 2000 (lambda () (chain 'c 10))) "c 10"))
+(hist (repeat 2000 (lambda () (chain 'a 2))) "a 2")
+(hist (repeat 2000 (lambda () (chain 'c 2))) "c 2")
+(hist (repeat 2000 (lambda () (chain 'a 10))) "a 10")
+(hist (repeat 2000 (lambda () (chain 'c 10))) "c 10")
 ~~~~
 
 ~~~~ {test_id="5"}
@@ -189,7 +187,7 @@
             bits
             (all (map noisy-equal? (rest bits) (all-but-last bits)))))
 
-(apply multiviz samples)
+(apply display samples)
 ~~~~
 
 ~~~~ {test_id="10"}

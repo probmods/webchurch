@@ -45,9 +45,8 @@
    
    (equal? observed-data (repeat num-flips coin))))
 
-(multiviz 
- (hist prior-samples "Coin weight, prior to observing data")
- (hist samples "Coin weight, conditioned on observed data"))
+(hist prior-samples "Coin weight, prior to observing data")
+(hist samples "Coin weight, conditioned on observed data")
 ~~~~
 
 ~~~~ {.mit-church test_id="3"}
@@ -97,9 +96,8 @@
    
    (equal? observed-data (repeat num-flips coin))))
 
-(multiviz
- (hist prior-samples "Coin weight, prior to observing data")
- (hist samples "Coin weight, conditioned on observed data"))
+(hist prior-samples "Coin weight, prior to observing data")
+(hist samples "Coin weight, conditioned on observed data")
 ~~~~
 
 ~~~~ {test_id="5"}
@@ -144,7 +142,7 @@
  
  (= (my-proc 1) 3)))
 
-(apply multiviz (repeat 20 sample))
+(apply display (repeat 20 sample))
 ~~~~
 
 ~~~~ {test_id="7"}

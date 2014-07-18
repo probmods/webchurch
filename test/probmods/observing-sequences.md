@@ -3,9 +3,8 @@
 
 (define sequences (repeat 1000 sequence))
 
-(multiviz 
- (hist (map first sequences) "first flip")
- (hist (map second sequences) "second flip"))
+(hist (map first sequences) "first flip")
+(hist (map second sequences) "second flip")
 ~~~~
 
 ~~~~ {test_id="1"}
@@ -16,9 +15,8 @@
    (second s)
    (equal? (first s) first-val)))
 
-(multiviz 
- (hist (sequences true)  "second if first is true")
- (hist (sequences false) "second if first is false"))
+(hist (sequences true)  "second if first is true")
+(hist (sequences false) "second if first is false")
 ~~~~
 
 ~~~~ {test_id="2"}
@@ -48,10 +46,9 @@
    (define s (repeat 10 myflip))
    (second s)
    (equal? (first s) first-val)))
-
-(multiviz 
- (hist (sequences true)  "second if first is true")
- (hist (sequences false) "second if first is false"))
+ 
+(hist (sequences true)  "second if first is true")
+(hist (sequences false) "second if first is false")
 ~~~~
 
 ~~~~ {.idealized test_id="5"}
@@ -127,9 +124,8 @@
    (condition (equal? sequence (repeat 5 coin)))))
 
 
-(multiviz
- (hist (samples (list false false true false true)) "00101 is fair?")
- (hist (samples (list false false false false false)) "00000 is fair?"))
+(hist (samples (list false false true false true)) "00101 is fair?")
+(hist (samples (list false false false false false)) "00000 is fair?")
 ~~~~
 
 ~~~~ {test_id="10"}
@@ -155,9 +151,8 @@
    (condition (equal? sequence (markov (flip) 5)))))
 
 
-(multiviz
- (hist (samples (list false true false true false)) "01010 is fair?")
- (hist (samples (list true false false true false)) "01100 is fair?"))
+(hist (samples (list false true false true false)) "01010 is fair?")
+(hist (samples (list true false false true false)) "01100 is fair?")
 ~~~~
 
 ~~~~ {test_id="11"}

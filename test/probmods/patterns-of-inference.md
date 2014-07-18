@@ -23,11 +23,10 @@
    (list cold lung-disease)
    
    cough))
-
-(multiviz 
- (hist (map first samples) "cold")
- (hist (map second samples) "lung-disease")
- (hist samples "cold, lung-disease"))
+ 
+(hist (map first samples) "cold")
+(hist (map second samples) "lung-disease")
+(hist samples "cold, lung-disease")
 ~~~~
 
 ~~~~ {test_id="2"}
@@ -52,10 +51,9 @@ A
   (list cough cold))
 
 (define samples (repeat 200 sample))
-
-(multiviz   
- (hist (map first samples) "cough")
- (hist (map second samples) "cold"))
+   
+(hist (map first samples) "cough")
+(hist (map second samples) "cold")
 ~~~~
 
 ~~~~ {test_id="4"}
@@ -73,10 +71,9 @@ A
   (list cough cold))
 
 (define samples (repeat 200 sample))
-
-(multiviz   
- (hist (map first samples) "cough")
- (hist (map second samples) "cold"))
+   
+(hist (map first samples) "cough")
+(hist (map second samples) "cold")
 ~~~~
 
 ~~~~ {test_id="5"}
@@ -89,9 +86,8 @@ A
    A
    (eq? B B-val)))
 
-(multiviz
- (hist (samples true) "A if B is true.")
- (hist (samples false) "A if B is false."))
+(hist (samples true) "A if B is true.")
+(hist (samples false) "A if B is false.")
 ~~~~
 
 ~~~~ {test_id="6"}
@@ -104,9 +100,8 @@ A
    A
    (eq? B B-val)))
 
-(multiviz
- (hist (samples true) "A if B is true.")
- (hist (samples false) "A if B is false."))
+(hist (samples true) "A if B is true.")
+(hist (samples false) "A if B is false.")
 ~~~~
 
 ~~~~ {test_id="7"}
@@ -119,9 +114,8 @@ A
    A
    (and C (eq? B B-val))))
 
-(multiviz
- (hist (samples true) "A if B is true.")
- (hist (samples false) "A if B is false."))
+(hist (samples true) "A if B is true.")
+(hist (samples false) "A if B is false.")
 ~~~~
 
 ~~~~ {test_id="8"}
@@ -134,9 +128,8 @@ A
     A
    (and C (eq? B B-val))))
 
-(multiviz
- (hist (samples true) "A if B is true.")
- (hist (samples false) "A if B is false."))
+(hist (samples true) "A if B is true.")
+(hist (samples false) "A if B is false.")
 ~~~~
 
 ~~~~ {.norun test_id="9"}
@@ -163,9 +156,8 @@ A
 
 (define samples (repeat 500 take-sample))
 
-(multiviz
- (scatter samples "A and B, conditioned on A + B = 9")
- (hist samples "A, B"))
+(scatter samples "A and B, conditioned on A + B = 9")
+(hist samples "A, B")
 ~~~~
 
 ~~~~ {test_id="11"}
@@ -180,9 +172,8 @@ A
 
 (define samples (repeat 500 take-sample))
 
-(multiviz
- (scatter samples "A and B, conditioned on A = B")
- (hist samples "A, B"))
+(scatter samples "A and B, conditioned on A = B")
+(hist samples "A, B")
 ~~~~
 
 ~~~~ {test_id="12"}
@@ -246,10 +237,9 @@ A
 
    cough))
    
-(multiviz
-  (hist (map first samples) "cold")
-  (hist (map second samples) "lung-disease")
-  (hist samples "cold, lung-disease"))
+(hist (map first samples) "cold")
+(hist (map second samples) "lung-disease")
+(hist samples "cold, lung-disease")
 ~~~~
 
 ~~~~ {test_id="15"}
@@ -269,10 +259,9 @@ A
 
    (and cough (not cold))))
    
-(multiviz
-  (hist (map first samples) "cold")
-  (hist (map second samples) "lung-disease")
-  (hist samples "cold, lung-disease"))
+(hist (map first samples) "cold")
+(hist (map second samples) "lung-disease")
+(hist samples "cold, lung-disease")
 ~~~~
 
 ~~~~ {test_id="16"}
@@ -292,10 +281,9 @@ A
 
    (and cough cold)))
    
-(multiviz
-  (hist (map first samples) "cold")
-  (hist (map second samples) "lung-disease")
-  (hist samples "cold, lung-disease"))
+(hist (map first samples) "cold")
+(hist (map second samples) "lung-disease")
+(hist samples "cold, lung-disease")
 ~~~~
 
 ~~~~ {test_id="17"}
@@ -313,10 +301,9 @@ A
 
    (not pass?)))
 
-(multiviz
-  (hist samples "Joint: Student Does Homework?, Exam Fair?")
-  (hist (map first samples) "Student Does Homework")
-  (hist (map second samples) "Exam Fair"))
+(hist samples "Joint: Student Does Homework?, Exam Fair?")
+(hist (map first samples) "Student Does Homework")
+(hist (map second samples) "Exam Fair")
 ~~~~
 
 ~~~~ {test_id="18"}
@@ -336,10 +323,9 @@ A
 
    (not (pass? 'bill 'exam1))))
 
-(multiviz
-  (hist samples "Joint: Student Does Homework?, Exam Fair?")
-  (hist (map first samples) "Student Does Homework")
-  (hist (map second samples) "Exam Fair"))
+(hist samples "Joint: Student Does Homework?, Exam Fair?")
+(hist (map first samples) "Student Does Homework")
+(hist (map second samples) "Exam Fair")
 ~~~~
 
 ~~~~ {.norun test_id="19"}
@@ -409,8 +395,8 @@ A
 
     (= luminance (gaussian observed-luminance 0.1))))
 
-(multiviz "Mean reflectance: " (mean samples)
-          (hist samples "Reflectance"))
+(display (list "Mean reflectance:" (mean samples)))
+(hist samples "Reflectance")
 ~~~~
 
 ~~~~ {test_id="22" .skip}
@@ -429,8 +415,8 @@ A
     (condition (= luminance (gaussian observed-luminance 0.1)))
     (condition (= illumination (gaussian 0.5  0.1)))))
 
-(multiviz "Mean reflectance: " (mean samples)
-          (hist samples "Reflectance"))
+(display (list "Mean reflectance:" (mean samples)))
+(hist samples "Reflectance")
 ~~~~
 
 ~~~~ {test_id="23"}

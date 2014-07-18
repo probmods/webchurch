@@ -147,9 +147,8 @@ D
     (and (eq? 'team1 (winner '(bob mary) '(tom sue)))
          (eq? 'team1 (winner '(bob sue) '(tom jim))))))
 
-(multiviz
- "Expected strength: " (mean samples)
- (density samples "Bob strength" true))
+(display (list "Expected strength:" (mean samples)))
+(density samples "Bob strength" true)
 ~~~~
 
 ~~~~ {test_id="11"}
