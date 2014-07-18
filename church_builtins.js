@@ -1340,7 +1340,21 @@ var regexp_split = $b({
     params: [{name: "s", type: "string", desc: ""},
              {name: "sep", type: "string", desc: ""}],
     fn: function(str, sep) {
-	return arrayToList(str.split(sep));
+    	return arrayToList(str.split(sep));
+    }
+});
+
+var string_append = $b({
+    name: 'string-append',
+    desc: 'Concatenates the given strings',
+    alias: 'string-append',
+    params: [{name: '[x ...]', type: 'string', desc: 'Strings to concatenate'}],
+    fn: function() {
+        var result = "";
+        for (var i = 0; i < arguments.length; i++) {
+            result += arguments[i];
+        }
+        return result;
     }
 });
 
