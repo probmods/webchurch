@@ -155,7 +155,10 @@ Counter.prototype.bin = function() {
     for (var i = 0; i < sorted_keys.length; i++) {
         var bin = Math.floor((sorted_keys[i] - this.min) / bin_size);
         bin = Math.min(bin, maxBins - 1);
-        new_counter[bin*bin_size] = (new_counter[bin*bin_size] || 0) + this.count(sorted_keys[i]);
+        new_counter[bin*bin_size + this.min] = (new_counter[bin*bin_size + this.min] || 0) + this.count(sorted_keys[i]);
+    }
+    for (var i=0; i<maxBins; i++) {
+        new_counter[i*bin_size + this.min] = new_counter[i*bin_size + this.min] || 0;
     }
     this.counter = new_counter;
     this.binned = true;
@@ -218,7 +221,7 @@ var make_hist_spec = function(samps, title) {
     var axes = [{type:"x", scale:"x", ticks: 10, format: "%"}]
     var marks = [horz_rect_marks];
     if (counter.binned) {
-        scales.push({name: "y_labels", nice: true, range: "height", domain: {data:"table", field:"data.item"}, padding: 0.1});
+        scales.push({name: "y_labels", range: "height", zero: false, domain: {data:"table", field:"data.item"}, padding: 0.1})
         axes.push({type:"y", scale:"y_labels"});
     } else {
         axes.push({type:"y", scale:"y"});
