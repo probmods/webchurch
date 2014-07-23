@@ -129,7 +129,7 @@ Counter.prototype.update_many = function(arr) {
 
 Counter.prototype.sorted_keys = function() {
     if (this.type == "number") {
-        return Object.keys(this.counter).sort(function(a,b) {return b-a});
+        return Object.keys(this.counter).sort(function(a,b) {return parseFloat(b)-parseFloat(a)});
     } else {
         return Object.keys(this.counter).sort();
     }
@@ -205,7 +205,11 @@ var make_hist_spec = function(samps, title) {
 
     var sorted_keys = counter.sorted_keys();
 
-    var spec_values = sorted_keys.map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
+    if (counter.type == "number") {
+        var spec_values = sorted_keys.map(function(key) {return {item: parseFloat(key), value: counter.count(key) / counter.total}});
+    } else {
+        var spec_values = sorted_keys.map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
+    }
 
     var padding = {
         top: 30 + (title ? titleOffset : 0),
@@ -221,7 +225,7 @@ var make_hist_spec = function(samps, title) {
     var axes = [{type:"x", scale:"x", ticks: 10, format: "%"}]
     var marks = [horz_rect_marks];
     if (counter.binned) {
-        scales.push({name: "y_labels", range: "height", zero: false, domain: {data:"table", field:"data.item"}, padding: 0.1})
+        scales.push({name: "y_labels", range: "height", nice: true, zero: false, domain: {data:"table", field:"data.item"}, padding: 0.1})
         axes.push({type:"y", scale:"y_labels"});
     } else {
         axes.push({type:"y", scale:"y"});
@@ -257,6 +261,7 @@ var make_density_spec = function(samps, title, with_hist) {
     }
 
     var counter = new Counter(listToArray(samps));
+    if (counter.type == "number" && Object.keys(counter.counter).length > maxBins) counter.bin();
 
     var padding = {top: 30 + (title ? titleOffset : 0), left: 45, bottom: 50, right: 30};
     var data = [{name: "density", values: kernelDensityEstimator(counter, epanechnikovKernel, 3)}];
@@ -264,7 +269,7 @@ var make_density_spec = function(samps, title, with_hist) {
     var width = 600 - padding.left;
     var scales = [
             {name: "x_density", type: "ordinal", range: "width", domain: {data:"density", field:"data.item"}, padding: 0.1},
-            {name: "x_labels", nice: true, range: "width", domain: {data:"density", field:"data.item"}, padding: 0.1},
+            {name: "x_labels", nice: true, range: "width", zero: false, domain: {data:"density", field:"data.item"}, padding: 0.1},
             {name: "y", range: "height", nice: true, domain: {data:"density", field:"data.value"}}];
     var axes = [
         {type:"x", scale:"x_labels"},
@@ -286,7 +291,8 @@ var make_density_spec = function(samps, title, with_hist) {
         counter.bin();
         var hist_data = counter.keys().map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
         data.push({name: "hist", values: hist_data});
-        scales.push({name: "x_hist", type: "ordinal", range: "width", domain: {data:"hist", field:"data.item"}, padding: 0.1});
+        scales.push({name: "x_hist", type: "ordinal", range: "width", domain: {data:"hist", field:"data.item"}, padding: 0.1},
+                    {name: "y_hist", range: "height", domain: {data:"hist", field:"data.value"}});
         marks.unshift({
             type: "rect",
             from: {data: "hist"},
@@ -294,8 +300,8 @@ var make_density_spec = function(samps, title, with_hist) {
                 enter: {
                     x: {scale:"x_hist", field: "data.item"},
                     width: {scale:"x_hist", band: true},
-                    y: {scale:"y", field: "data.value"},
-                    y2: {scale:"y", value: 0}
+                    y: {scale:"y_hist", field: "data.value"},
+                    y2: {scale:"y_hist", value: 0}
                 },
                 update: {fill: {value: "steelblue"}}
             }
