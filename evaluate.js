@@ -216,7 +216,7 @@ function evaluate(church_codestring, options) {
 	var js_to_church_site_map = get_js_to_church_site_map(sourceMap);
         var churchLines = church_codestring.split("\n");
 	var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
-	var stack = err.stack.split("\n");
+	var stack = err.stack ? err.stack.split("\n") : [":"];
 	var msg = stack[0].split(":");
 
         console.log(err.stack);
