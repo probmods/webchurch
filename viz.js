@@ -261,7 +261,6 @@ var make_density_spec = function(samps, title, with_hist) {
     }
 
     var counter = new Counter(listToArray(samps));
-    if (counter.type == "number" && Object.keys(counter.counter).length > maxBins) counter.bin();
 
     var padding = {top: 30 + (title ? titleOffset : 0), left: 45, bottom: 50, right: 30};
     var data = [{name: "density", values: kernelDensityEstimator(counter, epanechnikovKernel, 3)}];
@@ -288,10 +287,19 @@ var make_density_spec = function(samps, title, with_hist) {
     }];
 
     if (with_hist) {
-        counter.bin();
-        var hist_data = counter.keys().map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
+        if (counter.type == "number" && Object.keys(counter.counter).length > maxBins) counter.bin();
+        if (counter.type == "number" && Object.keys(counter.counter).length > maxBins) counter.bin();
+
+        var sorted_keys = counter.sorted_keys();
+
+        if (counter.type == "number") {
+            var hist_data = sorted_keys.map(function(key) {return {item: parseFloat(key), value: counter.count(key) / counter.total}});
+        } else {
+            var hist_data = sorted_keys.map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
+        }
+
         data.push({name: "hist", values: hist_data});
-        scales.push({name: "x_hist", type: "ordinal", range: "width", domain: {data:"hist", field:"data.item"}, padding: 0.1},
+        scales.push({name: "x_hist", type: "ordinal", range: [width, 0], domain: {data:"hist", field:"data.item"}, padding: 0.1},
                     {name: "y_hist", range: "height", domain: {data:"hist", field:"data.value"}});
         marks.unshift({
             type: "rect",
