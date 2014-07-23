@@ -1,5 +1,7 @@
 /* global global, require, module, exports */
 
+var seedrandom = require('seedrandom');
+
 // Contains the built-in Church functions written in Javascript.
 // TODO: document annotations format
 
@@ -1983,6 +1985,15 @@ var sample = $b({
     params: [{name: 'thunk', type: 'function'}],
     fn: function(thunk) {
         return thunk();
+    }
+})
+
+var set_seed = $b({
+    name: 'set_seed',
+    desc: 'Seed a seed for the PRNG',
+    params: [{name: 'seed', type: 'string'}],
+    fn: function(seed) {
+        Math.random = seedrandom(seed);
     }
 })
 

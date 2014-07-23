@@ -24,7 +24,8 @@
     "codemirror": "4.0.3",
     "d3": "3.4.4",
     "backbone": "~1.1.2",
-    "http-server": "^0.6.1"
+    "http-server": "^0.6.1",
+    "seedrandom": "^2.3.6"
   },
   "author": {
     "name": "Julius Cheng",

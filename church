@@ -2,6 +2,7 @@
 
 var sys = require('sys');
 var optparse = require('optparse');
+var seedrandom = require('seedrandom');
 
 function abort(msg) {
     console.log(msg)
@@ -13,11 +14,13 @@ var format_result = require("./evaluate.js").format_result;
 
 var srcfile = process.argv.length > 2 ? process.argv[process.argv.length-1] : abort("Usage: church [OPTIONS]... [FILE]");
 process.argv = process.argv.slice(0, -1);
+
 var opts = {};
 
 var switches = [
     ['-p', '--precompile', 'Turn on pre-compilation'],
     ['-a', '--program-args [MESSAGE]', 'Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable'],
+    ['-s', '--seed [SEED]', 'Set a random-number generator seed'],
     ['-t', '--timed', 'Print out timing information'],
     ['-d', '--desugar-only', 'Apply Church desugaring without execution'],
     ['-c', '--compile-only', 'Compile to Javascript without execution'],
@@ -49,6 +52,10 @@ parser.on("compile-only", function() {
 
 parser.on("disable-church-errors", function() {
     opts.disable_church_errors = true;
+});
+
+parser.on("seed", function(opt, value) {
+    Math.random = seedrandom(value);
 });
 
 parser.parse(process.argv);
