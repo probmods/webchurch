@@ -129,7 +129,9 @@ Counter.prototype.update_many = function(arr) {
 
 Counter.prototype.sorted_keys = function() {
     if (this.type == "number") {
-        return Object.keys(this.counter).sort(function(a,b) {return parseFloat(b)-parseFloat(a)});
+        return Object.keys(this.counter)
+            .map(function(x) {return parseFloat(x);})
+            .sort(function(a,b) {return b-a});
     } else {
         return Object.keys(this.counter).sort();
     }
@@ -162,6 +164,24 @@ Counter.prototype.bin = function() {
     }
     this.counter = new_counter;
     this.binned = true;
+}
+
+// Produce another counter resampled from this one, with replacement, of course.
+Counter.prototype.resample = function() {
+    var new_counter = {};
+    for (var key in this.counter) new_counter[key] = 0;
+    for (var i = 0; i < this.total; i++) {
+        var k = Math.random() * this.total;
+        for (var key in this.counter) {
+            if (k <= this.counter[key]) {
+                new_counter[key] += 1;
+                break;
+            } else {
+                k -= this.counter[key];
+            }
+        }
+    }
+    return new_counter;
 }
 
 // barplot (data should be a list with two elements)
@@ -205,15 +225,11 @@ var make_hist_spec = function(samps, title) {
 
     var sorted_keys = counter.sorted_keys();
 
-    if (counter.type == "number") {
-        var spec_values = sorted_keys.map(function(key) {return {item: parseFloat(key), value: counter.count(key) / counter.total}});
-    } else {
-        var spec_values = sorted_keys.map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
-    }
+    var spec_values = sorted_keys.map(function(key) {return {item: key, value: counter.count(key) / counter.total}});
 
     var padding = {
         top: 30 + (title ? titleOffset : 0),
-        left: 20 + Math.max.apply(undefined, sorted_keys.map(function(x) {return x.length;})) * 5,
+        left: 20 + Math.max.apply(undefined, sorted_keys.map(function(x) {return x.toString().length;})) * 5,
         bottom: 50,
         right: 30};
     var height = 1 + sorted_keys.length * 20;
@@ -235,6 +251,97 @@ var make_hist_spec = function(samps, title) {
 
 hist = function(samps, title) {
     render_vega(make_hist_spec(samps, title), create_and_append_result());
+}
+
+// TODO: fix how function names are handled in viz
+// TODO: some shared code between this and make_hist_spec, figure out how to merge.
+hist_45ci = function(samps, title) {
+    var counter = new Counter(listToArray(samps));
+    if (counter.type == "number" && Object.keys(counter.counter).length > maxBins) counter.bin();
+
+    var resample_bin_means = {};
+    for (var key in counter.counter) resample_bin_means[key] = [];
+    for (var i = 0; i < 1000; i++) {
+        var resample = counter.resample();
+        for (var key in resample) {
+            resample_bin_means[key].push(resample[key]);
+        }
+    }
+    for (var key in resample_bin_means) resample_bin_means[key].sort(function(a,b) {return a-b});
+
+    var sorted_keys = counter.sorted_keys();
+    var spec_values = sorted_keys.map(
+        function(key) {
+            return {
+                item: key,
+                value: counter.count(key) / counter.total,
+                lo: resample_bin_means[key][49] / counter.total,
+                hi: resample_bin_means[key][949] / counter.total,
+            }});
+
+    var padding = {
+        top: 30 + (title ? titleOffset : 0),
+        left: 20 + Math.max.apply(undefined, sorted_keys.map(function(x) {return x.toString().length;})) * 5,
+        bottom: 50,
+        right: 30};
+    var height = 1 + sorted_keys.length * 20;
+    var width = 600 - padding.left;
+    var data = [{name: "table", values: spec_values}];
+    var scales = [
+            {name: "x", range: "width", nice: true, domain: {data:"table", field:"data.hi"}},
+            {name: "y", type: "ordinal", range: "height", domain: {data:"table", field:"data.item"}, padding: 0.1}];
+    var axes = [{type:"x", scale:"x", ticks: 10, format: "%"}]
+    var marks = [
+        horz_rect_marks,
+        {
+            type: "rect",
+            from: {data: "table"},
+            properties: {
+                enter: {
+                  x: {scale: "x", field: "data.lo"},
+                  x2: {scale: "x", field: "data.hi"},
+                  y: {scale: "y", field: "data.item", offset:8},
+                  height: {value: 1},
+                }, 
+                update: {fill: {value: "black"}}
+          }
+        },
+        {
+            type: "rect",
+            from: {data: "table"},
+            properties: {
+                enter: {
+                    x: {scale: "x", field: "data.lo"},
+                    y: {scale: "y", field: "data.item", offset: 3},
+                    y2: {scale: "y", field: "data.item", offset: 13},
+                    width: {value: 1},
+                }, 
+                update: {fill: {value: "black"}}
+            }
+        },
+        {
+            type: "rect",
+            from: {data: "table"},
+            properties: {
+                enter: {
+                    x: {scale: "x", field: "data.hi"},
+                    y: {scale: "y", field: "data.item", offset: 3},
+                    y2: {scale: "y", field: "data.item", offset: 13},
+                    width: {value: 1},
+                }, 
+                update: {fill: {value: "black"}}
+            }
+        }];
+
+    if (counter.binned) {
+        scales.push({name: "y_labels", range: "height", nice: true, zero: false, domain: {data:"table", field:"data.item"}, padding: 0.1})
+        axes.push({type:"y", scale:"y_labels"});
+    } else {
+        axes.push({type:"y", scale:"y"});
+    }
+    var spec = make_spec(padding, width, height, data, scales, axes, marks, title);
+
+    render_vega(spec, create_and_append_result());   
 }
 
 livehist = function(n, func, title) {
