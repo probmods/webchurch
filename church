@@ -90,7 +90,7 @@ if (opts.yarn) {
     var churchDir = process.argv[1].split("/church")[0]; 
 
     // if webchurch repo is dirty, complain
-    var gitStatus = exec('cd ' + churchDir + '; git status --porcelain | grep " [M|D]"').stdout;
+    var gitStatus = exec('cd ' + churchDir + '; git status --porcelain | grep " [M|D]"').stdout.trim();
     if (gitStatus.split("\n").length > 0) {
         abort("WebChurch has local changes. Commit and retry yarning");
     }
