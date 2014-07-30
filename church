@@ -15,13 +15,13 @@ function abort(msg) {
 global["evaluate"] = require('./evaluate.js').evaluate
 var format_result = require("./evaluate.js").format_result;
 
-var srcfile = process.argv.length > 2 ? process.argv[process.argv.length-1] : abort("Usage: church [OPTIONS]... [FILE]");
+var argv = process.argv;
 
 var opts = {};
-
 var switches = [
     ['-p', '--precompile', 'Turn on pre-compilation'],
     ['-a', '--program-args [MESSAGE]', 'Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable'],
+    ['-h', '--help', 'Help'],
     ['-s', '--seed [SEED]', 'Set a random-number generator seed'],
     ['-t', '--timed', 'Print out timing information'],
     ['-d', '--desugar-only', 'Apply Church desugaring without execution'],
@@ -31,6 +31,17 @@ var switches = [
 ];
 
 var parser = new optparse.OptionParser(switches);
+parser.banner = 'Usage: church [options] [file]';
+
+var srcfile = argv[argv.length - 1];
+
+// if a model file is not specified or doesn't exist, bail
+// NB: if user didn't supply a filename (e.g., they just ran "church"), then srcfile will be
+// equal to the path of the current script
+if (srcfile == __filename || !shell.test("-e", srcfile)) {
+    console.log(parser.toString());
+    process.exit();
+}
 
 parser.on('precompile', function(x) {
     opts.pc = true;
@@ -64,16 +75,21 @@ parser.on("yarn", function(opt, value) {
     opts.yarn = true;
 });
 
-parser.parse(process.argv.slice(0,-1));
+parser.on("help", function() {
+    console.log(parser.toString());
+    process.exit()
+})
 
-code = require('fs').readFileSync(srcfile, "utf8");
+parser.parse(argv)
+
+var code = fs.readFileSync(srcfile, "utf8");
 
 var yarnData = {};
 
 if (opts.yarn) {
     // create a .yarn directory if need be
     // inside the .yarn directory
-    // things i want to keep track of:
+    // things to keep track of:
     // - church command
     // - code
     // - file name
@@ -81,13 +97,13 @@ if (opts.yarn) {
     // - result
     // - commit hash of webchurch version
 
-    yarnData = {command: process.argv.join(" "),
+    yarnData = {command: argv.join(" "),
                 fileName: srcfile,
                 code: code
                };
     
     // BRITTLE
-    var churchDir = process.argv[1].split("/church")[0]; 
+    var churchDir = argv[1].split("/church")[0]; 
 
     // if webchurch repo is dirty, complain
     var gitStatus = exec('cd ' + churchDir + '; git status --porcelain | grep " [M|D]"').stdout.trim();
