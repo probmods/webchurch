@@ -96,7 +96,7 @@ if (opts.yarn) {
     }
 
     // get commit hash
-    yarnData.gitHash = exec('cd ' + churchDir + '; git rev-parse HEAD').stdout;
+    yarnData.gitHash = exec('cd ' + churchDir + '; git rev-parse HEAD').stdout.trim();
 
     // make yarn directory if necessary
     if (!shell.test("-d", ".yarn")) {
