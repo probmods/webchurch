@@ -924,7 +924,7 @@ var mean = $b({
     desc: 'Mean of a list',
     params: [{name: "lst", type: "list<real>", desc: ""}],
     fn: function(lst) {
-        return plus.apply(null, listToArray(lst)) / (lst.length-1);
+        return sum(lst) / (lst.length-1);
     }
 });
 

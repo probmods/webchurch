@@ -527,6 +527,9 @@ abc
 (sum (make-list 123456 1))
 123456
 
+(mean (make-list 123456 1))
+1
+
 (prod (make-list 123456 1))
 1
 

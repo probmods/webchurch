@@ -2,6 +2,7 @@
 
 var $x = {};
 
+// TODO: this should probably be written using a stack, rather than recursion
 var listToArray = $x.listToArray = function(list, recurse) {
     if (recurse) {
 	      return list.slice(0, -1).map(function (x) {return Array.isArray(x) ? listToArray(x, recurse) : x});
