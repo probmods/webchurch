@@ -68,7 +68,7 @@ parser.parse(process.argv.slice(0,-1));
 
 code = require('fs').readFileSync(srcfile, "utf8");
 
-var yarnData;
+var yarnData = {};
 
 if (opts.yarn) {
     // create a .yarn directory if need be
