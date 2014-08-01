@@ -320,40 +320,43 @@ function church_tree_to_esprima_ast(church_tree) {
     }
 
     function make_quoted_expression(church_tree) {
-	function quote_helper(quoted) {
-	    if (!util.is_leaf(quoted)) {
-		if (quoted.children.length == 0) {
-		    return make_leaf_expression(quoted);
-		} else {
-		    var array = deep_copy(array_node);
-		    var proper_list = true;
-		    for (var i = 0; i < quoted.children.length; i++) {
-			if (quoted.children[i].text == ".") {
-			    if (i != quoted.children.length - 2) {
-				throw util.make_church_error("SyntaxError", quoted.children[i].start, quoted.children[i].end, "Invalid dot");
-			    } else {
-				proper_list = false;
-			    }
-			} else {
-			    array["elements"].push(quote_helper(quoted.children[i]));
-			}
-		    }
-		    if (proper_list) {
-			array["elements"].push({"type": "Literal", "name": null, "value": null});
-		    }
-		    return array;
-		}
-	    } else {
-		if (util.is_identifier(quoted.text)) {
-		    var copy = deep_copy(quoted)
-		    copy.text = '"' + copy.text + '"'
-		    return make_leaf_expression(copy);
-		} else {
-		    return make_leaf_expression(quoted);
-		}
-	    }
-	}
-	return quote_helper(church_tree.children[1]);
+        function quote_helper(quoted) {
+            if (!util.is_leaf(quoted)) {
+                if (quoted.children.length == 0) {
+                    return make_leaf_expression(quoted);
+                } else if(quoted.children[0].text == "unquote") { //unquote means stop making things literal: translate to js as usual.
+                    //var array = {type: "ArrayExpression", elements: [make_expression(quoted.children[1])]}
+                    return make_expression(quoted.children[1])
+                } else {
+                    var array = {type: "ArrayExpression", elements: [] }//= deep_copy(array_node);
+                    var proper_list = true;
+                    for (var i = 0; i < quoted.children.length; i++) {
+                        if (quoted.children[i].text == ".") {
+                            if (i != quoted.children.length - 2) {
+                                throw util.make_church_error("SyntaxError", quoted.children[i].start, quoted.children[i].end, "Invalid dot");
+                            } else {
+                                proper_list = false;
+                            }
+                        } else {
+                            array.elements.push(quote_helper(quoted.children[i]));
+                        }
+                    }
+                    if (proper_list) {
+                        array.elements.push({"type": "Literal", "name": null, "value": null});
+                    }
+                    return array;
+                }
+            } else {
+                if (util.is_identifier(quoted.text)) {
+                    var copy = deep_copy(quoted)
+                    copy.text = '"' + copy.text + '"'
+                    return make_leaf_expression(copy);
+                } else {
+                    return make_leaf_expression(quoted);
+                }
+            }
+        }
+        return quote_helper(church_tree.children[1]);
     }
 
     function make_expression(church_tree) {
