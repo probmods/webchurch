@@ -96,15 +96,30 @@
     
     <pre id="codebox"><code>
 
-(define (reject func p) (lambda () (rejection-query '() (func) (flip p))))
+; Confidence interval demo
+(hist-ci (repeat 1000 gaussian))
 
-(define (geom p) (if (flip p) 0 (+ 1 (geom p))))
 
-(livehist 100 (reject (lambda () (geom 0.5)) 0.001))
+; MH score viewer demo
+(define (flip-coin p) (if (flip p) 'H 'T))
+(define (markov-init) (flip-coin 0.5))
+(define (markov-t s) (if (equal? s 'H) (flip-coin 0.9) (flip-coin 0.1)))
 
-(livedensity 500 (reject gaussian 0.001) "" true)
+(define samples
+  (mh-query-scored 100 1
+    (define s1 (markov-init))
+    (define s2 (markov-t s1))
+    (define s3 (markov-t s2))
+    (define s4 (markov-t s3))
+    (define s5 (markov-t s4))
 
-(livescatter 200 (reject (lambda () (repeat 2 gaussian)) 0.001))
+
+    (string-append s1 s2 s3 s4 s5)
+    (condition (equal? s4 'T))
+    (condition (equal? s5 'T))))
+
+;samples 
+(viz-mh samples "Markov model")
 </code>
 
   </body>

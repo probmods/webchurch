@@ -4,7 +4,7 @@
 // d3 = require("d3");
 // var vega = require("./vega.js");
 var format_result = require("./util").format_result;
-var _ = require("underscore"); 
+var _ = require("underscore");
 var typeUtils = require("./type-utils");
 var listToArray = typeUtils.listToArray;
 var arrayToList = typeUtils.arrayToList; 
@@ -92,12 +92,18 @@ var live_render = function(n, func, spec_maker, title) {
     var execute_pid = setInterval(execute, liveDelay);  
 }
 
-var render_vega = function(spec, element) {
-    vg.parse.spec(spec, function(chart) {chart({el:element, renderer:"svg"}).update();});
+var render_vega = function(spec, element, callback, renderer) {
+    vg.parse.spec(
+        spec,
+        function(chart) {
+            chart({el:element.get()[0], renderer:renderer || "svg"}).update();
+            if (callback) callback(element);
+        }
+    );
 }
 
 var create_and_append_result = function() {
-    var el = document.createElement("div");
+    var el = $("<div></div>");
     $results.append(el);
     return el;
 }
@@ -201,7 +207,7 @@ barplot = function(data, title) {
 
     var padding = {
         top: 30 + (title ? titleOffset : 0),
-        left: 20 + Math.max.apply(undefined, items.map(function(x) {return x.length;})) * 5,
+        left: 20 + Math.max.apply(undefined, items.map(function(x) {return x.length;})) * 6,
         bottom: 50, right: 30};
     var height = 1 + items.length * 20;
     var width = 600 - padding.left;
@@ -229,7 +235,7 @@ var make_hist_spec = function(samps, title) {
 
     var padding = {
         top: 30 + (title ? titleOffset : 0),
-        left: 20 + Math.max.apply(undefined, sorted_keys.map(function(x) {return x.toString().length;})) * 5,
+        left: 20 + Math.max.apply(undefined, sorted_keys.map(function(x) {return x.toString().length;})) * 6,
         bottom: 50,
         right: 30};
     var height = 1 + sorted_keys.length * 20;
@@ -281,7 +287,7 @@ hist_45ci = function(samps, title) {
 
     var padding = {
         top: 30 + (title ? titleOffset : 0),
-        left: 20 + Math.max.apply(undefined, sorted_keys.map(function(x) {return x.toString().length;})) * 5,
+        left: 20 + Math.max.apply(undefined, sorted_keys.map(function(x) {return x.toString().length;})) * 6,
         bottom: 50,
         right: 30};
     var height = 1 + sorted_keys.length * 20;
@@ -499,6 +505,97 @@ livelineplot = function(n, func, title) {
 
 multiviz = function() {
 };
+
+var make_timeseries_spec = function(data, title) {
+    var padding = {top: 30 + (title ? titleOffset : 0), left: 45, bottom: 50, right: 30};
+    data = listToArray(data);
+    var data_values = [];
+    for (var i = 0; i < data.length - 1; i++) {
+        data_values[i] = {x: i, y: data[i]};
+    }
+    var data = [{name: "points", values: data_values}];
+    var height = 300;
+    var width = 600 - padding.left;
+    var scales = [
+            {name: "x", range: "width", nice: true, domain: {data:"points", field:"data.x"}},
+            {name: "y", range: "height", nice: true, zero: false,  domain: {data:"points", field:"data.y"}},
+            {name: "y_labels", reverse: true, range: "height", nice: true, domain: {data:"points", field:"data.y"}}];
+    var axes = [
+        {type:"x", scale:"x"},
+        {type:"y", scale:"y"}];
+    var marks = [
+
+        {
+            type: "line",
+            from: {data:"points", transform: [{type: "sort", by: "data.x"}]},
+            properties: {
+                enter: {
+                    x: {scale:"x", field: "data.x"},
+                    y: {scale:"y", field: "data.y"},
+                    stroke: {value: "steelblue"},
+                    strokeWidth: {value: 2}
+                }
+            }
+        }
+    ];
+    return make_spec(padding, width, height, data, scales, axes, marks, title);
+
+}
+
+viz_45mh = function(samps, title) {
+    samps = listToArray(samps, true);
+    var samples = samps.map(function(x){return x[0];})
+    var logprobs = samps.map(function(x){return x[1];})
+    multi_spec([make_hist_spec(samples, title), make_timeseries_spec(logprobs, title + " : sample scores")]);
+}
+
+var multi_spec = function(specs) {
+    var display = $('<div></div>');
+    var thumbnails = $('<table align="center"><tbody><tr></tr></tbody></table>');
+    var thumbnails_row = thumbnails.children().children();
+    
+    for (var i = 0; i < specs.length; i++) {
+        thumbnails_row.append($('<td></td>'));
+        display.append($('<div></div>').css("display", "none"));
+    }
+    display.children().eq(0).css("display", "inline");
+    thumbnails_row.children().eq(0).css("background-color", "LightSteelBlue").addClass("multi-spec-on");
+    $results.append($('<div></div>').append(display).append(thumbnails));
+
+    for (var i = 0; i < specs.length; i++) {
+        render_vega(specs[i], display.children().eq(i), function(element) {
+            // When finished rendering, make the thumbnail version
+            var index = element.index();
+            var thumbnail = thumbnails_row.children().eq(index);
+            // The element is structured like <div><div><svg><g>...
+            var svg = element.children().children().clone();
+            svg.attr("height", svg.attr("height") * 0.1);
+            svg.attr("width", svg.attr("width") * 0.1);
+            var g = svg.children().attr("transform", "scale(0.1)");
+            thumbnail.append(svg);
+
+            thumbnail.hover(
+                function() {
+                    $(this).css("background-color", "LightSteelBlue");
+                },
+                function() {
+                    if (!$(this).hasClass("multi-spec-on")) $(this).css("background-color", "white");
+                }
+            )
+            thumbnail.click(
+                function() {
+                    var index = $(this).index();
+                    console.log(index);
+                    display.children().css("display", "none");
+                    display.children().eq(index).css("display", "inline");
+                    thumbnails_row.children().css("background-color", "white").removeClass("multi-spec-on");
+                    $(this).css("background-color", "LightSteelBlue").addClass("multi-spec-on");
+                }
+            )
+        });
+    }
+}
+
 
 
 module.exports = {

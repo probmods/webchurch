@@ -4,12 +4,13 @@ var rename_map = require('./js_astify.js').rename_map;
 
 var brackets_map = {"(": ")", "[": "]"};
 
-var query_fns = ["rejection-query", "mh-query", "enumeration-query", "conditional"];
+var query_fns = ["rejection-query", "mh-query", "mh-query-scored", "enumeration-query", "conditional"];
 var query_fns_to_num_params = {
     "rejection-query": 0,
     "enumeration-query": 0,
     "conditional": 1,
-    "mh-query": 2
+    "mh-query": 2,
+    "mh-query-scored": 2
 }
 var query_decls = ["define", "condition", "factor", "condition-repeat-equals"];
 var condition_fns = ["condition", "factor", "condition-repeat-equals"];
