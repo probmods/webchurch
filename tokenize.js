@@ -1,6 +1,6 @@
 var util = require('./util.js');
 
-var delimiters = ["(", ")", "[", "]", "'", "\"", ";"]
+var delimiters = ["(", ")", "[", "]", "'", ",", "@", "\"", ";"]
 var whitespace_re = /^\s/
 
 function get_site_map(s) {
