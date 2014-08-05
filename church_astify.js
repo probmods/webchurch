@@ -206,20 +206,61 @@ function church_astify(tokens) {
     }
 
     function dsgr_quote(ast) {
-	var last = ast.children[ast.children.length-1];
-	if (last.text=="'") {
-	    throw util.make_church_error("SyntaxError", last.start, last.end, "Invalid single quote");
-	}
-	for (var i = ast.children.length - 2; i >= 0; i--) {
-	    if (ast.children[i].text == "'") {
-		ast.children.splice(i, 2, {
-		    children: [{text: "quote", start: ast.children[i].start, end: ast.children[i].end}, ast.children[i+1]],
-		    start: ast.children[i].start,
-		    end: ast.children[i+1].end
-		});
-	    }
-	}
-	return ast;
+        var last = ast.children[ast.children.length-1];
+        if (last.text=="'") {
+            throw util.make_church_error("SyntaxError", last.start, last.end, "Invalid single quote");
+        }
+        for (var i = ast.children.length - 2; i >= 0; i--) {
+            if (ast.children[i].text == "'") {
+                ast.children.splice(i, 2, {
+                                    children: [{text: "quote", start: ast.children[i].start, end: ast.children[i].end}, ast.children[i+1]],
+                                    start: ast.children[i].start,
+                                    end: ast.children[i+1].end
+                                    });
+            }
+        }
+        return ast;
+    }
+    
+    function dsgr_unquote(ast) {
+        for (var i = ast.children.length - 2; i >= 0; i--) {
+            if (ast.children[i].text == ",") {
+                ast.children.splice(i, 2, {
+                                    children: [{text: "unquote", start: ast.children[i].start, end: ast.children[i].end}, ast.children[i+1]],
+                                    start: ast.children[i].start,
+                                    end: ast.children[i+1].end
+                                    });
+            }
+        }
+        return ast;
+    }
+    
+    //turn (... , @ foo ...) into  (, (append ' (...) foo ' (...)))
+    //because this wraps each items have to also turn "... , foo ..." into "... (list foo) ..."
+    //note: do this before desugarring quote and unquote.
+    function dsgr_splunquote(ast) {
+        
+        //todo:start and end
+        var ats = false
+        var children = [{text: "append"}]
+        for(var c = 0; c < ast.children.length; c++){
+            if(ast.children[c].text =="," && ast.children[c+1].text =="@") {
+                ats = true
+                children.push(ast.children[c+2])
+                c=c+2
+            } else if(ast.children[c].text ==","){
+                children.push({children:[{text:"list"}, ast.children[c+1]]})
+                c=c+1
+            } else {
+                children.push({text: "'"})
+                children.push({children: [ast.children[c]]})
+            }
+        }
+        if(ats){
+            return {children: [{text:"unquote"}, {children: children}]}
+        } else {
+            return ast
+        }
     }
 
     function dsgr_case(ast) {
@@ -553,7 +594,9 @@ function church_astify(tokens) {
     for (var i = 0; i < ast.children.length; i++) {
 	assert_not_special_form(ast.children[i]);
     }
+    ast = traverse(ast, dsgr_splunquote);
     ast = traverse(ast, dsgr_quote);
+    ast = traverse(ast, dsgr_unquote);
     for (var i = 0; i < desugar_fns.length; i++) {
 	ast = traverse(ast, desugar_fns[i], isquote);
     }
