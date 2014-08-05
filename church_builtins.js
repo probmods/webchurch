@@ -1,5 +1,7 @@
 /* global global, require, module, exports */
 
+var seedrandom = require('seedrandom');
+
 // Contains the built-in Church functions written in Javascript.
 // TODO: document annotations format
 
@@ -1298,12 +1300,12 @@ var member = $b({
     fn: function(x, lst, cmp) {
         cmp = cmp || is_equal;
         var array = listToArray(lst);
-	for (var i = 0, ii = array.length; i < ii; i++) {
-	    if (cmp(x, array[i])) {
-		return lst;
-	    }
-	}
-	return false;
+	      for (var i = 0, ii = array.length; i < ii; i++) {
+	          if (cmp(x, array[i])) {
+		            return lst;
+	          }
+	      }
+	      return false;
     }
 });
 
@@ -1377,7 +1379,7 @@ var number_to_boolean = $b({
 });
 
 var bang_bang = $b({
-    name: '!!',
+    name: 'bang_bang',
     desc: 'Coerce an object to a boolean',
     params: [{name: 'x'}],
     fn: function(x) {
@@ -1407,14 +1409,45 @@ var string_to_symbol = $b({
     }
 });
 
+var stringify = $b({
+    name: "stringify",
+    desc: 'Convert an object to a string',
+    params: [{name: "x", type: "", desc: ""}],
+    fn: function(x) {
+	      return x.toString();
+    } 
+})
+
 var number_to_string = $b({
     name: 'number_to_string',
     desc: 'Convert a number to a string',
     params: [{name: "x", type: "real", desc: ""}],
     fn: function(num) {
-	return num.toString();
+	      return num.toString();
     }
 });
+
+var string_slice = $b({
+    name: 'string_slice',
+    desc: 'Extract a substring from a string',
+    params: [{name: "string", type: "string", desc: ""},
+             {name: "start", type: "nat", desc: ""},
+             {name: "[end]", type: "nat", desc: ""}
+            ],
+    fn: function(string, start, end) {
+        return string.slice(start, end)
+    }
+});
+
+var string_length = $b({
+    name: 'string_length',
+    desc: 'Get the length of string',
+    params: [{name: "string", type: "string", desc: ""}],
+    fn: function(string) {
+        return string.length;
+    }
+});
+
 
 var sample_discrete = $b({
     name: 'sample_discrete',
@@ -1999,6 +2032,15 @@ var sample = $b({
     }
 })
 
+var set_seed = $b({
+    name: 'set_seed',
+    desc: 'Seed a seed for the PRNG',
+    params: [{name: 'seed', type: 'string'}],
+    fn: function(seed) {
+        Math.random = seedrandom(seed);
+    }
+})
+
 // var ch_import = $b({
 //     name: 'ch_import',
 //     alias: ['ch-import','import-as'],
@@ -2063,6 +2105,8 @@ var load_url = $b({
     }
 });
 
+
+
 // TODO: add a flag somewhere for turning on/off wrapping
 function wrapAsserts(annotation) {
 
@@ -2084,7 +2128,7 @@ function wrapAsserts(annotation) {
         var userArgs = arguments;
 
         var userNumArgs = userArgs.length;
-        // console.log( 'inside wrapped ' + functionName);
+        // console.log( 'inside wrapped ' + fnName);
 
         if (userNumArgs < numMandatoryParams) {
             var err = _.template('<<functionName>> takes {{numArgs}} argument{{plural}}, but {{userNumArgs}} were given',
@@ -2104,6 +2148,7 @@ function wrapAsserts(annotation) {
                 throw new Error('Invalid number of arguments to <<functionName>>');
             }
         }
+
 
         // for each supplied argument, check type
         for(var i = 0, a, props, variadic = false, specType, argName; i < userNumArgs; i++) {

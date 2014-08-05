@@ -2,6 +2,10 @@
 
 var sys = require('sys');
 var optparse = require('optparse');
+var seedrandom = require('seedrandom');
+var exec = require('execSync').exec;
+var shell = require('shelljs');
+var fs = require('fs');
 
 function abort(msg) {
     console.log(msg)
@@ -11,21 +15,33 @@ function abort(msg) {
 global["evaluate"] = require('./evaluate.js').evaluate
 var format_result = require("./evaluate.js").format_result;
 
-var srcfile = process.argv.length > 2 ? process.argv[process.argv.length-1] : abort("Usage: church [OPTIONS]... [FILE]");
-process.argv = process.argv.slice(0, -1);
-var opts = {};
+var argv = process.argv;
 
+var opts = {};
 var switches = [
     ['-p', '--precompile', 'Turn on pre-compilation'],
     ['-a', '--program-args [MESSAGE]', 'Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable'],
+    ['-h', '--help', 'Help'],
+    ['-s', '--seed [SEED]', 'Set a random-number generator seed'],
     ['-t', '--timed', 'Print out timing information'],
     ['-d', '--desugar-only', 'Apply Church desugaring without execution'],
     ['-c', '--compile-only', 'Compile to Javascript without execution'],
-    ['-e', '--disable-church-errors', 'Disable special Church error checking and show Javascript errors instead']
+    ['-e', '--disable-church-errors', 'Disable special Church error checking and show Javascript errors instead'],
+    ['-y', '--yarn', 'Record run results and metadata to disk']
 ];
 
 var parser = new optparse.OptionParser(switches);
+parser.banner = 'Usage: church [options] [file]';
 
+var srcfile = argv[argv.length - 1];
+
+// if a model file is not specified or doesn't exist, bail
+// NB: if user didn't supply a filename (e.g., they just ran "church"), then srcfile will be
+// equal to the path of the current script
+if (srcfile == __filename || !shell.test("-e", srcfile)) {
+    console.log(parser.toString());
+    process.exit();
+}
 
 parser.on('precompile', function(x) {
     opts.pc = true;
@@ -51,14 +67,90 @@ parser.on("disable-church-errors", function() {
     opts.disable_church_errors = true;
 });
 
-parser.parse(process.argv);
+parser.on("seed", function(opt, value) {
+    Math.random = seedrandom(value);
+});
 
-code = require('fs').readFileSync(srcfile, "utf8");
+parser.on("yarn", function(opt, value) {
+    opts.yarn = true;
+});
 
+parser.on("help", function() {
+    console.log(parser.toString());
+    process.exit()
+})
+
+parser.parse(argv)
+
+var code = fs.readFileSync(srcfile, "utf8");
+
+var yarnData = {};
+
+if (opts.yarn) {
+    // create a .yarn directory if need be
+    // inside the .yarn directory
+    // things to keep track of:
+    // - church command
+    // - code
+    // - file name
+    // - run time
+    // - result
+    // - commit hash of webchurch version
+
+    yarnData = {command: argv.join(" "),
+                fileName: srcfile,
+                code: code
+               };
+    
+    // BRITTLE
+    var churchDir = argv[1].split("/church")[0]; 
+
+    // if webchurch repo is dirty, complain
+    var gitStatus = exec('cd ' + churchDir + '; git status --porcelain | grep " [M|D]"').stdout.trim();
+    if (gitStatus.length > 0) {
+        abort("WebChurch has local changes. Commit and retry yarning"); 
+    }
+
+    // get commit hash
+    yarnData.gitHash = exec('cd ' + churchDir + '; git rev-parse HEAD').stdout.trim();
+
+    // make yarn directory if necessary
+    if (!shell.test("-d", ".yarn")) {
+        shell.mkdir(".yarn");
+    }
+
+    // see how many results there are so far to compute yarn filename
+    var numYarns = shell.ls(".yarn/" + srcfile + ".*.result").length; 
+    var yarnName = srcfile + "." + (numYarns + 1) + ".result"; 
+}
+
+// run time is millisecond precision
+yarnData.start = (new Date()).getTime();
+var tEnd;
 try {
-    result = format_result(evaluate(code, opts));
+    var result = format_result(evaluate(code, opts));
+    yarnData.runTime = ( (new Date().getTime()) - yarnData.start);
+    yarnData.success = true;
+    yarnData.result = result;
     console.log(result);
+    
 } catch (e) {
+    yarnData.runTime = ( (new Date().getTime()) - yarnData.start);
+    yarnData.success = false;
+    yarnData.result = e;
     console.log(e.message)
     throw e
+}
+
+if (opts.yarn) {
+    // write yarn
+    fs.writeFile(".yarn/" + yarnName, JSON.stringify(yarnData), function(err) {
+        if(err) {
+            console.log('Problem yarning');
+            console.log(err);
+        } else {
+            console.log("Yarned");
+        }
+    });
+    shell.ln("-sf",".yarn/" + yarnName, ".yarn/" + srcfile);
 }
