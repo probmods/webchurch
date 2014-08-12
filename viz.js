@@ -355,18 +355,35 @@ livehist = function(n, func, title) {
 }
 
 var make_density_spec = function(samps, title, with_hist) {
+    // NB: scale argument is no longer used, as we now estimate the bandwidth
     function kernelDensityEstimator(counter, kernel, scale) {
         var density_values = [];
         var keys = Object.keys(counter.counter);
-        for (var i = 0; i <= maxBins; i++) {
-            var x = counter.min + (counter.max - counter.min) / maxBins * i;
+
+        // get optimal bandwidth
+        // HT http://en.wikipedia.org/wiki/Kernel_density_estimation#Practical_estimation_of_the_bandwidth
+        var sum = samps.reduce(function(x,y) { return x + y });
+        var n = samps.length;
+        var mean = sum / n;
+        var sd = Math.sqrt(samps.reduce(function(acc, x) {
+            return acc + Math.pow(x - mean, 2)
+        }) / (n-1));
+
+        var bandwidth = 1.06 * sd * Math.pow(n, -0.2);
+        var min = counter.min;
+        var max = counter.max;
+
+        var numBins = (max - min) / bandwidth;
+        
+        for (var i = 0; i <= numBins; i++) {
+            var x = min + bandwidth * i;
             var kernel_sum = 0;
             for (var j = 0; j < keys.length; j++) {
-                kernel_sum += kernel((x - keys[j]) / scale) * counter.count(keys[j]);
+                kernel_sum += kernel((x - keys[j]) / bandwidth) * counter.count(keys[j]);
             }
-            density_values.push({item: x, value: kernel_sum / samps.length / scale});
+            density_values.push({item: x, value: kernel_sum / (n * bandwidth)});
         }
-        return density_values;
+        return density_values; 
     }
 
     function epanechnikovKernel(u) {
