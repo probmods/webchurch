@@ -325,7 +325,6 @@ function church_tree_to_esprima_ast(church_tree) {
                 if (quoted.children.length == 0) {
                     return make_leaf_expression(quoted);
                 } else if(quoted.children[0].text == "unquote") { //unquote means stop making things literal: translate to js as usual.
-                    //var array = {type: "ArrayExpression", elements: [make_expression(quoted.children[1])]}
                     return make_expression(quoted.children[1])
                 } else {
                     var array = {type: "ArrayExpression", elements: [] }//= deep_copy(array_node);

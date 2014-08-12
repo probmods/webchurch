@@ -1715,6 +1715,19 @@ var wrapped_mh_query = $b({
     }
 });
 
+var wrapped_mh_query_scored = $b({
+    name: 'wrapped_mh_query_scored',
+    desc: '',
+    params: [{name: 'comp'},
+             {name: 'samples', type: 'nat'},
+             {name: 'lag', type: 'nat'}],
+    fn: function(comp, samples, lag) {
+    var inn = traceMH(comp, samples, lag, false, "lessdumb").map(function(x) {return [x.sample, x.logprob, null]});
+    var res = arrayToList(inn);
+    return res;
+    }
+});
+
 var wrapped_rejection_query = $b({
     name: 'wrapped_rejection_query',
     desc: '',
