@@ -1593,6 +1593,18 @@ var wrapped_gamma = $b({
     }
 });
 
+var wrapped_exponential = $b({
+    name: 'wrapped_exponential',
+    desc: 'Sample from the exponential distribution with parameter rate',
+    numArgs: [1,2],
+    params: [{name: "rate", type: "positive real", desc: ""},
+             {name: "[conditionedValue]", type: "", desc: "", noexport: true}],
+    erp: true,
+    fn: function(rate, conditionedValue) {
+	      return exponential(rate, undefined, conditionedValue);
+    }
+});
+
 var wrapped_beta = $b({
     name: 'wrapped_beta',
     desc: 'Sample from the beta distribution B(a,b). Returns only the first element.',
@@ -1635,9 +1647,30 @@ var DPmem = $b({
         var restaurants = {};
         return function() {
             var args = args_to_array(arguments);
+            var extractingTables = false;
+            
+            if (args[0] == 'get-tables') {
+                extractingTables = true;
+                args.shift(); 
+            }
             var restaurantId = JSON.stringify(args);
 
             var tables = restaurants[restaurantId];
+
+            // console.log('tables are ');
+            // console.log(tables);
+            
+            if (extractingTables) {
+                // return a list of table pairs
+                // in each pair, the first element is the label
+                // and the second value is the count
+                if (!tables) {
+                    return arrayToList([]);
+                }
+                var ret = tables.map(function(obj) { return [obj.value, obj.count]})
+                return arrayToList(ret); 
+            } 
+            
             var numTables;
 
             if (tables === undefined) {
