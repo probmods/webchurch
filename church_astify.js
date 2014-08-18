@@ -12,8 +12,8 @@ var query_fns_to_num_params = {
     "mh-query": 2,
     "mh-query-scored": 2
 }
-var query_decls = ["define", "condition", "factor", "condition-repeat-equals"];
-var condition_fns = ["condition", "factor", "condition-repeat-equals"];
+var query_decls = ["define", "condition", "factor", "condition-equal", "condition-repeat-equal"];
+var condition_fns = ["condition", "factor", "condition-equal", "condition-repeat-equal"];
 
 function make_generic_node(head, children) {
     return {"head": head, "children": children};
