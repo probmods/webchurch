@@ -1006,10 +1006,11 @@ var fold = $b({
     ],
     fn: function(fn, initialValue /*, ... */ ) {
         var args = args_to_array(arguments);
-        var arrs = args.slice(2).map(listToArray);
+        var arrs = args.slice(2).map(function(x) { return listToArray(x) });
+        
         var max_length = Math.min.apply(this, arrs.map(function(el) {return el.length;}));
         var cumulativeValue = initialValue;
-        for (i=0; i<max_length; i++) {
+        for (var i=0; i<max_length; i++) {
             var fn_args = arrs.map(function(el) {return el[i];});
             fn_args.push(cumulativeValue);
             cumulativeValue = fn.apply(this, fn_args);
