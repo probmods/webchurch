@@ -29,6 +29,7 @@ var lineifyTitle= function(title){
     var width= 40;
     for (var i = 0; i < words.length; i++) {
        if (line.length + words[i].length + 1 > width || i == words.length - 1){
+           line += " " + words[i];
            lineslist.push(line);
            line="";
        }
