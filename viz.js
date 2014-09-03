@@ -268,54 +268,65 @@ livehist = function(n, func, title) {
 };
 
 var make_density_spec = function(samps, title, with_hist) {
-    title = title ? lineifyTitle(title) : undefined;
-
+    // NB: scale argument is no longer used, as we now estimate the bandwidth
     function kernelDensityEstimator(counter, kernel, scale) {
         var density_values = [];
         var keys = Object.keys(counter.counter);
-        for (var i = 0; i <= maxBins; i++) {
-            var x = counter.min + (counter.max - counter.min) / maxBins * i;
+
+        // get optimal bandwidth
+        // HT http://en.wikipedia.org/wiki/Kernel_density_estimation#Practical_estimation_of_the_bandwidth
+        var sum = samps.reduce(function(x,y) { return x + y });
+        var n = samps.length;
+        var mean = sum / n;
+        var sd = Math.sqrt(samps.reduce(function(acc, x) {
+            return acc + Math.pow(x - mean, 2)
+        }) / (n-1));
+
+        var bandwidth = 1.06 * sd * Math.pow(n, -0.2);
+        var min = counter.min;
+        var max = counter.max;
+
+        var numBins = (max - min) / bandwidth;
+        
+        for (var i = 0; i <= numBins; i++) {
+            var x = min + bandwidth * i;
             var kernel_sum = 0;
             for (var j = 0; j < keys.length; j++) {
-                kernel_sum += kernel((x - keys[j]) / scale) * counter.count(keys[j]);
+                kernel_sum += kernel((x - keys[j]) / bandwidth) * counter.count(keys[j]);
             }
-            density_values.push({item: x, value: kernel_sum / samps.length / scale});
+            density_values.push({item: x, value: kernel_sum / (n * bandwidth)});
         }
-        return density_values;
+        return density_values; 
     }
 
     function epanechnikovKernel(u) {
-        return Math.abs(u) <= 1 ? .75 * (1 - u * u) : 0;
+            return Math.abs(u) <= 1 ? .75 * (1 - u * u) : 0;
     }
 
     var counter = new Counter(listToArray(samps));
 
-    var padding = {
-        top: 30 + (title ? title.length * OneLineTitleOffset : 0),
-        left: 45,
-        bottom: 50,
-        right: 30};
+    var padding = {top: 30 + (title ? titleOffset : 0), left: 45, bottom: 50, right: 30};
     var data = [{name: "density", values: kernelDensityEstimator(counter, epanechnikovKernel, 3)}];
     var height = 300;
     var width = 600 - padding.left;
     var scales = [
-        {name: "x_density", type: "ordinal", range: "width", domain: {data:"density", field:"data.item"}, padding: 0.1},
-        {name: "x_labels", nice: true, range: "width", zero: false, domain: {data:"density", field:"data.item"}, padding: 0.1},
-        {name: "y", range: "height", nice: true, domain: {data:"density", field:"data.value"}}];
+            {name: "x_density", type: "ordinal", range: "width", domain: {data:"density", field:"data.item"}, padding: 0.1},
+            {name: "x_labels", nice: true, range: "width", zero: false, domain: {data:"density", field:"data.item"}, padding: 0.1},
+            {name: "y", range: "height", nice: true, domain: {data:"density", field:"data.value"}}];
     var axes = [
         {type:"x", scale:"x_labels"},
         {type:"y", scale:"y", ticks: 10, format: "%"}];
     var marks = [{
-        type: "line",
-        from: {data:"density"},
-        properties: {
-            enter: {
-                x: {scale:"x_density", field: "data.item"},
-                y: {scale:"y", field: "data.value"},
-                strokeWidth: {value: 3},
-                stroke: {value: "black"}
+            type: "line",
+            from: {data:"density"},
+            properties: {
+                enter: {
+                    x: {scale:"x_density", field: "data.item"},
+                    y: {scale:"y", field: "data.value"},
+                    strokeWidth: {value: 3},
+                    stroke: {value: "black"}
+                }
             }
-        }
     }];
 
     if (with_hist) {
@@ -345,7 +356,7 @@ var make_density_spec = function(samps, title, with_hist) {
                 },
                 update: {fill: {value: "steelblue"}}
             }
-        });
+        })
     }
 
     return make_spec(padding, width, height, data, scales, axes, marks, title);
