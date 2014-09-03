@@ -1790,6 +1790,57 @@ var wrapped_enumeration_query = $b({
     }
 });
 
+var wrapped_condition_equal = $b({
+    name: 'wrapped_condition_equal',
+    alias: 'condition-equal',
+    desc: '',
+    params: [{name: 'comp'}, {name: 'value'}],
+    fn: function(comp, value) {
+        var marg;
+        try {
+            marg = wrapped_enumeration_query(comp);
+        } catch (e) {
+            throw new Error("Unable to enumerate over function");
+        }
+        for (var i = 0; i < marg.length - 1; i++) {
+            console.log(JSON.stringify(marg), value)
+            if (is_equal(marg[0][i], value)) {
+                factor(Math.log(marg[1][i]));
+                return;
+            }
+        }
+        // If no match is found, then the condition fails
+        condition(false);
+    }
+
+});
+
+
+var wrapped_condition_repeat_equal = $b({
+    name: 'wrapped_condition_repeat_equal',
+    alias: 'condition-repeat-equal',
+    desc: '',
+    params: [{name: 'comp'}, {name: 'values'}],
+    fn: function(comp, values) {
+        var marg;
+        try {
+            marg = wrapped_enumeration_query(comp);
+        } catch (e) {
+            throw new Error("Unable to enumerate over function");
+        }
+        for (var i = 0; i < marg.length - 1; i++) {
+            console.log(JSON.stringify(marg), value)
+            if (is_equal(marg[0][i], value)) {
+                factor(Math.log(marg[1][i]));
+                return;
+            }
+        }
+        // If no match is found, then the condition fails
+        condition(false);
+    }
+
+});
+
 var read_file = $b({
     name: 'read_file',
     desc: '',
