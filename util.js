@@ -51,9 +51,13 @@ function format_result(obj) {
 	    } else {
 		return "#f";
 	    }
-	} else {
-	    return "" + obj;
-	}
+	} else if (typeof obj == "string") {
+	    return obj
+	} else if (typeof obj == "object") {
+      return JSON.stringify(obj);
+  } else {
+      return obj + "";
+  }
     }
 }
 
