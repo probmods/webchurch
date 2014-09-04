@@ -141,7 +141,7 @@ function runTestFile(filename) {
             var actualOutput = format_result( evaluate(input) );
             if (typeof wantedOutput != 'undefined' && actualOutput != wantedOutput) {
                 log(red("Test " + index + " failed"),
-                    //input,
+                    input,
                     red("Wanted"),
                     wantedOutput,
                     red("Actual"),
