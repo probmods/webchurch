@@ -1641,11 +1641,13 @@ var wrapped_dirichlet = $b({
 var DPmem = $b({
     name: 'DPmem',
     desc: 'Stochastic memoization using the Dirichlet Process',
-    params: [{name: 'alpha', type: 'real', desc: 'Concentration parameter of the DP'},
+    params: [{name: 'alpha', type: 'positive real', desc: 'Concentration parameter of the DP'},
              {name: 'f', type: 'function', desc: 'Function to stochastically memoize'}
             ],
     fn: function(alpha, f) {
-        var restaurants = {};
+        var allLabels = {};
+        var allIndices = {};
+        var allCounts = {};
         return function() {
             var args = args_to_array(arguments);
             var extractingTables = false;
@@ -1654,64 +1656,57 @@ var DPmem = $b({
                 extractingTables = true;
                 args.shift(); 
             }
-            var restaurantId = JSON.stringify(args);
+            var argsHash = JSON.stringify(args);
 
-            var tables = restaurants[restaurantId];
+            var labels = allLabels[argsHash];
+            var counts = allCounts[argsHash];
+            var indices = allIndices[argsHash];
 
-            // console.log('tables are ');
-            // console.log(tables);
-            
             if (extractingTables) {
                 // return a list of table pairs
                 // in each pair, the first element is the label
                 // and the second value is the count
-                if (!tables) {
+                if (!labels) {
                     return arrayToList([]);
                 }
-                var ret = tables.map(function(obj) { return [obj.value, obj.count]})
+                var ret = [];
+                for(var i = 0; i < labels.length; i++) {
+                    ret.push([labels[i], counts[i+1]])
+                };
                 return arrayToList(ret); 
-            } 
+            }
+
+            if (labels === undefined) {
+                labels = allLabels[argsHash] = [];
+
+                // virtual index of -1 for sampling a new table
+                indices = allIndices[argsHash] = [-1];
+
+                // virtual count of alpha for sampling a new table
+                counts = allCounts[argsHash] = [alpha];
+            }
             
-            var numTables;
-
-            if (tables === undefined) {
-                numTables = 0;
-                tables = restaurants[restaurantId] = [];
+            var sampledIndex = wrapped_multinomial(arrayToList(indices),
+                                                   arrayToList(counts));
+            
+            var label;
+            if (sampledIndex == -1) {
+                label = f.apply(null,arguments);
+                indices.push(indices.length - 1);
+                labels.push(label);
+                counts.push(1);
             } else {
-                numTables = tables.length;
+                // NB: labels will always have 1 fewer item than counts
+                label = labels[sampledIndex];
+                counts[sampledIndex + 1]++; 
             }
 
-            var value;
-
-            // no tables yet or we sample a new one
-            if (numTables == 0 || wrapped_flip(alpha / (numTables + alpha))) {
-                value = f.apply(null, arguments);
-                // store both the count and the un-serialized value
-                // (so we don't have to run JSON.parse if we later reuse it)
-                //tables[JSON.stringify(value)] = {count: 1, value: value};
-                tables.push({value: value, count: 1});
-            }
-            //  reuse existing table
-            else {
-
-                // construct a multinomial over current tables
-                var indices = [];
-                for(var i = 0; i < numTables; i++ ) {
-                    indices.push(i);
-                }
-
-                var counts = tables.map(function(table) { return table.count });
-
-                var sampledIndex = wrapped_multinomial(arrayToList(indices, true),
-                                                       arrayToList(counts, true));
-
-                value = tables[sampledIndex].value;
-                tables[sampledIndex].count++;
-            }
-            return value;
+            return label;
         }
     }
 })
+
+
 
 var wrapped_conditional = $b({
     name: 'wrapped_conditional',
