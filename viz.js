@@ -268,6 +268,8 @@ livehist = function(n, func, title) {
 };
 
 var make_density_spec = function(samps, title, with_hist) {
+    title = title ? lineifyTitle(title) : undefined;
+    
     // NB: scale argument is no longer used, as we now estimate the bandwidth
     function kernelDensityEstimator(counter, kernel, scale) {
         var density_values = [];
