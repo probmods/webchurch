@@ -467,97 +467,109 @@ function church_astify(tokens) {
     }
 
     function transform_equals_condition(ast) {
-	function is_equals_conditionable(ast) {
-	    if (util.is_leaf(ast)) return false;
-	    var fn = church_builtins.__annotations__[rename_map[ast.children[0].text]];
-	    return fn && fn.erp && ast.children[fn.numArgs[fn.numArgs.length-1]] == undefined;
-	}
-
-	function transform_erp(erp, conditioned_value) {
-	    erp.children.push(conditioned_value);
-	}
-
-	function try_transform(left, right) {
-	    if (left == undefined) return false;
-	    if (is_equals_conditionable(left)) {
-		transform_erp(left, right);
-		statements.splice(i, 1, left);
-		return true;
-	    } else if (util.is_leaf(left) && define_table[left.text] && is_equals_conditionable(define_table[left.text].def)) {
-		var left_entry = define_table[left.text];
-		if (!util.is_identifier(right.text) || (
-		    define_table[right.text] && left_entry.index > define_table[right.text].index)) {
-		    transform_erp(left_entry.def, right);
-		    statements.splice(i, 1);
-		    return true;
+		function is_equals_conditionable(ast) {
+		    if (util.is_leaf(ast)) return false;
+		    var fn = church_builtins.__annotations__[rename_map[ast.children[0].text]];
+		    return fn && fn.erp && ast.children[fn.numArgs[fn.numArgs.length-1]] == undefined;
 		}
-	    }
-	    return false;
-	}
 
-	var transformed;
-	if (query_fns.indexOf(ast.children[0].text) != -1) {
-	    var define_table = {};
-	    // Assumes preprocessing through dsgr_query
-	    var statements = ast.children[1].children.slice(2);
-	    var i = 0;
-	    // Iterate through each lambda statement
-	    for (var i = 0; i < statements.length; i++) {
-		if (!util.is_leaf(statements[i])) {
-		    // If statement is a define and an ERP without an existing condition, put it in a table
-		    if (statements[i].children[0].text == "define") {
-			define_table[statements[i].children[1].text] = {
-			    index: i,
-			    def: statements[i].children[2]
-			};
-			// If statement is a condition, check if it's an equality and attempt to transform
-		    } else if (statements[i].children[0].text == "condition") {
-			var condition = statements[i].children[1];
-			if (!util.is_leaf(condition) && ["=", "equal?"].indexOf(condition.children[0].text) != -1 && condition.children.length == 3) {
+		function transform_erp(erp, conditioned_value) {
+		    erp.children.push(conditioned_value);
+		}
+
+		function try_transform(left, right) {
+		    if (left == undefined) return false;
+		    if (is_equals_conditionable(left)) {
+				transform_erp(left, right);
+				statements.splice(i, 1, left);
+				return true;
+		    } else if (util.is_leaf(left) && define_table[left.text] && is_equals_conditionable(define_table[left.text].def)) {
+				var left_entry = define_table[left.text];
+				if (!util.is_identifier(right.text) || (
+				    define_table[right.text] && left_entry.index > define_table[right.text].index)) {
+				    transform_erp(left_entry.def, right);
+				    statements.splice(i, 1);
+				    return true;
+				}
+		    }
+		    return false;
+		}
+
+		var transformed;
+		if (query_fns.indexOf(ast.children[0].text) != -1) {
+		    var define_table = {};
+		    // Assumes preprocessing through dsgr_query
+		    var statements = ast.children[1].children.slice(2);
+		    var i = 0;
+		    // Iterate through each lambda statement
+		    for (var i = 0; i < statements.length; i++) {
+				if (!util.is_leaf(statements[i])) {
+				    // If statement is a define and an ERP without an existing condition, put it in a table
+				    if (statements[i].children[0].text == "define") {
+						define_table[statements[i].children[1].text] = {
+						    index: i,
+						    def: statements[i].children[2]
+						};
+					// If statement is a condition, check if it's an equality and attempt to transform
+				    } else if (statements[i].children[0].text == "condition") {
+						var condition = statements[i].children[1];
+						if (!util.is_leaf(condition) && ["=", "equal?"].indexOf(condition.children[0].text) != -1 && condition.children.length == 3) {
+						    var left = condition.children[1];
+						    var right = condition.children[2];
+						    if (!try_transform(left, right)) try_transform(right, left);
+						}
+				    }
+				}
+		    }
+		} else if (ast.children[0].text == "condition") {
+			function transform(left, right) {
+			    if (is_equals_conditionable(left)) {
+					transform_erp(left, right);
+					return true;
+				}
+		    }
+			var condition = ast.children[1];
+			if (["=", "equal?"].indexOf(condition.children[0].text) != -1 && condition.children.length == 3) {
 			    var left = condition.children[1];
 			    var right = condition.children[2];
-			    if (!try_transform(left, right)) try_transform(right, left);
+			    if (!transform(left, right)) transform(right, left);
+	    		console.log(church_ast_to_string(ast));
 			}
-		    }
-
 		}
-	    }
-
-	}
-	return ast;
+		return ast;
     }
 
     function transform_repeat_equals_condition(ast) {
-	function try_transform(left, right) {
-	    if (!util.is_leaf(left) && left.children[0].text == "repeat") {
-		ast.children[1].children[i+2] = {
-		    children: [
-			{"text": "multi-equals-condition"},
-			left.children[2],
-			left.children[1],
-			right],
-		    start: ast.children[1].children[i+2].children[0].start,
-		    end: ast.children[1].children[i+2].children[0].end
-		};
-		return true;
-	    }
-	    return false;
-	}
+		function try_transform(left, right) {
+		    if (!util.is_leaf(left) && left.children[0].text == "repeat") {
+				ast.children[1].children[i+2] = {
+				    children: [
+					{"text": "multi-equals-condition"},
+					left.children[2],
+					left.children[1],
+					right],
+				    start: ast.children[1].children[i+2].children[0].start,
+				    end: ast.children[1].children[i+2].children[0].end
+			};
+			return true;
+		    }
+		    return false;
+		}
 
-	if (query_fns.indexOf(ast.children[0].text) != -1) {
-	    var statements = ast.children[1].children.slice(2);
-	    for (var i = 0; i < statements.length; i++) {
-		if (!util.is_leaf(statements[i]) && statements[i].children[0].text == "condition") {
-		    var condition = statements[i].children[1];
-		    if (!util.is_leaf(condition) && condition.children[0].text == "equal?" && condition.children.length == 3) {
-			var left = condition.children[1];
-			var right = condition.children[2];
-			if (!try_transform(left, right)) try_transform(right, left);
+		if (query_fns.indexOf(ast.children[0].text) != -1) {
+		    var statements = ast.children[1].children.slice(2);
+		    for (var i = 0; i < statements.length; i++) {
+				if (!util.is_leaf(statements[i]) && statements[i].children[0].text == "condition") {
+				    var condition = statements[i].children[1];
+				    if (!util.is_leaf(condition) && condition.children[0].text == "equal?" && condition.children.length == 3) {
+					var left = condition.children[1];
+					var right = condition.children[2];
+					if (!try_transform(left, right)) try_transform(right, left);
+				    }
+				}
 		    }
 		}
-	    }
-	}
-	return ast;
+		return ast;
     }
 
     // Break out conditions with ands into multiple condition statements
