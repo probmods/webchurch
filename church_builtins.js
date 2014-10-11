@@ -1508,7 +1508,8 @@ var wrapped_multinomial = $b({
     desc: 'Sample an element from lst with the probability specified in probs',
     numArgs: [2,3],
     params: [{name: "lst", type: "list", desc: ""},
-             {name: "probs", type: "list<real>", desc: ""}],
+             {name: "probs", type: "list<real>", desc: ""},
+             {name: "[conditionedValue]", type: "", desc: ""}],
     erp: true,
     fn: function(lst, probs, conditionedValue) {
 	if (lst.length != probs.length) {
