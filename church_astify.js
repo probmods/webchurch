@@ -529,11 +529,10 @@ function church_astify(tokens) {
 				}
 		    }
 			var condition = ast.children[1];
-			if (["=", "equal?"].indexOf(condition.children[0].text) != -1 && condition.children.length == 3) {
+			if (!util.is_leaf(condition) && ["=", "equal?"].indexOf(condition.children[0].text) != -1 && condition.children.length == 3) {
 			    var left = condition.children[1];
 			    var right = condition.children[2];
 			    if (!transform(left, right)) transform(right, left);
-	    		console.log(church_ast_to_string(ast));
 			}
 		}
 		return ast;
