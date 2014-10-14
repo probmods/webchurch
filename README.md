@@ -76,3 +76,21 @@ Available options are:
 - `-e, --disable-church-errors`: Disable special Church error checking and show Javascript errors instead.
 - `-y, --yarn`: Yarn mode. Stores code, result, and metadata (e.g., run time) in `.yarn/[FILE]` (JSON format). Useful for keeping track of changes when rapidly prototyping.
 
+### Making `church` a global command
+
+If you want to be able to call `church` from anywhere on the command line, this is what you would do:
+
+1. If you don't alreay have a directory `~/bin`, make that directory.
+2. Add a symbolic link to the church executable
+
+		ln -s path/to/webchurch/church ~/bin/
+		
+3. Add `~/bin` to your path
+	1. If you don't already have a file called `~/.bash_profile`, make that file
+	2. Open that file and add the line:
+
+			export PATH=$PATH:~/bin
+
+4. Re-open your terminal or `source ~/.bash_profile`
+
+Now you can use the command `church` from the terminal no matter what working directory you're in.
