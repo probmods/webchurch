@@ -902,10 +902,18 @@ var map_at = $b({
 var max = $b({
     name: 'max',
     desc: 'Maximum of arguments',
-    params: [{name: "[x ...]", type: "real", desc: ""}],
-    fn: function(x) {
-	var args = args_to_array(arguments);
-	return Math.max.apply(Math, args);
+    params: [{name: "[x ...]", type: "real", desc: ""}], 
+    fn: function() {
+        // we don't use Math.max.apply here because that
+        // can choke on small-ish arguments sizes (~80k suffices)
+        // because v8 is weird with nested apply calls
+        var maxVal = -Infinity;
+        for(var i = 0, n = arguments.length; i < n; i++) {
+            if (arguments[i] > maxVal) {
+                maxVal = arguments[i];
+            }
+        }
+        return maxVal;
     }
 });
 
@@ -914,8 +922,16 @@ var min = $b({
     desc: 'Minimum of arguments',
     params: [{name: "[x ...]", type: "real", desc: ""}],
     fn: function() {
-	var args = args_to_array(arguments);
-	return Math.min.apply(Math, args);
+        // we don't use Math.min.apply here because that
+        // can choke on small-ish arguments sizes (~80k suffices)
+        // because v8 is weird with nested apply calls 
+	      var minVal = -Infinity;
+        for(var i = 0, n = arguments.length; i < n; i++) {
+            if (arguments[i] < minVal) {
+                minVal = arguments[i];
+            }
+        }
+        return minVal;
     }
 });
 
@@ -2277,7 +2293,6 @@ function wrapAsserts(annotation) {
         }
         return fn.apply(null, userArgs);
     };
-    wrapped.num_args = annotation.numArgs;
 
     return wrapped;
     // return fn;
