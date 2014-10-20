@@ -925,7 +925,7 @@ var min = $b({
         // we don't use Math.min.apply here because that
         // can choke on small-ish arguments sizes (~80k suffices)
         // because v8 is weird with nested apply calls 
-	      var minVal = -Infinity;
+	      var minVal = Infinity;
         for(var i = 0, n = arguments.length; i < n; i++) {
             if (arguments[i] < minVal) {
                 minVal = arguments[i];
