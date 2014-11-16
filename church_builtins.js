@@ -2217,6 +2217,7 @@ function wrapAsserts(annotation) {
 
     var fnName = annotation.name;
     var fn = annotation.fn;
+    fn.displayName = fnName;
     var paramProps = annotation.params || [];
 
     var validArgumentLengths = annotation.numArgs;
@@ -2301,6 +2302,9 @@ function wrapAsserts(annotation) {
         }
         return fn.apply(null, userArgs);
     };
+
+    // set the function's displayName for debugging purposes
+    wrapped.displayName = "asserted/" + fnName;
 
     return wrapped;
     // return fn;

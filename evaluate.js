@@ -134,7 +134,7 @@ var churchToJs = function(churchCode, options) {
              expression: {
                  type: 'CallExpression',
                  callee: { type: 'FunctionExpression',
-                           id: null,
+                           id: {type: "Identifier", name: "churchProgram"},
                            params: [],
                            defaults: [],
                            body:
