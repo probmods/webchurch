@@ -175,6 +175,14 @@ function atLeastOne (args) {
     if (args.length < 1) {throw new Error('Needs at least one argument');};
 }
 
+var js_debug = $b({
+    name: 'js-debug',
+    desc: 'Trigger the javascript debugger',
+    fn: function() {
+        debugger;
+    }
+});
+
 var plus = $b({
     name: 'plus',
     alias: '+',
