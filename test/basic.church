@@ -172,13 +172,13 @@ abc
 #f
 
 (member '(c d) '((g h) (c d) (e f) (a b)))
-((g h) (c d) (e f) (a b))
+((c d) (e f) (a b))
 
 (member '() '((g h) (c d) (e f) (a b)))
 #f
 
 (member #f '(#t #f))
-(#t #f)
+(#f)
 
 (iota 1)
 (0)
