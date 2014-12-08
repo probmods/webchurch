@@ -1316,7 +1316,7 @@ var is_equal = $b({
 
 var member = $b({
     name: 'member',
-    desc: 'Test whether x is in a list according to some optional comparator function cmp)',
+    desc: 'Test whether x is in a list according to some optional comparator function cmp',
     params: [
         {name: "x"},
         {name: "list", type: "list"},
@@ -1327,7 +1327,7 @@ var member = $b({
         var array = listToArray(lst);
 	      for (var i = 0, ii = array.length; i < ii; i++) {
 	          if (cmp(x, array[i])) {
-		            return lst;
+		            return arrayToList(array.slice(i));
 	          }
 	      }
 	      return false;
