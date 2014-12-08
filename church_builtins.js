@@ -2306,6 +2306,9 @@ function wrapAsserts(annotation) {
     // set the function's displayName for debugging purposes
     wrapped.displayName = "asserted/" + fnName;
 
-    return wrapped;
-    // return fn;
+    if (global.unsafe_types) {
+        return fn;
+    } else {
+        return wrapped;
+    }
 }

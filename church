@@ -12,9 +12,6 @@ function abort(msg) {
     process.exit(0);
 }
 
-global["evaluate"] = require('./evaluate.js').evaluate
-var format_result = require("./evaluate.js").format_result;
-
 var argv = process.argv;
 
 var opts = {};
@@ -26,6 +23,7 @@ var switches = [
     ['-t', '--timed', 'Print out timing information'],
     ['-d', '--desugar-only', 'Apply Church desugaring without execution'],
     ['-c', '--compile-only', 'Compile to Javascript without execution'],
+    ['-u', '--unsafe-types', "Don't perform run-time typehcecking"],
     ['-e', '--disable-church-errors', 'Disable special Church error checking and show Javascript errors instead'],
     ['-y', '--yarn', 'Record run results and metadata to disk']
 ];
@@ -63,6 +61,10 @@ parser.on("compile-only", function() {
     opts.compile = true;
 });
 
+parser.on("unsafe-types", function() {
+    global.unsafe_types = true;
+})
+
 parser.on("disable-church-errors", function() {
     opts.disable_church_errors = true;
 });
@@ -83,6 +85,9 @@ parser.on("help", function() {
 parser.parse(argv)
 
 var code = fs.readFileSync(srcfile, "utf8");
+
+global["evaluate"] = require('./evaluate.js').evaluate;
+var format_result = require("./evaluate.js").format_result;
 
 var yarnData = {};
 
