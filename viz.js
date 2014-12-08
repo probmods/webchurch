@@ -547,7 +547,7 @@ var make_lineplot_spec = function(data, title) {
 }
 
 lineplot = function(samps, title) {
-    render_vega(make_plot_spec(samps, title), create_and_append_result());
+    render_vega(make_lineplot_spec(samps, title), create_and_append_result());
 }
 
 livelineplot = function(n, func, title) {
