@@ -958,6 +958,32 @@ var mean = $b({
     }
 });
 
+var variance = $b({
+    name: 'variance',
+    alias: ['var'],
+    desc: 'Population variance',
+    params: [{name: 'lst', type: 'list<real>', desc: 'List of numbers'}],
+    fn: function(lst) {
+        var a = listToArray(lst);
+        var n = a.length;
+        var total = 0;
+        for(var i = 0 ; i < n; i++) {
+            total += a[i];
+        }
+
+        var mean = total / n;
+
+        var r = 0;
+
+        for(var i = 0; i < n; i++) {
+            r += Math.pow(a[i] - mean, 2);
+        }
+
+        return r / n; 
+    }    
+});
+
+
 var append = $b({
     name: 'append',
     desc: 'Merge an arbitrary number of lists',
