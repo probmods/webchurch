@@ -660,7 +660,7 @@ var first = $b({
         if (arr.length < 1) {
             throw new Error('Tried to get the first element of an empty list');
         }
-        return lst[0];
+        return arr[0];
     }
 });
 
@@ -673,7 +673,7 @@ var second = $b({
         if (arr.length < 2) {
             throw new Error('Tried to get the 2nd element of a list with only ' + arr.length + ' item');
         }
-        return lst[1];
+        return arr[1];
     }
 });
 
@@ -686,7 +686,7 @@ var third = $b({
         if (arr.length < 3) {
             throw new Error('Tried to get the 3rd element of list with only ' + arr.length + ' elements');
         }
-        return lst[2];
+        return arr[2];
     }
 });
 
@@ -699,7 +699,7 @@ var fourth = $b({
         if (arr.length < 4) {
             throw new Error('Tried to get the 4th element of list with only ' + arr.length + ' elements');
         }
-        return lst[3];
+        return arr[3];
     }
 });
 
@@ -712,7 +712,7 @@ var fifth = $b({
         if (arr.length < 5) {
             throw new Error('Tried to get the 5th element of list with only ' + arr.length + ' elements');
         }
-        return lst[4];
+        return arr[4];
     }
 });
 
@@ -725,7 +725,7 @@ var sixth = $b({
         if (arr.length < 6) {
             throw new Error('Tried to get the 6th element of list with only ' + arr.length + ' elements');
         }
-        return lst[5];
+        return arr[5];
     }
 });
 
@@ -738,7 +738,7 @@ var seventh = $b({
         if (arr.length < 7) {
             throw new Error('Tried to get the 7th element of list with only ' + arr.length + ' elements');
         }
-        return lst[6];
+        return arr[6];
     }
 });
 
