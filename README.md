@@ -13,7 +13,7 @@ In a terminal, go to wherever you want your webchurch folder to live and run:
 ```sh
 git clone https://github.com/probmods/webchurch.git
 cd webchurch
-git init (only if you are on Windows)
+git init ## only if you are on Windows
 git submodule update --init --recursive
 npm install
 ./compile.sh
@@ -73,20 +73,15 @@ Open `online/index.html`. If you wish to use the `load` builtin for dynamically 
 ### On the command line
 `church [OPTIONS] [FILE]` will run the contents of `[FILE]`.
 
-Available options are:
+Available options flags:
 
-`-p, --precompile`: Turn on pre-compilation (very experimental)
-
-`-a, --program-args [MESSAGE]`: Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable.
-
-`-s, --seed [SEED]`: Set the seed for the random number generator.
-
-`-t, --timed`: Print out timing information.
-
-`-d, --desugar-only`: Apply Church desugaring without execution.
-
-`-c, --compile-only`: Compile to Javascript without execution.
-
-`-e, --disable-church-errors`: Disable special Church error checking and show Javascript errors instead.
-
-`-y, --yarn`: Yarn mode. Stores code, result, and metadata (e.g., run time) in `.yarn/[FILE]` (JSON format). Useful for keeping track of changes when rapidly prototyping.
+ Short      | Long      | Details 
+ ---------- | --------- | ------- 
+`-p` | `--precompile` | Turn on pre-compilation (very experimental)
+`-a` | `--program-args [MESSAGE]` | Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable.
+`-s` | `--seed [SEED]` | Set the seed for the random number generator.
+`-t` | `--timed` | Print out timing information.
+`-d` | `--desugar-only` | Apply Church desugaring without execution.
+`-c` | `--compile-only` | Compile to Javascript without execution.
+`-e` | `--disable-church-errors` | Disable special Church error checking and show Javascript errors instead.
+`-y` | `--yarn` | Yarn mode. Stores code, result, and metadata (e.g., run time) in `.yarn/[FILE]` (JSON format). Useful for keeping track of changes when rapidly prototyping.
