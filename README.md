@@ -73,15 +73,13 @@ Open `online/index.html`. If you wish to use the `load` builtin for dynamically 
 ### On the command line
 `church [OPTIONS] [FILE]` will run the contents of `[FILE]`.
 
-Available options flags:
+Available options:
 
- Short      | Long      | Details 
- ---------- | --------- | ------- 
-`-p` | `--precompile` | Turn on pre-compilation (very experimental)
-`-a` | `--program-args [MESSAGE]` | Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable.
-`-s` | `--seed [SEED]` | Set the seed for the random number generator.
-`-t` | `--timed` | Print out timing information.
-`-d` | `--desugar-only` | Apply Church desugaring without execution.
-`-c` | `--compile-only` | Compile to Javascript without execution.
-`-e` | `--disable-church-errors` | Disable special Church error checking and show Javascript errors instead.
-`-y` | `--yarn` | Yarn mode. Stores code, result, and metadata (e.g., run time) in `.yarn/[FILE]` (JSON format). Useful for keeping track of changes when rapidly prototyping.
+- `-p, --precompile`: Turn on pre-compilation (very experimental)
+- `-a, --program-args [MESSAGE]`: Arguments to pass to program. MESSAGE is sent to Church is the `argstring` variable.
+- `-s, --seed [SEED]`: Set the seed for the random number generator.
+- `-t, --timed`: Print out timing information.
+- `-d, --desugar-only`: Apply Church desugaring without execution.
+- `-c, --compile-only`: Compile to Javascript without execution.
+- `-e, --disable-church-errors`: Disable special Church error checking and show Javascript errors instead.
+- `-y, --yarn`: Yarn mode. Stores code, result, and metadata (e.g., run time) in `.yarn/[FILE]` (JSON format). Useful for keeping track of changes when rapidly prototyping.
