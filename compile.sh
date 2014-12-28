@@ -31,6 +31,6 @@ echo "- Add webworkers stub"
 cat online/webchurch.js ww-stub.js > online/webchurch-ww.js
 
 echo "- Make docs"
-node make-docs.js > refs.html
+node make-docs.js > online/ref.html
 
 echo "Done"
