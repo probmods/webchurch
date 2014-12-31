@@ -192,6 +192,9 @@ function evaluate(church_codestring, options) {
     // this global variable is modified in viz.js
     // and accessed in editor.js (makewebchurchrunner)
     sideEffects = [];
+    if (gensym) {
+        gensym.__gensymcounter__ = 0;
+    }
 
     if (options.compile) return jsCode;
 
