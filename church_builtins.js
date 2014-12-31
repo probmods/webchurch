@@ -2126,6 +2126,7 @@ var gensym = $b({
     name: 'gensym',
     desc: 'A default gensym (prefix is g)',
     params: [],
+    nowrap: true,
     fn: make_gensym('g')
 });
 
