@@ -2110,23 +2110,23 @@ var make_gensym = $b({
     name: 'make_gensym',
     desc: "Returns a gensym, which is a function that returns a new string value every time you call it (i.e., you're guaranteed to never get the same return value twice). You can specify an optional prefix for these values (default is 'g')",
     params: [{name: '[prefix]', default: 'n/a', type: 'string'}],
+    nowrap: true,
     fn: function(prefix) {
         prefix = prefix || "g";
-        var closure = (function() {
-            var counter = 0;
-            return function() {
-                return prefix + (counter++);
-            };
-        })();
-        return closure;
+        prefix += "";
+        var f = function() {
+            return prefix + (f.__gensymcounter__++);
+        };
+        f.__gensymcounter__ = 0;
+        return f;
     }
 });
 
 var gensym = $b({
     name: 'gensym',
-    desc: 'A default gensym (prefix is #g)',
+    desc: 'A default gensym (prefix is g)',
     params: [],
-    fn: make_gensym('#g')
+    fn: make_gensym('g')
 });
 
 // var dict = $x.dict = function() {
@@ -2243,14 +2243,17 @@ var load_url = $b({
 });
 
 
-
-// TODO: add a flag somewhere for turning on/off wrapping
 function wrapAsserts(annotation) {
 
     var fnName = annotation.name;
     var fn = annotation.fn;
     fn.displayName = fnName;
     var paramProps = annotation.params || [];
+    var nowrap = annotation.nowrap;
+    
+    if (global.unsafe_types || nowrap) {
+        return fn;
+    }
 
     var validArgumentLengths = annotation.numArgs;
 
@@ -2338,9 +2341,5 @@ function wrapAsserts(annotation) {
     // set the function's displayName for debugging purposes
     wrapped.displayName = "asserted/" + fnName;
 
-    if (global.unsafe_types) {
-        return fn;
-    } else {
-        return wrapped;
-    }
+    return wrapped;
 }
