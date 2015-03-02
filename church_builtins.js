@@ -176,7 +176,7 @@ function atLeastOne (args) {
 }
 
 var js_debug = $b({
-    name: 'js-debug',
+    name: 'js_debug',
     desc: 'Trigger the javascript debugger',
     fn: function() {
         debugger;
