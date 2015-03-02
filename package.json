@@ -15,19 +15,19 @@
     "url": "https://github.com/probmods/webchurch.git"
   },
   "dependencies": {
-    "escodegen": "0.0.26",
-    "esprima": "1.0.4",
-    "source-map": "0.1.30",
+    "backbone": "~1.1.2",
     "browserify": "3.38.0",
-    "optparse": "1.0.5",
-    "underscore": "~1.6.0",
     "codemirror": "4.0.3",
     "d3": "3.4.4",
-    "backbone": "~1.1.2",
+    "escodegen": "0.0.26",
+    "esprima": "1.0.4",
     "http-server": "^0.6.1",
+    "optparse": "1.0.5",
     "seedrandom": "^2.3.6",
-    "execSync": "^1.0.1-pre",
-    "shelljs": "^0.3.0"
+    "shelljs": "^0.3.0",
+    "source-map": "0.1.30",
+    "uglify-js": "^2.4.16",
+    "underscore": "~1.6.0"
   },
   "author": {
     "name": "Julius Cheng",

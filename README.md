@@ -82,4 +82,3 @@ Available options:
 - `-d, --desugar-only`: Apply Church desugaring without execution.
 - `-c, --compile-only`: Compile to Javascript without execution.
 - `-e, --disable-church-errors`: Disable special Church error checking and show Javascript errors instead.
-- `-y, --yarn`: Yarn mode. Stores code, result, and metadata (e.g., run time) in `.yarn/[FILE]` (JSON format). Useful for keeping track of changes when rapidly prototyping.
