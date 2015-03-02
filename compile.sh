@@ -1,7 +1,7 @@
 # echo "- Update probabilistic-js"
 # git submodule update --recursive
 
-echo "- Installing hooks"
+echo "- Install hooks"
 if [ -d ".git" ]
 then
     if [ -d ".git/hooks" ]
@@ -10,7 +10,7 @@ then
     fi
 fi
 
-echo "- Browserifying"
+echo "- Browserify"
 # HT many responses on http://stackoverflow.com/q/16275325/351392
 node node_modules/browserify/bin/cmd.js --fast \
     -r ./probabilistic-js \
