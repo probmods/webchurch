@@ -53,9 +53,11 @@ function format_result(obj) {
 	    }
 	} else if (typeof obj == "string") {
 	    return obj
-	} else if (typeof obj == "object") {
+	} else if (obj instanceof RegExp) {
+    return obj.toString();
+  } else if (typeof obj == "object") {
       return JSON.stringify(obj);
-  } else {
+  }  else {
       return obj + "";
   }
     }
