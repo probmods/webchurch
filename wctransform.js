@@ -56,7 +56,17 @@ var WrapIfs =
         }
     }
 
-var nextid = 0
+var nextid = 0;
+
+var idToFunctionName = {};
+
+global.humanizeAddress = function(name) {
+    var splitName = name.split("."),
+        erpStack = splitName[0].split(":"),
+        loopCounter = splitName[1];
+
+    return erpStack.map(function(name) { return idToFunctionName[name]}).join(" ") + "." + loopCounter;
+}
 
 var MoveCalls =
     {
@@ -81,6 +91,7 @@ var MoveCalls =
                 //replace with new identifier, add to call queue.
                 var id = nextid++
                 var idNode = {type: "Identifier", name: "call"+id}
+                idToFunctionName[id + ""] = node.callee.name;
                 var newCallBlock = templateReplace("{enterfn("+id+"); var call"+id+"=__REPLACEME__; leavefn();}",node)
                 newCallBlock.body[1].loc = node.loc //original location of new assignment is set to original call. needed because error stack inside eval doesn't give character, only line.
                 callsToMove.push(newCallBlock)
