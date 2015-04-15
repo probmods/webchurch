@@ -519,7 +519,154 @@ var make_plot_spec = function(data, title) {
     return make_spec(padding, width, height, data, scales, axes, marks, title);
 }
 
-scatter = function(samps, title) {
+var make_multi_spec = function(padding, width, height, data, scales, axes, marks, title, graph_legend) {
+    var spec = {padding: padding, width: width, height: height, data: data, scales: scales, axes: axes, marks: marks, legends: graph_legend};
+    if (title) {
+        for (var i = 0; i < title.length; i++){
+            spec.marks.push({
+                type: "text",
+                properties: {
+                    enter: {
+                        x: {value: spec.width * 0.5},
+                        y: {value: (title.length * -OneLineTitleOffset) + OneLineTitleOffset*0.5+(i * OneLineTitleOffset)},
+                        fontSize: {value: 24},
+                        text: {value: title[i]},
+                        align: {value: "center"},
+                        baseline: {value: "bottom"},
+                        fill: {value: "#000"}
+                    }
+                }
+            });
+        }
+    }
+    return spec;
+};
+var make_multi_plot_spec = function(data, title, axis_labels) {
+    var get_color_palette = function(n) {
+        var colors = [
+            "steelblue",
+            "mediumvioletred",
+            "olivedrab",
+            "orange",
+            "mediumpurple",
+            "coral",
+            "hotpink",
+            "deepskyblue",
+            "yellowgreen",
+            "indigo",
+            "slategray"
+        ];
+        var levels = {
+            "hotpink": 0,
+            "mediumvioletred": 1,
+            "coral": 2,
+            "orange": 3,
+            "yellowgreen": 4,
+            "olivedrab": 5,
+            "deepskyblue": 6,
+            "steelblue": 7,
+            "mediumpurple": 8,
+            "indigo": 9,
+            "slategray" : 10 
+        }
+        var color_palette = colors.slice(0, n).sort(function(a, b) {
+            if (levels[a] < levels[b]) {
+                return -1;
+            }
+            if (levels[a] > levels[b]) {
+                return 1;
+            }
+            return 0;
+        });
+        return color_palette;
+    }
+
+    title = title ? lineifyTitle(title) : undefined;
+
+    var padding = {
+        top: 30 + (title ? title.length * OneLineTitleOffset : 0),
+        left: 45,
+        bottom: 50,
+        right: 5};
+    var color_palette = get_color_palette(listToArray(data).length);
+    var data_values = function(arrdata) {
+        var data_values_collector = [];
+        for (i=0; i<arrdata.length; i++) {
+            var subdata = listToArray(arrdata[i][1]);
+            for (j=0; j<subdata.length; j++) {
+                var datum = subdata[j];
+                data_values_collector.push({
+                    x: datum[0],
+                    y: datum[1],
+                    label: (color_palette.length > i) ? listToArray(arrdata[i])[0] : "other",
+                    c: (color_palette.length > i) ? color_palette[i] : "black"
+                });
+            }
+        }
+        return data_values_collector;
+    }(listToArray(data));
+    var length_of_char = 10;
+    var legend_width = length_of_char * Math.max.apply(null, data_values.map(function(x) {return x.label.length}));
+    console.log(legend_width);
+    var data = [{name: "points", values: data_values}];
+    var height = 300;
+    var width = 600 + padding.left + padding.right;
+    var scales = [
+            {name: "x", range: width - legend_width - padding.left - padding.right, nice: true, domain: {data:"points", field:"data.x"}},
+            {name: "y", range: "height", nice: true, domain: {data:"points", field:"data.y"}},
+            {name: "y_labels", reverse: true, range: "height", nice: true, domain: {data:"points", field:"data.y"}},
+            {name: "color", type:"ordinal", range: {data: "points", field:"data.c"}, domain: {data: "points", field:"data.label"}}
+        ];
+    if (axis_labels) {
+        var axes = [
+                {type:"x", scale:"x", offset: {scale: "y_labels", value: 0}, title:axis_labels[0]},
+                {type:"y", scale:"y", offset: {scale: "x", value: 0}, title:axis_labels[1]}
+            ];
+    } else {
+        var axes = [
+                {type:"x", scale:"x", offset: {scale: "y_labels", value: 0}},
+                {type:"y", scale:"y", offset: {scale: "x", value: 0}}
+            ];
+    }
+    var marks = [{
+        type: "symbol",
+        from: {data:"points"},
+        properties: {
+            enter: {
+                x: {scale:"x", field: "data.x"},
+                y: {scale:"y", field: "data.y"},
+                size: {value: 50},
+                fill: {scale:"color", field: "data.label"},
+                fillOpacity: {value: 0.8}
+            }
+        }
+    }];
+
+    graph_legend = [{
+        "fill": "color",
+        "properties": {
+            "title": {
+                "fontSize": {"value": 14}
+            },
+            "labels": {
+                "fontSize": {"value": 12}
+            },
+            "symbols": {
+                "stroke": {"value": "transparent"}
+            },
+            "legend": {
+                "stroke": {"value": "#ccc"},
+                "strokeWidth": {"value": 1.5}
+            }
+        }
+    }];
+    return make_multi_spec(padding, width, height, data, scales, axes, marks, title, graph_legend);
+}
+multiscatter = function(samps, title, axis_labels) {
+    render_vega(make_multi_plot_spec(samps, title, axis_labels), create_and_append_result());
+}
+
+scatter = function(samps, title, axis_labels) {
     render_vega(make_plot_spec(samps, title), create_and_append_result());
 }
 
