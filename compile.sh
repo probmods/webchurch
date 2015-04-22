@@ -27,8 +27,11 @@ node node_modules/browserify/bin/cmd.js --fast \
     -r d3 \
     -o online/webchurch.js
 
-echo "- Add webworkers stub"
-cat online/webchurch.js ww-stub.js > online/webchurch-ww.js
+# echo "- Add webworkers stub"
+# cat online/webchurch.js ww-stub.js > online/webchurch-ww.js
+
+echo "- Minify"
+./node_modules/uglify-js/bin/uglifyjs online/webchurch.js -o online/webchurch.min.js
 
 echo "- Make docs"
 node make-docs.js > online/ref.html
