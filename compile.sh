@@ -1,6 +1,9 @@
 # echo "- Update probabilistic-js"
 # git submodule update --recursive
 
+echo "- Update npm packages"
+npm install
+
 echo "- Install hooks"
 if [ -d ".git" ]
 then
