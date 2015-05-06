@@ -248,11 +248,11 @@ var kinematicEntity = function (shapeT, pos) {return simpleEntity(shapeT, kinema
 
 var namedSimpleEntity = function (id, shapeT, body) {return entity2D(id, shapeT, body, stdFixture());}
 var namedStaticEntity = function (id, shapeT, pos) {
-    return namedsimpleEntity(id, shapeT, staticBody(pos));}
+    return namedSimpleEntity(id, shapeT, staticBody(pos));}
 var namedDynamicEntity = function (id, shapeT, pos) {
-    return namedsimpleEntity(id, shapeT, dynamicBody(pos));}
+    return namedSimpleEntity(id, shapeT, dynamicBody(pos));}
 var namedKinematicEntity = function (id, shapeT, pos) {
-    return namedsimpleEntity(id, shapeT, kinematicBody(pos));}
+    return namedSimpleEntity(id, shapeT, kinematicBody(pos));}
 
 var makeWorld = function (gravity, entities) {
     var world = new b2World(tob2Vec2(gravity.slice(1)), true);
