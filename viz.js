@@ -675,7 +675,7 @@ livescatter = function(n, func, title) {
 }
 
 var make_lineplot_spec = function(data, title) {
-    title = title ? lineifyTitle(title) : undefined;
+//    title = title ? lineifyTitle(title) : undefined;
     var spec = make_plot_spec(data, title);
     spec.marks.push({
         type: "line",
