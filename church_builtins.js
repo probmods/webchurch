@@ -344,6 +344,71 @@ var sqrt = $b({
     }
 });
 
+var sin = $b({
+  name: 'sin',
+  desc: 'Sine',
+  params: [{name: 'x', type: 'real'}],
+  fn: function(x) {
+    return Math.sin(x);
+  }
+});
+
+var cos = $b({
+  name: 'cos',
+  desc: 'Cosine',
+  params: [{name: 'x', type: 'real'}],
+  fn: function(x) {
+    return Math.cos(x);
+  }
+});
+
+var tan = $b({
+  name: 'tan',
+  desc: 'Tangent',
+  params: [{name: 'x', type: 'real'}],
+  fn: function(x) {
+    return Math.tan(x);
+  }
+});
+
+var asin = $b({
+  name: 'asin',
+  desc: 'Arcsine',
+  params: [{name: 'x', type: 'real'}],
+  fn: function(x) {
+    return Math.asin(x);
+  }
+});
+
+var acos = $b({
+  name: 'acos',
+  desc: 'Arccosine',
+  params: [{name: 'x', type: 'real'}],
+  fn: function(x) {
+    return Math.acos(x);
+  }
+});
+
+var atan = $b({
+  name: 'atan',
+  desc: 'Arctangent',
+  params: [{name: 'x', type: 'real'}],
+  fn: function(x) {
+    return Math.atan(x);
+  }
+});
+
+var atan2 = $b({
+  name: 'atan2',
+  desc: 'Arctangent (quotient version)',
+  params: [{name: 'y', type: 'real'},
+           {name: 'x', type: 'real'}],
+  fn: function(y, x) {
+    return Math.atan2(x);
+  }
+});
+
+
 var sum = $b({
     name: 'sum',
     desc: 'Sum a list of numbers',
