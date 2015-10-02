@@ -45,15 +45,15 @@
       p.error {
         font-size: 120%;
       }
-      
+
       .code-controls {
       position: absolute;
-      bottom: 0; 
+      bottom: 0;
       right: 0;
       opacity: 0;
       z-index: 1000
       }
-      
+
       .code-settings {
       z-index: 999;
       position: absolute;
@@ -63,14 +63,14 @@
       list-style-type: none;
       margin: 2px
       }
-     
+
       .code-settings li {
       display: none;
       }
 
       .code-settings .settings-icon {
       display: inline;
-      opacity: 0.3; 
+      opacity: 0.3;
       }
 
       .code-settings:hover li {
@@ -93,8 +93,12 @@
       margin-right: 5%;
       float: right;
       }
+
+      #codebox {
+      height: 100%
+      }
     </style>
-    
+
   </head>
   <body>
     <h1>WebChurch</h1>
@@ -129,7 +133,7 @@
     (condition (equal? s4 'T))
     (condition (equal? s5 'T))))
 
-;samples 
+;samples
 (viz-mh samples "Markov model")
       </code>
 

@@ -334,7 +334,7 @@ hist_45ci = function(samps, title) {
                   x2: {scale: "x", field: "data.hi"},
                   y: {scale: "y", field: "data.item", offset:8},
                   height: {value: 1}
-                }, 
+                },
                 update: {fill: {value: "black"}}
           }
         },
@@ -347,7 +347,7 @@ hist_45ci = function(samps, title) {
                     y: {scale: "y", field: "data.item", offset: 3},
                     y2: {scale: "y", field: "data.item", offset: 13},
                     width: {value: 1}
-                }, 
+                },
                 update: {fill: {value: "black"}}
             }
         },
@@ -360,7 +360,7 @@ hist_45ci = function(samps, title) {
                     y: {scale: "y", field: "data.item", offset: 3},
                     y2: {scale: "y", field: "data.item", offset: 13},
                     width: {value: 1}
-                }, 
+                },
                 update: {fill: {value: "black"}}
             }
         }];
@@ -373,7 +373,7 @@ hist_45ci = function(samps, title) {
     }
     var spec = make_spec(padding, width, height, data, scales, axes, marks, title);
 
-    render_vega(spec, create_and_append_result());   
+    render_vega(spec, create_and_append_result());
 };
 
 livehist = function(n, func, title) {
@@ -382,7 +382,7 @@ livehist = function(n, func, title) {
 
 var make_density_spec = function(samps, title, with_hist) {
     title = title ? lineifyTitle(title) : undefined;
-    
+
     // NB: scale argument is no longer used, as we now estimate the bandwidth
     function kernelDensityEstimator(counter, kernel, scale) {
         var density_values = [];
@@ -402,7 +402,7 @@ var make_density_spec = function(samps, title, with_hist) {
         var max = counter.max;
 
         var numBins = (max - min) / bandwidth;
-        
+
         for (var i = 0; i <= numBins; i++) {
             var x = min + bandwidth * i;
             var kernel_sum = 0;
@@ -411,7 +411,7 @@ var make_density_spec = function(samps, title, with_hist) {
             }
             density_values.push({item: x, value: kernel_sum / (n * bandwidth)});
         }
-        return density_values; 
+        return density_values;
     }
 
     function epanechnikovKernel(u) {
@@ -567,7 +567,7 @@ var make_multi_plot_spec = function(data, title, axis_labels) {
             "steelblue": 7,
             "mediumpurple": 8,
             "indigo": 9,
-            "slategray" : 10 
+            "slategray" : 10
         }
         var color_palette = colors.slice(0, n).sort(function(a, b) {
             if (levels[a] < levels[b]) {
@@ -752,7 +752,7 @@ var multi_spec = function(specs) {
     var display = $('<div></div>');
     var thumbnails = $('<table align="center"><tbody><tr></tr></tbody></table>');
     var thumbnails_row = thumbnails.children().children();
-    
+
     for (var i = 0; i < specs.length; i++) {
         thumbnails_row.append($('<td></td>'));
         display.append($('<div></div>').css("display", "none"));

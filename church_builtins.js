@@ -130,12 +130,12 @@ var addBuiltin = function(dict) {
     // if alias is just a single string, embed it in an array
     if (typeof dict.alias == "string") {
         dict.alias = [dict.alias];
-    } 
-    
+    }
+
     if (!dict.alias) {
         dict.alias = [];
-    } 
-    
+    }
+
     // add the automated alias
     var autoAlias = dict.name
         .replace(/wrapped_(.+)/, function(m, p1) { return p1 })
@@ -586,7 +586,7 @@ var eq = $b({
     name: 'eq',
     alias: '=',
     canonical: '=',
-    desc: 'Test whether all (numeric) arguments are equal', 
+    desc: 'Test whether all (numeric) arguments are equal',
     params: [{name: '[x ...]', type: 'real'}],
     fn: function() {
         var numArgs = arguments.length;
@@ -910,7 +910,7 @@ var map_at = $b({
 var max = $b({
     name: 'max',
     desc: 'Maximum of arguments',
-    params: [{name: "[x ...]", type: "real", desc: ""}], 
+    params: [{name: "[x ...]", type: "real", desc: ""}],
     fn: function() {
         // we don't use Math.max.apply here because that
         // can choke on small-ish arguments sizes (~80k suffices)
@@ -932,7 +932,7 @@ var min = $b({
     fn: function() {
         // we don't use Math.min.apply here because that
         // can choke on small-ish arguments sizes (~80k suffices)
-        // because v8 is weird with nested apply calls 
+        // because v8 is weird with nested apply calls
 	      var minVal = Infinity;
         for(var i = 0, n = arguments.length; i < n; i++) {
             if (arguments[i] < minVal) {
@@ -953,8 +953,8 @@ var mean = $b({
         var total = 0;
         for(var i = 0; i < n; i++) {
             total += a[i];
-        } 
-        return total / a.length; 
+        }
+        return total / a.length;
     }
 });
 
@@ -979,8 +979,8 @@ var variance = $b({
             r += Math.pow(a[i] - mean, 2);
         }
 
-        return r / n; 
-    }    
+        return r / n;
+    }
 });
 
 
@@ -1063,7 +1063,7 @@ var fold = $b({
     fn: function(fn, initialValue /*, ... */ ) {
         var args = args_to_array(arguments);
         var arrs = args.slice(2).map(function(x) { return listToArray(x) });
-        
+
         var max_length = Math.min.apply(this, arrs.map(function(el) {return el.length;}));
         var cumulativeValue = initialValue;
         for (var i=0; i<max_length; i++) {
@@ -1472,7 +1472,7 @@ var stringify = $b({
     params: [{name: "x", type: "", desc: ""}],
     fn: function(x) {
 	      return x.toString();
-    } 
+    }
 })
 
 var number_to_string = $b({
@@ -1708,10 +1708,10 @@ var DPmem = $b({
         return function() {
             var args = args_to_array(arguments);
             var extractingTables = false;
-            
+
             if (args[0] == 'get-tables') {
                 extractingTables = true;
-                args.shift(); 
+                args.shift();
             }
             var argsHash = JSON.stringify(args);
 
@@ -1730,7 +1730,7 @@ var DPmem = $b({
                 for(var i = 0; i < labels.length; i++) {
                     ret.push([labels[i], counts[i+1]])
                 };
-                return arrayToList(ret); 
+                return arrayToList(ret);
             }
 
             if (labels === undefined) {
@@ -1742,10 +1742,10 @@ var DPmem = $b({
                 // virtual count of alpha for sampling a new table
                 counts = allCounts[argsHash] = [alpha];
             }
-            
+
             var sampledIndex = wrapped_multinomial(arrayToList(indices),
                                                    arrayToList(counts));
-            
+
             var label;
             if (sampledIndex == -1) {
                 label = f.apply(null,arguments);
@@ -1755,7 +1755,7 @@ var DPmem = $b({
             } else {
                 // NB: labels will always have 1 fewer item than counts
                 label = labels[sampledIndex];
-                counts[sampledIndex + 1]++; 
+                counts[sampledIndex + 1]++;
             }
 
             return label;
@@ -2206,16 +2206,16 @@ var load_url = $b({
     params: [{name: 'path', type: 'string'}],
     fn: function(path) {
         var isChurch = true;
-        
+
         var extension = path.split("/").pop().split(".").pop();
 
         if (extension == 'js') {
             isChurch = false;
         }
-        
+
         if (inBrowser) {
             // by default, assume we're working with Church
-            
+
             var jqxhr = $.ajax({
                 url: path + '?' + (new Date()).getTime(),
                 async: false,
@@ -2229,7 +2229,7 @@ var load_url = $b({
         } else {
             code = fs.readFileSync(path, 'utf8');
         }
-        
+
         if (isChurch) {
             var churchToJs = require('./evaluate.js').churchToJs;
             code = churchToJs(code,
@@ -2237,9 +2237,9 @@ var load_url = $b({
                                   includePreamble: false,
                                   returnCodeOnly: true,
                                   wrap: false
-                              }); 
+                              });
         }
-        return code; 
+        return code;
     }
 });
 
@@ -2251,7 +2251,7 @@ function wrapAsserts(annotation) {
     fn.displayName = fnName;
     var paramProps = annotation.params || [];
     var nowrap = annotation.nowrap;
-    
+
     if (global.unsafe_types || nowrap) {
         return fn;
     }
