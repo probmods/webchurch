@@ -404,7 +404,7 @@ var atan2 = $b({
   params: [{name: 'y', type: 'real'},
            {name: 'x', type: 'real'}],
   fn: function(y, x) {
-    return Math.atan2(x);
+    return Math.atan2(y, x);
   }
 });
 
