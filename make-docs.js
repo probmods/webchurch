@@ -1,7 +1,7 @@
 /* global require */
 
-var builtins = require('./church_builtins.js');
-var annotations = require('./church_builtins.js').__annotations__;
+var builtins = require('./src/church_builtins.js');
+var annotations = require('./src/church_builtins.js').__annotations__;
 var _ = require('underscore');
 
 _.templateSettings = {

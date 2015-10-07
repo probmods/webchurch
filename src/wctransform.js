@@ -148,11 +148,11 @@ var BlockStatementCollapser ={
 
 //preamble that forwards the functions needed at runtime:
 var preamble = "\
-var formatResult = require('/src/util.js').format_result;\
-var churchToBareJs = require('/src/evaluate').churchToBareJs;\
-var __pr = require('/src/probabilistic-js');\
+var formatResult = require('app/util.js').format_result;\
+var churchToBareJs = require('app/evaluate').churchToBareJs;\
+var __pr = require('app/probabilistic-js');\
 __pr.openModule(__pr);\
-var __ch = require('/src/church_builtins');\
+var __ch = require('app/church_builtins');\
 openModule(__ch);";
 
 //function probTransform(codeString)
@@ -178,5 +178,3 @@ module.exports =
         //	probTransform: probTransform,
         BlockStatementCollapser: BlockStatementCollapser
     }
-
-"var x = foo(1, bar(), 3)"

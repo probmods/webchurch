@@ -20,9 +20,9 @@ var red = function(str) {
     return "\033[31m" + str + ":\033[91m";
 };
 
-var evaluate = require("./evaluate.js").evaluate;
-var church_builtins = require("./church_builtins.js");
-var format_result = require("./evaluate.js").format_result;
+var evaluate = require("./src/evaluate.js").evaluate;
+var church_builtins = require("./src/church_builtins.js");
+var format_result = require("./src/evaluate.js").format_result;
 var fs = require('fs');
 
 var tests = [];

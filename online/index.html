@@ -109,9 +109,7 @@
       <li> <code>Cmd + ;</code> or <code>Ctrl + ;</code> - Comment selection section</li>
     </ul>
 
-    <pre id="codebox"><code>
-
-; Confidence interval demo
+    <pre id="codebox"><code>; Confidence interval demo
 (hist-ci (repeat 1000 gaussian))
 
 
@@ -134,15 +132,14 @@
     (condition (equal? s5 'T))))
 
 ;samples
-(viz-mh samples "Markov model")
-      </code>
+(viz-mh samples "Markov model")</code></pre>
 
   </body>
   <script>
     var savedCode = store.get('code');
     var code = savedCode || $("#codebox > code").text();
 
-    var EditorModel = require('./editor').EditorModel;
+    var EditorModel = require('app/editor').EditorModel;
     var editor = new EditorModel(
     {
     code: code,

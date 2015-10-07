@@ -80,8 +80,8 @@ parser.parse(argv)
 
 var code = fs.readFileSync(srcfile, "utf8");
 
-global["evaluate"] = require('./evaluate.js').evaluate;
-var format_result = require("./evaluate.js").format_result;
+global["evaluate"] = require('app/evaluate.js').evaluate;
+var format_result = require("app/evaluate.js").format_result;
 
 var tEnd;
 try {

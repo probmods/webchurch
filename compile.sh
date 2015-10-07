@@ -16,17 +16,17 @@ fi
 echo "- Browserify"
 # HT many responses on http://stackoverflow.com/q/16275325/351392
 node node_modules/browserify/bin/cmd.js --fast \
-    -r ./probabilistic-js \
-    -r ./type-utils.js \
-    -r ./viz \
-    -r ./church_builtins \
-    -r ./evaluate \
-    -r ./editor \
-    -r ./cm-brackets \
-    -r ./cm-folding \
-    -r ./cm-church \
-    -r ./cm-comments \
-    -r ./util.js \
+    -r app/probabilistic-js \
+    -r app/type-utils.js \
+    -r app/viz \
+    -r app/church_builtins \
+    -r app/evaluate \
+    -r app/editor \
+    -r app/cm-brackets \
+    -r app/cm-folding \
+    -r app/cm-church \
+    -r app/cm-comments \
+    -r app/util.js \
     -r d3 \
     -o online/webchurch.js
 
