@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-var sys = require('sys');
+//var sys = require('sys');
 var optparse = require('optparse');
 var seedrandom = require('seedrandom');
 var shell = require('shelljs');
