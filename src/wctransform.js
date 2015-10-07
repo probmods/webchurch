@@ -148,7 +148,7 @@ var BlockStatementCollapser ={
 
 //preamble that forwards the functions needed at runtime:
 var preamble = "\
-var formatResult = require('app/util.js').format_result;\
+var formatResult = require('app/util').format_result;\
 var churchToBareJs = require('app/evaluate').churchToBareJs;\
 var __pr = require('app/probabilistic-js');\
 __pr.openModule(__pr);\

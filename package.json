@@ -28,7 +28,8 @@
     "shelljs": "^0.5.3",
     "source-map": "^0.5.1",
     "uglify-js": "^2.4.24",
-    "underscore": "^1.8.3"
+    "underscore": "^1.8.3",
+    "watchify": "^3.4.0"
   },
   "author": {
     "name": "Julius Cheng",
