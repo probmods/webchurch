@@ -44,3 +44,6 @@ all: .git/hooks src/probabilistic-js node_modules minify docs
 
 clean :
 	@rm -f online/webchurch.js online/webchurch.min.js online/ref.html
+
+lint.log :
+	gjslint --nojsdoc --max_line_length 99999 src/*.js > lint.log
