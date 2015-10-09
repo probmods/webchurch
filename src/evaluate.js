@@ -178,7 +178,11 @@ function evaluate(church_codestring, options) {
     options = options || {};
 
     // ask churchToJs for all the data, not just the js string
-    options.returnCodeOnly = false;
+  options.returnCodeOnly = false;
+
+  // online include preamble if we're running on the command line
+  var commandLine = (typeof window === "undefined");
+  options.includePreamble = commandLine;
 
     if (options.desugar) return church_ast_to_string(church_astify(tokenize(church_codestring)));
 

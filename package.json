@@ -32,9 +32,8 @@
     "watchify": "^3.4.0"
   },
   "author": {
-    "name": "Julius Cheng",
-    "email": "juliusc@stanford.edu",
-    "url": "http://stanford.edu/~juliusc"
+    "name": "Probmods developers",
+    "email": "probmods@gmail.com"
   },
   "license": "MIT"
 }

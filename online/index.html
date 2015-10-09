@@ -9,7 +9,7 @@
     <script src="store.js"></script>
     <script src="jquery.js"></script>
     <script src="webchurch.js"></script>
-    <script>d3 = require('d3')</script>
+    <script>d3 = webchurch.d3</script>
     <script src="vega.min.js"></script>
     <style>
       body {
@@ -139,7 +139,7 @@
     var savedCode = store.get('code');
     var code = savedCode || $("#codebox > code").text();
 
-    var EditorModel = require('app/editor').EditorModel;
+    var EditorModel = webchurch.EditorModel;
     var editor = new EditorModel(
     {
     code: code,

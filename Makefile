@@ -1,37 +1,26 @@
 browserify : online/webchurch.js
 
+# online/webchurch.js : src/*
+# 	@node node_modules/browserify/bin/cmd.js --fast \
+# 	    -r app/probabilistic-js \
+# 	    -r app/type-utils \
+# 	    -r app/viz \
+# 	    -r app/church_builtins \
+# 	    -r app/evaluate \
+# 	    -r app/editor \
+# 	    -r app/cm-brackets \
+# 	    -r app/cm-folding \
+# 	    -r app/cm-church \
+# 	    -r app/cm-comments \
+# 	    -r app/util \
+# 	    -r d3 \
+# 	    -o online/webchurch.js
+
 online/webchurch.js : src/*
-	@node node_modules/browserify/bin/cmd.js --fast \
-	    -r app/probabilistic-js \
-	    -r app/type-utils \
-	    -r app/viz \
-	    -r app/church_builtins \
-	    -r app/evaluate \
-	    -r app/editor \
-	    -r app/cm-brackets \
-	    -r app/cm-folding \
-	    -r app/cm-church \
-	    -r app/cm-comments \
-	    -r app/util \
-	    -r d3 \
-	    -o online/webchurch.js
+	@node node_modules/browserify/bin/cmd.js src/index.js -o online/webchurch.js
 
 watchify :
-	@node node_modules/watchify/bin/cmd.js --fast \
-		-r app/probabilistic-js \
-		-r app/type-utils \
-		-r app/viz \
-		-r app/church_builtins \
-		-r app/evaluate \
-		-r app/editor \
-		-r app/cm-brackets \
-		-r app/cm-folding \
-		-r app/cm-church \
-		-r app/cm-comments \
-		-r app/util \
-		-r d3 \
-	  -v \
-		-o online/webchurch.js
+	@node node_modules/watchify/bin/cmd.js src/index.js -v -o online/webchurch.js
 
 minify : online/webchurch.js
 	@./node_modules/uglify-js/bin/uglifyjs online/webchurch.js -o online/webchurch.min.js
