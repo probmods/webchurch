@@ -3,13 +3,13 @@ var CodeMirror = require('codemirror');
 /* global CodeMirror */
 
 (function() {
-    "use strict";
+    'use strict';
 
     function doFold(cm, pos, options) {
         var finder = options && (options.call ? options : options.rangeFinder);
-        if (!finder) finder = cm.getHelper(pos, "fold");
+        if (!finder) finder = cm.getHelper(pos, 'fold');
         if (!finder) return;
-        if (typeof pos == "number") pos = CodeMirror.Pos(pos, 0);
+        if (typeof pos == 'number') pos = CodeMirror.Pos(pos, 0);
         var minSize = options && options.minFoldSize || 0;
 
         function getRange(allowFolded) {
@@ -34,25 +34,25 @@ var CodeMirror = require('codemirror');
         if (!range || range.cleared) return;
 
         var myWidget = makeWidget(options);
-        CodeMirror.on(myWidget, "mousedown", function() { myRange.clear(); });
+        CodeMirror.on(myWidget, 'mousedown', function() { myRange.clear(); });
         var myRange = cm.markText(range.from, range.to, {
             replacedWith: myWidget,
             clearOnEnter: true,
             __isFold: true
         });
-        myRange.on("clear", function(from, to) {
-            CodeMirror.signal(cm, "unfold", cm, from, to);
+        myRange.on('clear', function(from, to) {
+            CodeMirror.signal(cm, 'unfold', cm, from, to);
         });
-        CodeMirror.signal(cm, "fold", cm, range.from, range.to);
+        CodeMirror.signal(cm, 'fold', cm, range.from, range.to);
     }
 
     function makeWidget(options) {
-        var widget = (options && options.widget) || "\u2194";
-        if (typeof widget == "string") {
+        var widget = (options && options.widget) || '\u2194';
+        if (typeof widget == 'string') {
             var text = document.createTextNode(widget);
-            widget = document.createElement("span");
+            widget = document.createElement('span');
             widget.appendChild(text);
-            widget.className = "CodeMirror-foldmarker";
+            widget.className = 'CodeMirror-foldmarker';
         }
         return widget;
     }
@@ -63,9 +63,9 @@ var CodeMirror = require('codemirror');
     };
 
     // New-style interface
-    CodeMirror.defineExtension("foldCode", function(pos, options) { doFold(this, pos, options); });
+    CodeMirror.defineExtension('foldCode', function(pos, options) { doFold(this, pos, options); });
 
-    CodeMirror.registerHelper("fold", "combine", function() {
+    CodeMirror.registerHelper('fold', 'combine', function() {
         var funcs = Array.prototype.slice.call(arguments, 0);
         return function(cm, start) {
             for (var i = 0; i < funcs.length; ++i) {
@@ -81,7 +81,7 @@ var myRangeFinder = function(cm, start) {
     var line = start.line, lineText = cm.getLine(line);
 
     //if the line has a comment fold, then do that:
-    if (lineText.indexOf(";;;fold:") != -1) return tripleCommentRangeFinder(cm, start)
+    if (lineText.indexOf(';;;fold:') != -1) return tripleCommentRangeFinder(cm, start);
 
     var startCh, tokenType;
 
@@ -101,8 +101,8 @@ var myRangeFinder = function(cm, start) {
     //        }
     //    }
 
-    var startToken = "(", endToken = ")";
-    var startCh = lineText.lastIndexOf("(", start.ch);
+    var startToken = '(', endToken = ')';
+    var startCh = lineText.lastIndexOf('(', start.ch);
     if (startCh == -1) return;
     startCh++;
     tokenType = cm.getTokenTypeAt(CodeMirror.Pos(line, startCh));
@@ -127,7 +127,7 @@ var myRangeFinder = function(cm, start) {
     if (end == null || line == end && endCh == startCh) return;
     return {from: CodeMirror.Pos(line, startCh),
             to: CodeMirror.Pos(end, endCh)};
-}
+};
 
 //if we want to fold what's between ";;;fold:" and ";;;".
 //assume that start is already the line with ";;;fold:"
@@ -135,17 +135,17 @@ var myRangeFinder = function(cm, start) {
 var tripleCommentRangeFinder = function(cm, start) {
     var lastLine = cm.lastLine();
     var pos;
-    for (var i = start.line+1; i<=lastLine; i++) {
-        var text = cm.getLine(i)
-        pos = text.indexOf(";;;")
-        if (pos==0) {
-            var endCh = cm.getLine(i).length
-            return {from: CodeMirror.Pos(start.line+1, 0), to: CodeMirror.Pos(i, endCh)}; }
+    for (var i = start.line + 1; i <= lastLine; i++) {
+        var text = cm.getLine(i);
+        pos = text.indexOf(';;;');
+        if (pos == 0) {
+            var endCh = cm.getLine(i).length;
+            return {from: CodeMirror.Pos(start.line + 1, 0), to: CodeMirror.Pos(i, endCh)}; }
     }
     return;
-}
+};
 
 module.exports = {
     tripleCommentRangeFinder: tripleCommentRangeFinder,
     myRangeFinder: myRangeFinder
-}
+};

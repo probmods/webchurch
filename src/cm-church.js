@@ -4,19 +4,19 @@
 
 var CodeMirror = require('codemirror');
 
-CodeMirror.defineMode("scheme", function () {
-    var BUILTIN = "builtin", COMMENT = "comment", STRING = "string",
-        ATOM = "atom", NUMBER = "number", BRACKET = "bracket";
+CodeMirror.defineMode('scheme', function() {
+    var BUILTIN = 'builtin', COMMENT = 'comment', STRING = 'string',
+        ATOM = 'atom', NUMBER = 'number', BRACKET = 'bracket';
     var INDENT_WORD_SKIP = 2;
 
     function makeKeywords(str) {
-        var obj = {}, words = str.split(" ");
+        var obj = {}, words = str.split(' ');
         for (var i = 0; i < words.length; ++i) obj[words[i]] = true;
         return obj;
     }
 
-    var keywords = makeKeywords("λ case-lambda call/cc class define-class exit-handler field import inherit init-field interface let*-values let-values let/ec mixin opt-lambda override protect provide public rename require require-for-syntax syntax syntax-case syntax-error unit/sig unless when with-syntax and begin call-with-current-continuation call-with-input-file call-with-output-file case cond define define-syntax delay do dynamic-wind else for-each if lambda let let* let-syntax letrec letrec-syntax map or syntax-rules abs acos angle append apply asin assoc assq assv atan boolean? caar cadr call-with-values car cdddar cddddr cdr ceiling char->integer char-alphabetic? char-ci<=? char-ci<? char-ci=? char-ci>=? char-ci>? char-downcase char-lower-case? char-numeric? char-ready? char-upcase char-upper-case? char-whitespace? char<=? char<? char=? char>=? char>? char? close-input-port close-output-port complex? cons cos current-input-port current-output-port denominator display eof-object? eq? equal? eqv? eval even? exact->inexact exact? exp expt #f floor force gcd imag-part inexact->exact inexact? input-port? integer->char integer? interaction-environment lcm length list list->string list->vector list-ref list-tail list? load log magnitude make-polar make-rectangular make-string make-vector max member memq memv min modulo negative? newline not null-environment null? number->string number? numerator odd? open-input-file open-output-file output-port? pair? peek-char port? positive? procedure? quasiquote quote quotient rational? rationalize read read-char real-part real? remainder reverse round scheme-report-environment set! set-car! set-cdr! sin sqrt string string->list string->number string->symbol string-append string-ci<=? string-ci<? string-ci=? string-ci>=? string-ci>? string-copy string-fill! string-length string-ref string-set! string<=? string<? string=? string>=? string>? string? substring symbol->string symbol? #t tan transcript-off transcript-on truncate values vector vector->list vector-fill! vector-length vector-ref vector-set! with-input-from-file with-output-to-file write write-char zero? barplot enumeration-query rejection-query mh-query condition factor fold flatten pair first second third fourth fifth sixth seventh rest flip hist repeat gaussian density multiviz uniform-draw mem sum runPhysics animatePhysics uniform worldWidth worldHeight scatter lineplot dirichlet multinomial beta mean");
-    var indentKeys = makeKeywords("define let letrec let* lambda");
+    var keywords = makeKeywords('λ case-lambda call/cc class define-class exit-handler field import inherit init-field interface let*-values let-values let/ec mixin opt-lambda override protect provide public rename require require-for-syntax syntax syntax-case syntax-error unit/sig unless when with-syntax and begin call-with-current-continuation call-with-input-file call-with-output-file case cond define define-syntax delay do dynamic-wind else for-each if lambda let let* let-syntax letrec letrec-syntax map or syntax-rules abs acos angle append apply asin assoc assq assv atan boolean? caar cadr call-with-values car cdddar cddddr cdr ceiling char->integer char-alphabetic? char-ci<=? char-ci<? char-ci=? char-ci>=? char-ci>? char-downcase char-lower-case? char-numeric? char-ready? char-upcase char-upper-case? char-whitespace? char<=? char<? char=? char>=? char>? char? close-input-port close-output-port complex? cons cos current-input-port current-output-port denominator display eof-object? eq? equal? eqv? eval even? exact->inexact exact? exp expt #f floor force gcd imag-part inexact->exact inexact? input-port? integer->char integer? interaction-environment lcm length list list->string list->vector list-ref list-tail list? load log magnitude make-polar make-rectangular make-string make-vector max member memq memv min modulo negative? newline not null-environment null? number->string number? numerator odd? open-input-file open-output-file output-port? pair? peek-char port? positive? procedure? quasiquote quote quotient rational? rationalize read read-char real-part real? remainder reverse round scheme-report-environment set! set-car! set-cdr! sin sqrt string string->list string->number string->symbol string-append string-ci<=? string-ci<? string-ci=? string-ci>=? string-ci>? string-copy string-fill! string-length string-ref string-set! string<=? string<? string=? string>=? string>? string? substring symbol->string symbol? #t tan transcript-off transcript-on truncate values vector vector->list vector-fill! vector-length vector-ref vector-set! with-input-from-file with-output-to-file write write-char zero? barplot enumeration-query rejection-query mh-query condition factor fold flatten pair first second third fourth fifth sixth seventh rest flip hist repeat gaussian density multiviz uniform-draw mem sum runPhysics animatePhysics uniform worldWidth worldHeight scatter lineplot dirichlet multinomial beta mean');
+    var indentKeys = makeKeywords('define let letrec let* lambda');
 
     function stateStack(indent, type, prev) { // represents a state stack object
         this.indent = indent;
@@ -37,27 +37,27 @@ CodeMirror.defineMode("scheme", function () {
     var hexMatcher = new RegExp(/^(?:[-+]i|[-+][\da-f]+#*(?:\/[\da-f]+#*)?i|[-+]?[\da-f]+#*(?:\/[\da-f]+#*)?@[-+]?[\da-f]+#*(?:\/[\da-f]+#*)?|[-+]?[\da-f]+#*(?:\/[\da-f]+#*)?[-+](?:[\da-f]+#*(?:\/[\da-f]+#*)?)?i|[-+]?[\da-f]+#*(?:\/[\da-f]+#*)?)(?=[()\s;"]|$)/i);
     var decimalMatcher = new RegExp(/^(?:[-+]i|[-+](?:(?:(?:\d+#+\.?#*|\d+\.\d*#*|\.\d+#*|\d+)(?:[esfdl][-+]?\d+)?)|\d+#*\/\d+#*)i|[-+]?(?:(?:(?:\d+#+\.?#*|\d+\.\d*#*|\.\d+#*|\d+)(?:[esfdl][-+]?\d+)?)|\d+#*\/\d+#*)@[-+]?(?:(?:(?:\d+#+\.?#*|\d+\.\d*#*|\.\d+#*|\d+)(?:[esfdl][-+]?\d+)?)|\d+#*\/\d+#*)|[-+]?(?:(?:(?:\d+#+\.?#*|\d+\.\d*#*|\.\d+#*|\d+)(?:[esfdl][-+]?\d+)?)|\d+#*\/\d+#*)[-+](?:(?:(?:\d+#+\.?#*|\d+\.\d*#*|\.\d+#*|\d+)(?:[esfdl][-+]?\d+)?)|\d+#*\/\d+#*)?i|(?:(?:(?:\d+#+\.?#*|\d+\.\d*#*|\.\d+#*|\d+)(?:[esfdl][-+]?\d+)?)|\d+#*\/\d+#*))(?=[()\s;"]|$)/i);
 
-    function isBinaryNumber (stream) {
+    function isBinaryNumber(stream) {
         return stream.match(binaryMatcher);
     }
 
-    function isOctalNumber (stream) {
+    function isOctalNumber(stream) {
         return stream.match(octalMatcher);
     }
 
-    function isDecimalNumber (stream, backup) {
+    function isDecimalNumber(stream, backup) {
         if (backup === true) {
             stream.backUp(1);
         }
         return stream.match(decimalMatcher);
     }
 
-    function isHexNumber (stream) {
+    function isHexNumber(stream) {
         return stream.match(hexMatcher);
     }
 
     return {
-        startState: function () {
+        startState: function() {
             return {
                 indentStack: null,
                 indentation: 0,
@@ -66,7 +66,7 @@ CodeMirror.defineMode("scheme", function () {
             };
         },
 
-        token: function (stream, state) {
+        token: function(stream, state) {
             if (state.indentStack == null && stream.sol()) {
                 // update indentation, but only if indentStack is empty
                 state.indentation = stream.indentation();
@@ -78,37 +78,37 @@ CodeMirror.defineMode("scheme", function () {
             }
             var returnType = null;
 
-            switch(state.mode){
-            case "string": // multi-line string parsing mode
+            switch (state.mode) {
+            case 'string': // multi-line string parsing mode
                 var next, escaped = false;
                 while ((next = stream.next()) != null) {
-                    if (next == "\"" && !escaped) {
+                    if (next == '\"' && !escaped) {
 
                         state.mode = false;
                         break;
                     }
-                    escaped = !escaped && next == "\\";
+                    escaped = !escaped && next == '\\';
                 }
                 returnType = STRING; // continue on in scheme-string mode
                 break;
-            case "comment": // comment parsing mode
+            case 'comment': // comment parsing mode
                 var next, maybeEnd = false;
                 while ((next = stream.next()) != null) {
-                    if (next == "#" && maybeEnd) {
+                    if (next == '#' && maybeEnd) {
 
                         state.mode = false;
                         break;
                     }
-                    maybeEnd = (next == "|");
+                    maybeEnd = (next == '|');
                 }
                 returnType = COMMENT;
                 break;
-            case "s-expr-comment": // s-expr commenting mode
+            case 's-expr-comment': // s-expr commenting mode
                 state.mode = false;
-                if(stream.peek() == "(" || stream.peek() == "["){
+                if (stream.peek() == '(' || stream.peek() == '[') {
                     // actually start scheme s-expr commenting mode
                     state.sExprComment = 0;
-                }else{
+                }else {
                     // if not we just comment the entire of the next token
                     stream.eatWhile(/[^/s]/); // eat non spaces
                     returnType = COMMENT;
@@ -117,20 +117,20 @@ CodeMirror.defineMode("scheme", function () {
             default: // default parsing mode
                 var ch = stream.next();
 
-                if (ch == "\"") {
-                    state.mode = "string";
+                if (ch == '\"') {
+                    state.mode = 'string';
                     returnType = STRING;
 
                 } else if (ch == "'") {
                     returnType = ATOM;
                 } else if (ch == '#') {
-                    if (stream.eat("|")) {                    // Multi-line comment
-                        state.mode = "comment"; // toggle to comment mode
+                    if (stream.eat('|')) {                    // Multi-line comment
+                        state.mode = 'comment'; // toggle to comment mode
                         returnType = COMMENT;
                     } else if (stream.eat(/[tf]/i)) {            // #t/#f (atom)
                         returnType = ATOM;
                     } else if (stream.eat(';')) {                // S-Expr comment
-                        state.mode = "s-expr-comment";
+                        state.mode = 's-expr-comment';
                         returnType = COMMENT;
                     } else {
                         var numTest = null, hasExactness = false, hasRadix = true;
@@ -165,10 +165,10 @@ CodeMirror.defineMode("scheme", function () {
                     }
                 } else if (/^[-+0-9.]/.test(ch) && isDecimalNumber(stream, true)) { // match non-prefixed number, must be decimal
                     returnType = NUMBER;
-                } else if (ch == ";") { // comment
+                } else if (ch == ';') { // comment
                     stream.skipToEnd(); // rest of the line is a comment
                     returnType = COMMENT;
-                } else if (ch == "(" || ch == "[") {
+                } else if (ch == '(' || ch == '[') {
                     var keyWord = ''; var indentTemp = stream.column(), letter;
                     /**
                        Either
@@ -187,7 +187,7 @@ CodeMirror.defineMode("scheme", function () {
                     } else { // non-indent word
                         // we continue eating the spaces
                         stream.eatSpace();
-                        if (stream.eol() || stream.peek() == ";") {
+                        if (stream.eol() || stream.peek() == ';') {
                             // nothing significant after
                             // we restart indentation 1 space after
                             pushStack(state, indentTemp + 1, ch);
@@ -197,16 +197,16 @@ CodeMirror.defineMode("scheme", function () {
                     }
                     stream.backUp(stream.current().length - 1); // undo all the eating
 
-                    if(typeof state.sExprComment == "number") state.sExprComment++;
+                    if (typeof state.sExprComment == 'number') state.sExprComment++;
 
                     returnType = BRACKET;
-                } else if (ch == ")" || ch == "]") {
+                } else if (ch == ')' || ch == ']') {
                     returnType = BRACKET;
-                    if (state.indentStack != null && state.indentStack.type == (ch == ")" ? "(" : "[")) {
+                    if (state.indentStack != null && state.indentStack.type == (ch == ')' ? '(' : '[')) {
                         popStack(state);
 
-                        if(typeof state.sExprComment == "number"){
-                            if(--state.sExprComment == 0){
+                        if (typeof state.sExprComment == 'number') {
+                            if (--state.sExprComment == 0) {
                                 returnType = COMMENT; // final closing bracket
                                 state.sExprComment = false; // turn off s-expr commenting mode
                             }
@@ -217,19 +217,19 @@ CodeMirror.defineMode("scheme", function () {
 
                     if (keywords && keywords.propertyIsEnumerable(stream.current())) {
                         returnType = BUILTIN;
-                    } else returnType = "variable";
+                    } else returnType = 'variable';
                 }
             }
-            return (typeof state.sExprComment == "number") ? COMMENT : returnType;
+            return (typeof state.sExprComment == 'number') ? COMMENT : returnType;
         },
 
-        indent: function (state) {
+        indent: function(state) {
             if (state.indentStack == null) return state.indentation;
             return state.indentStack.indent;
         },
 
-        lineComment: ";;"
+        lineComment: ';;'
     };
 });
 
-CodeMirror.defineMIME("text/x-scheme", "scheme");
+CodeMirror.defineMIME('text/x-scheme', 'scheme');

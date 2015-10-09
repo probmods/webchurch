@@ -1,18 +1,18 @@
 var util = require('./util.js');
 
-var delimiters = ["(", ")", "[", "]", "'", ",", "@", "\"", ";"]
-var whitespace_re = /^\s/
+var delimiters = ['(', ')', '[', ']', "'", ',', '@', '\"', ';'];
+var whitespace_re = /^\s/;
 
 function get_site_map(s) {
     var map = {};
     var row = 1;
     var col = 1;
     for (var i = 0; i < s.length; i++) {
-	if (s[i] == "\n") {
+	if (s[i] == '\n') {
 	    row++;
 	    col = 1;
 	} else {
-	    map[i] = row + ":" + col;
+	    map[i] = row + ':' + col;
 	    col++;
 	}
     }
@@ -27,16 +27,16 @@ function tokenize(s) {
     while (begin < s.length) {
 	if (s[begin].match(whitespace_re)) {
 	    begin++;
-	} else if (s[begin] == ";") {
-	    for (; begin < s.length && s[begin] != "\n"; begin++) {}
+	} else if (s[begin] == ';') {
+	    for (; begin < s.length && s[begin] != '\n'; begin++) {}
 	} else {
-	    if (s[begin] == "\"") {
-		for (end = begin + 1; ; end++) {
+	    if (s[begin] == '\"') {
+		for (end = begin + 1;; end++) {
 		    if (end > s.length) {
-			throw util.make_church_error("SyntaxError", site_map[begin], site_map[begin], "Unclosed double quote");
-		    } else if (s.slice(end, end + 2) == "\\\"") {
+			throw util.make_church_error('SyntaxError', site_map[begin], site_map[begin], 'Unclosed double quote');
+		    } else if (s.slice(end, end + 2) == '\\\"') {
 			end++;
-		    } else if (s[end] == "\"") {
+		    } else if (s[end] == '\"') {
 			end++;
 			break;
 		    }
@@ -52,8 +52,8 @@ function tokenize(s) {
 	    }
 	    var token = s.slice(begin, end);
 	    if (token[0] == '"')
-		token = '"' + token.substring(1, token.length-1).replace(/\\\"/g, '"') + '"'
-	    tokens.push({text: token, start: site_map[begin], end: site_map[end-1]});
+		token = '"' + token.substring(1, token.length - 1).replace(/\\\"/g, '"') + '"';
+	    tokens.push({text: token, start: site_map[begin], end: site_map[end - 1]});
 	    begin = end;
 	}
     }
@@ -62,4 +62,4 @@ function tokenize(s) {
 
 module.exports = {
     tokenize: tokenize
-}
+};

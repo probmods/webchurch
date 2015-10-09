@@ -1,6 +1,6 @@
-var esprima = require("esprima")
+var esprima = require('esprima');
 //var escodegen = require("escodegen")
-var estraverse = require("escodegen/node_modules/estraverse")
+var estraverse = require('escodegen/node_modules/estraverse');
 
 /*
   -Webchurch generates a simpler js sublanguage than full js.. so transform can be simpler. Make a specialized transform for webchurch, and just use probabilistic-js runtime.
@@ -21,15 +21,15 @@ function templateReplace(template, replacenode) {
             enter: function(node)
 	    {
 		if (node.type == estraverse.Syntax.Identifier &&
-		    node.name == "__REPLACEME__")
+		    node.name == '__REPLACEME__')
 		{
-		    return replacenode
+		    return replacenode;
 		}
-		return node
+		return node;
 	    }
-	}
-    var templateAST = esprima.parse(template).body[0] //NOTE: template must be expression or single statement.
-    return estraverse.replace(templateAST, replacer)
+	};
+    var templateAST = esprima.parse(template).body[0]; //NOTE: template must be expression or single statement.
+    return estraverse.replace(templateAST, replacer);
 }
 
 var WrapIfs =
@@ -37,36 +37,36 @@ var WrapIfs =
 
         enter: function(node)
 	{
-            if(node.type == 'ConditionalExpression') {
+            if (node.type == 'ConditionalExpression') {
                 //replace any non-imediate subexpression (ie not identifier or literal) with function(){subexp}() statement. (to maintain control flow.) mark this call as skipped so it desn't get moved.
-                if(!(node.test.type == 'Identifier' ||  node.test.type == 'Literal')) {
-                    node.test = templateReplace("(function(){return __REPLACEME__}())", node.test).expression
-                    node.test.skipcall=true
+                if (!(node.test.type == 'Identifier' || node.test.type == 'Literal')) {
+                    node.test = templateReplace('(function(){return __REPLACEME__}())', node.test).expression;
+                    node.test.skipcall = true;
                 }
-                if(!(node.consequent.type == 'Identifier' ||  node.consequent.type == 'Literal')) {
-                    node.consequent = templateReplace("(function(){return __REPLACEME__}())", node.consequent).expression
-                    node.consequent.skipcall=true
+                if (!(node.consequent.type == 'Identifier' || node.consequent.type == 'Literal')) {
+                    node.consequent = templateReplace('(function(){return __REPLACEME__}())', node.consequent).expression;
+                    node.consequent.skipcall = true;
                 }
-                if(!(node.alternate.type == 'Identifier' ||  node.alternate.type == 'Literal')) {
-                    node.alternate = templateReplace("(function(){return __REPLACEME__}())", node.alternate).expression
-                    node.alternate.skipcall=true
+                if (!(node.alternate.type == 'Identifier' || node.alternate.type == 'Literal')) {
+                    node.alternate = templateReplace('(function(){return __REPLACEME__}())', node.alternate).expression;
+                    node.alternate.skipcall = true;
                 }
             }
-            return node
+            return node;
         }
-    }
+    };
 
 var nextid = 0;
 
 var idToFunctionName = {};
 
 global.humanizeAddress = function(name) {
-    var splitName = name.split("."),
-        erpStack = splitName[0].split(":"),
+    var splitName = name.split('.'),
+        erpStack = splitName[0].split(':'),
         loopCounter = splitName[1];
 
-    return erpStack.map(function(name) { return idToFunctionName[name]}).join(" ") + "." + loopCounter;
-}
+    return erpStack.map(function(name) { return idToFunctionName[name]}).join(' ') + '.' + loopCounter;
+};
 
 var MoveCalls =
     {
@@ -74,77 +74,77 @@ var MoveCalls =
         {
 
             //get call to be moved up from children:
-            var callsToMove = []
-            var candidates = estraverse.VisitorKeys[node.type]
-            for(var c in candidates) {
-                var candidate = node[candidates[c]]
-                if(!candidate){break}
-                if(candidate instanceof Array) {
-                    for(var i in candidate){callsToMove = callsToMove.concat(candidate[i].callsToMove || [])}
+            var callsToMove = [];
+            var candidates = estraverse.VisitorKeys[node.type];
+            for (var c in candidates) {
+                var candidate = node[candidates[c]];
+                if (!candidate) {break}
+                if (candidate instanceof Array) {
+                    for (var i in candidate) {callsToMove = callsToMove.concat(candidate[i].callsToMove || [])}
                 } else {
-                    callsToMove = callsToMove.concat(candidate.callsToMove || [])
+                    callsToMove = callsToMove.concat(candidate.callsToMove || []);
                 }
             }
 
             //transform calls (which could be in args) by replacing with new identifier, wrapping with enter/leave marks, and adding to queue to move up.
-            if(!node.skipcall && node.type == 'CallExpression') {
+            if (!node.skipcall && node.type == 'CallExpression') {
                 //replace with new identifier, add to call queue.
-                var id = nextid++
-                var idNode = {type: "Identifier", name: "call"+id}
-                idToFunctionName[id + ""] = node.callee.name;
-                var newCallBlock = templateReplace("{enterfn("+id+"); var call"+id+"=__REPLACEME__; leavefn();}",node)
-                newCallBlock.body[1].loc = node.loc //original location of new assignment is set to original call. needed because error stack inside eval doesn't give character, only line.
-                callsToMove.push(newCallBlock)
-                idNode.callsToMove = callsToMove
-                return idNode
+                var id = nextid++;
+                var idNode = {type: 'Identifier', name: 'call' + id};
+                idToFunctionName[id + ''] = node.callee.name;
+                var newCallBlock = templateReplace('{enterfn(' + id + '); var call' + id + '=__REPLACEME__; leavefn();}', node);
+                newCallBlock.body[1].loc = node.loc; //original location of new assignment is set to original call. needed because error stack inside eval doesn't give character, only line.
+                callsToMove.push(newCallBlock);
+                idNode.callsToMove = callsToMove;
+                return idNode;
             }
 
             //catch calls that are being moved at closest Statement:
             //IfStatement (which may be generated by tracer) are handled because then paths will be statements of below types and calls in test expression are lifted above the if.
-            if(node.type == 'ExpressionStatement'
-               || node.type == 'Program'
-               || node.type == 'BlockStatement'
-               || node.type == 'ReturnStatement'
-               || node.type == 'VariableDeclaration') {
+            if (node.type == 'ExpressionStatement' ||
+               node.type == 'Program' ||
+               node.type == 'BlockStatement' ||
+               node.type == 'ReturnStatement' ||
+               node.type == 'VariableDeclaration') {
 
                 //statements that don't already have a body sequence get wrapped in a block statement:
-                if(node.type == 'ExpressionStatement'
-                   || node.type == 'ReturnStatement'
-                   || node.type == 'VariableDeclaration') {
-                    node = {type: "BlockStatement", body: [node]}
+                if (node.type == 'ExpressionStatement' ||
+                   node.type == 'ReturnStatement' ||
+                   node.type == 'VariableDeclaration') {
+                    node = {type: 'BlockStatement', body: [node]};
                 }
                 //stick moved calls onto top of body sequence:
-                node.body = callsToMove.concat(node.body)
-                return node
+                node.body = callsToMove.concat(node.body);
+                return node;
             }
 
             //if we didn't already return, add moved calls to queue on this node and return:
-            node.callsToMove = callsToMove
-            return node
+            node.callsToMove = callsToMove;
+            return node;
 
         }
-    }
+    };
 
 /*
   Collapse out nested blockSatements, just to make things prettier.
 */
 
-var BlockStatementCollapser ={
-    leave: function(node){
-        if(node.type == 'BlockStatement' || node.type == 'Program') {
-            var newbody = []
-            for(var i in node.body) {
-                if(node.body[i].type == 'BlockStatement') {
-                    node.body[i].body.map(function(x){newbody.push(x)})
+var BlockStatementCollapser = {
+    leave: function(node) {
+        if (node.type == 'BlockStatement' || node.type == 'Program') {
+            var newbody = [];
+            for (var i in node.body) {
+                if (node.body[i].type == 'BlockStatement') {
+                    node.body[i].body.map(function(x) {newbody.push(x)});
                 } else {
-                    newbody.push(node.body[i])
+                    newbody.push(node.body[i]);
                 }
             }
-            node.body = newbody
+            node.body = newbody;
         }
-        return node
+        return node;
     }
-}
+};
 
 //preamble that forwards the functions needed at runtime:
 var preamble = "\
@@ -163,13 +163,13 @@ openModule(__ch);";
 
 function probTransformAST(ast, includePreamble)
 {
-    estraverse.replace(ast, WrapIfs)
-    estraverse.replace(ast, MoveCalls)
+    estraverse.replace(ast, WrapIfs);
+    estraverse.replace(ast, MoveCalls);
     if (includePreamble) {
-	ast.body.unshift(esprima.parse(preamble))
+	ast.body.unshift(esprima.parse(preamble));
     }
-    estraverse.replace(ast, BlockStatementCollapser)
-    return ast
+    estraverse.replace(ast, BlockStatementCollapser);
+    return ast;
 }
 
 module.exports =
@@ -177,4 +177,4 @@ module.exports =
 	probTransformAST: probTransformAST,
         //	probTransform: probTransform,
         BlockStatementCollapser: BlockStatementCollapser
-    }
+    };

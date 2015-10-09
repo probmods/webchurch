@@ -25,14 +25,14 @@ function get_js_to_church_site_map(src_map) {
         // Some of the mappings map to undefined locations for some reason, ignore those
         if (m.originalLine) {
             site_map[m.generatedLine] = site_map[m.generatedLine] || {};
-            site_map[m.generatedLine][m.generatedColumn] = m.originalLine + ":" + m.originalColumn;
+            site_map[m.generatedLine][m.generatedColumn] = m.originalLine + ':' + m.originalColumn;
         }
     });
     return site_map;
 }
 
 function get_church_sites_to_tokens_map(tokens) {
-    var map = {}
+    var map = {};
     for (var i = 0; i < tokens.length; i++) {
 	map[tokens[i].start] = tokens[i];
     }
@@ -44,9 +44,9 @@ function get_sites_from_stack(split_stack) {
     for (var i = 0; i < split_stack.length; i++) {
 	// This makes the fairly safe assumption that the first run of consecutive
 	// stack frames containing "<anonymous>" belong to the generated code
-	if (split_stack[i].match("<anonymous>")) {
-	    var site = split_stack[i].match(/(\d+:\d+)[^:]*$/)[1].split(":");
-	    sites.push([site[0], parseInt(site[1]-1)]); //See above note on indexing.
+	if (split_stack[i].match('<anonymous>')) {
+	    var site = split_stack[i].match(/(\d+:\d+)[^:]*$/)[1].split(':');
+	    sites.push([site[0], parseInt(site[1] - 1)]); //See above note on indexing.
 	} else if (sites.length > 0) {
 	    break;
 	}
@@ -58,7 +58,7 @@ function churchToBareJs(churchCode) {
     return churchToJs(churchCode, {
         includePreamble: false,
         returnCodeOnly: true
-    })
+    });
 }
 
 // options are:
@@ -74,14 +74,14 @@ var churchToJs = function(churchCode, options) {
         includePreamble: true,
         returnCodeOnly: true,
         wrap: true
-    })
+    });
 
     var tokens = tokenize(churchCode);
 
     var js_ast;
 
-    if(options.precompile) {
-        console.log("pre-compiling...");
+    if (options.precompile) {
+        console.log('pre-compiling...');
         var js_precompiled = precompile(churchCode);
         js_ast = esprima.parse(js_precompiled);
     } else {
@@ -118,7 +118,7 @@ var churchToJs = function(churchCode, options) {
 
     // convert the last statement into a return statement
     if (body.length > 0) {
-        var lastStatement = body[body.length-1]
+        var lastStatement = body[body.length - 1];
         if (/Statement/.test(lastStatement.type)) {
 
             lastStatement.type = 'ReturnStatement';
@@ -134,7 +134,7 @@ var churchToJs = function(churchCode, options) {
              expression: {
                  type: 'CallExpression',
                  callee: { type: 'FunctionExpression',
-                           id: {type: "Identifier", name: "churchProgram"},
+                           id: {type: 'Identifier', name: 'churchProgram'},
                            params: [],
                            defaults: [],
                            body:
@@ -152,9 +152,9 @@ var churchToJs = function(churchCode, options) {
     js_ast.body = body;
 
     var code_and_source_map = escodegen.generate(js_ast,
-                                                 {"sourceMap": "whatever",
-                                                  "sourceMapWithCode": true,
-                                                  "format": {"compact" : options.compact}});
+                                                 {'sourceMap': 'whatever',
+                                                  'sourceMapWithCode': true,
+                                                  'format': {'compact' : options.compact}});
 
     if (options.returnCodeOnly) {
         return code_and_source_map.code;
@@ -164,13 +164,13 @@ var churchToJs = function(churchCode, options) {
             code_and_source_map: code_and_source_map
         };
     }
-}
+};
 
 function evaluate(church_codestring, options) {
     function really_evaluate() {
         var result = eval(jsCode);
         var t2 = new Date().getTime();
-        if (options.timed) console.log("Time to execute: " + (t2-t1) + "ms");
+        if (options.timed) console.log('Time to execute: ' + (t2 - t1) + 'ms');
         return result;
     }
 
@@ -181,7 +181,7 @@ function evaluate(church_codestring, options) {
   options.returnCodeOnly = false;
 
   // online include preamble if we're running on the command line
-  var commandLine = (typeof window === "undefined");
+  var commandLine = (typeof window === 'undefined');
   options.includePreamble = commandLine;
 
     if (options.desugar) return church_ast_to_string(church_astify(tokenize(church_codestring)));
@@ -205,7 +205,7 @@ function evaluate(church_codestring, options) {
     var result;
 
     var t1 = new Date().getTime();
-    if (options.timed) console.log("Time to compile: " + (t1-t0) + "ms");
+    if (options.timed) console.log('Time to compile: ' + (t1 - t0) + 'ms');
     var argstring = options.argstring;
     if (options.disable_church_errors) return really_evaluate();
 
@@ -221,10 +221,10 @@ function evaluate(church_codestring, options) {
     } catch (err) {
 
 	var js_to_church_site_map = get_js_to_church_site_map(sourceMap);
-        var churchLines = church_codestring.split("\n");
+        var churchLines = church_codestring.split('\n');
 	var church_sites_to_tokens_map = get_church_sites_to_tokens_map(tokens);
-	var stack = err.stack ? err.stack.split("\n") : [":"];
-	var msg = stack[0].split(":");
+	var stack = err.stack ? err.stack.split('\n') : [':'];
+	var msg = stack[0].split(':');
 
         console.log(err.stack);
 
@@ -234,7 +234,7 @@ function evaluate(church_codestring, options) {
 	    var js_site = js_sites[i];
 	    var church_site = js_to_church_site_map[js_site[0]] && js_to_church_site_map[js_site[0]][js_site[1]];
 
-	    if(church_site){church_sites.push(church_site);};
+	    if (church_site) {church_sites.push(church_site);}
 	}
 
 
@@ -257,12 +257,12 @@ function evaluate(church_codestring, options) {
             // error sometimes matches on starting paren rather than the function name
             // so seek to next token, which willbe the function name
             var fntoken;
-            if (token.text == "(") {
+            if (token.text == '(') {
                 var tokStart = token.start,
                     tokEnd = token.end,
                     tokeNum;
 
-                for(var j = 0, jj = tokens.length; j < jj; j++) {
+                for (var j = 0, jj = tokens.length; j < jj; j++) {
                     if (tokens[j].start == tokStart && tokens[j].end == tokEnd) {
                         tokeNum = j;
                     }
@@ -272,23 +272,23 @@ function evaluate(church_codestring, options) {
 
             var displayedMessage;
 
-            if (msg[0] == "ReferenceError") {
-                token = fntoken?fntoken:token;
-                displayedMessage = token.text + " is not defined";
+            if (msg[0] == 'ReferenceError') {
+                token = fntoken ? fntoken : token;
+                displayedMessage = token.text + ' is not defined';
 
-            } else if (msg[0] == "TypeError") {
-                token = fntoken?fntoken:token;
-                displayedMessage = token.text + " is not a function";
+            } else if (msg[0] == 'TypeError') {
+                token = fntoken ? fntoken : token;
+                displayedMessage = token.text + ' is not a function';
             } else {
-                displayedMessage = err.message.replace('<<functionName>>', fntoken ? fntoken.text : token.text)
+                displayedMessage = err.message.replace('<<functionName>>', fntoken ? fntoken.text : token.text);
             }
 
 	    var e = util.make_church_error(msg[0], token.start, token.end, displayedMessage);
 	    e.stack = church_sites.map(function(x) {
                 var tok = church_sites_to_tokens_map[x];
-                return tok.start + "-" + tok.end;
-            }).join(",");
-            e.stackarray = church_sites.map(function(x) {return church_sites_to_tokens_map[x]})
+                return tok.start + '-' + tok.end;
+            }).join(',');
+            e.stackarray = church_sites.map(function(x) {return church_sites_to_tokens_map[x]});
 
             e.jsStack = stack;
 

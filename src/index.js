@@ -1,7 +1,7 @@
 global.webchurch = {
   EditorModel: require('./editor').EditorModel,
   d3: require('d3')
-}
+};
 
 var formatResult = require('app/util').format_result;
 var churchToBareJs = require('app/evaluate').churchToBareJs;
