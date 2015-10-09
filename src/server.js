@@ -10,9 +10,8 @@ http.createServer(function(request, response) {
   response.writeHead(200, {'Content-Type': 'text/plain'});
 
   request.on('end', function() {
-	response.write(format_result(evaluate(post_data)));
-	response.end();
+    response.write(format_result(evaluate(post_data)));
+    response.end();
   });
 
 }).listen(8888);
-
