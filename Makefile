@@ -32,7 +32,11 @@ online/ref.html : src/church_builtins.js
 
 node_modules : package.json
 	@npm install
+
+node_modules/app : node_modules
 	@ln -s ../src node_modules/app
+
+install : node_modules/app
 
 src/probabilistic-js :
 	@git submodule update --init --recursive
