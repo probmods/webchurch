@@ -5,13 +5,13 @@ var evaluate = require('./evaluate').evaluate,
 
 var d3 = require('d3');
 var CodeMirror = require('codemirror');
-require('./cm-church');
-require('./cm-brackets');
-require('./cm-comments');
+require('./codemirror/syntax');
+require('./codemirror/brackets');
+require('./codemirror/comments');
 require('./viz');
 
 var Backbone = require('backbone');
-var folding = require('./cm-folding');
+var folding = require('./codemirror/folding');
 
 CodeMirror.keyMap.default['Tab'] = 'indentAuto';
 CodeMirror.keyMap.default['Cmd-;'] = 'toggleComment';
