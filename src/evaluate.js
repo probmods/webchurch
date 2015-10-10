@@ -180,7 +180,7 @@ function evaluate(church_codestring, options) {
   // ask churchToJs for all the data, not just the js string
   options.returnCodeOnly = false;
 
-  // online include preamble if we're running on the command line
+  // only include preamble if we're running on the command line
   var commandLine = (typeof window === 'undefined');
   options.includePreamble = commandLine;
 
