@@ -2,9 +2,9 @@
   "name": "webchurch",
   "version": "0.0.1",
   "description": "A Church-to-Javascript compiler that works on the web",
-  "main": "evaluate.js",
+  "main": "src/evaluate.js",
   "bin": {
-    "webchurch": "./compile.sh"
+    "webchurch": "./church"
   },
   "scripts": {
     "test": "node tester.js test/load.church test/basic.church test/mh.church test/support-change.church test/probmods",
@@ -32,7 +32,7 @@
     "watchify": "^3.4.0"
   },
   "author": {
-    "name": "Probmods developers",
+    "name": "webchurch developers",
     "email": "probmods@gmail.com"
   },
   "license": "MIT"
