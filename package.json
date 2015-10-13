@@ -4,7 +4,7 @@
   "description": "A Church-to-Javascript compiler that works on the web",
   "main": "src/evaluate.js",
   "bin": {
-    "webchurch": "./church"
+    "church": "./church"
   },
   "scripts": {
     "test": "node tester.js test/load.church test/basic.church test/mh.church test/support-change.church test/probmods",
