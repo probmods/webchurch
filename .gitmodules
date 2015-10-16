@@ -1,3 +1,0 @@
-[submodule "probabilistic-js"]
-	path = src/probabilistic-js
-	url = https://github.com/dritchie/probabilistic-js.git
