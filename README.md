@@ -13,6 +13,8 @@ On the command line, type:
 npm install -g webchurch
 ```
 
+(If this fails, try `sudo npm install -g webchurch`)
+
 ## Usage
 
 ### Command line
