@@ -24,6 +24,7 @@
     "http-server": "^0.8.5",
     "jquery": "^2.1.4",
     "optparse": "^1.0.5",
+    "probabilistic-js": "dritchie/probabilistic-js",
     "seedrandom": "^2.4.2",
     "shelljs": "^0.5.3",
     "source-map": "^0.5.1",
