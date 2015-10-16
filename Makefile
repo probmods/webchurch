@@ -37,7 +37,7 @@ node_modules/app : node_modules
 	@ln -s ../src node_modules/app
 
 src/probabilistic-js :
-	@git submodule update --init --recursive
+	git subtree pull --prefix src/probabilistic-js probabilistic-js master --squash
 
 all: .git/hooks src/probabilistic-js node_modules minify docs
 
