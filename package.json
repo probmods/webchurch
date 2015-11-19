@@ -7,7 +7,7 @@
     "webchurch": "./compile.sh"
   },
   "scripts": {
-    "test": "node tester.js test/load.church test/basic.church test/mh.church test/support-change.church test/probmods",
+    "test": "node tester.js test/load.church test/basic.church test/conditioning.church test/mh.church test/support-change.church test/probmods",
     "server": "node node_modules/http-server/bin/http-server"
   },
   "repository": {
