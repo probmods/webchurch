@@ -1649,8 +1649,11 @@ var wrapped_flip = $b({
              {name: "[conditionedValue]", type: "", desc: "", noexport: true}
             ],
     erp: true,
-    fn: function(p, conditionedValue) {
-	return flip(p, undefined, conditionedValue) == 1;
+  fn: function(p, conditionedValue) {
+    if (p < 0 || p > 1) {
+      throw new Error("flip called on " + p + ", which is not a probability");
+    }
+	    return flip(p, undefined, conditionedValue) == 1;
     }
 });
 
