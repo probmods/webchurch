@@ -135,7 +135,7 @@ function church_astify(tokens) {
     }
 
     function dsgr_let(ast) {
-	var let_varieties = ["let", "let*"];
+  var let_varieties = ["let", "let*","letrec"];
 
 	if (let_varieties.indexOf(ast.children[0].text)!=-1) {
 	    if (ast.children.length < 3) {
@@ -197,7 +197,40 @@ function church_astify(tokens) {
 			]
 		    }
 		}
-		return new_ast;
+		    return new_ast;
+      case "letrec":
+        // example input:
+        // (letrec ([is-even? (lambda (n) (if (= n 0) true (is-odd? (- n 1))))]
+        //          [is-odd? (lambda (n) (if (= n 0) false (is-even? (- n 1))))])
+        //  (is-odd? 131))
+
+        // example output:
+        // ((lambda ()
+        //   (define is-even? (lambda (n) (if (= n 0) true (is-odd? (- n 1)))))
+        //   (define is-odd? (lambda (n) (if (= n 0) false (is-even? (- n 1)))))
+        //   (is-odd? 131)))
+
+        var children = bindings.children.map(function(child) {
+          return {
+            children: [{text: "define"}].concat(child.children)
+          }
+        })
+
+        var lambdaBody = children.concat(ast.children[2]);
+        // console.log(JSON.stringify(lambdaBody, null, 1));
+
+        var new_ast = {
+		      children: [
+			      {
+			        children: [
+				        {text: "lambda"},
+				        {children: []}
+			        ].concat(lambdaBody)
+			      }
+		      ]
+		    };
+
+        return new_ast;
 	    }
 
 	} else {
@@ -221,7 +254,7 @@ function church_astify(tokens) {
         }
         return ast;
     }
-    
+
     function dsgr_unquote(ast) {
         for (var i = ast.children.length - 2; i >= 0; i--) {
             if (ast.children[i].text == ",") {
@@ -234,12 +267,12 @@ function church_astify(tokens) {
         }
         return ast;
     }
-    
+
     //turn (... , @ foo ...) into  (, (append ' (...) foo ' (...)))
     //because this wraps each items have to also turn "... , foo ..." into "... (list foo) ..."
     //note: do this before desugarring quote and unquote.
     function dsgr_splunquote(ast) {
-        
+
         //todo:start and end
         var ats = false
         var children = [{text: "append"}]
@@ -402,10 +435,10 @@ function church_astify(tokens) {
                 }
 	          }
         }
-        return ast; 
+        return ast;
     };
 
-    
+
     function dsgr_query(ast) {
 		// Makes the lambda that's passed to the query function
 		function query_helper(statements, args) {

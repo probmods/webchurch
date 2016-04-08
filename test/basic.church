@@ -551,6 +551,11 @@ abc
 (let* ([x 1] [y (+ x 1)]) (list x y))
 (1 2)
 
+(letrec ([is-even? (lambda (n) (if (= n 0) true (is-odd? (- n 1))))]
+         [is-odd? (lambda (n) (if (= n 0) false (is-even? (- n 1))))])
+  (is-odd? 131))
+#t
+
 (define x 1)
 x
 1
