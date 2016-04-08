@@ -401,10 +401,11 @@ var make_density_spec = function(samps, title, with_hist) {
         var min = counter.min;
         var max = counter.max;
 
-        var numBins = (max - min) / bandwidth;
+      var numBins = 100;
+      var binWidth = (max - min) / numBins;
 
-        for (var i = 0; i <= numBins; i++) {
-            var x = min + bandwidth * i;
+        for (var i = 0; i < numBins; i++) {
+          var x = min + binWidth * i;
             var kernel_sum = 0;
             for (var j = 0; j < keys.length; j++) {
                 kernel_sum += kernel((x - keys[j]) / bandwidth) * counter.count(keys[j]);
