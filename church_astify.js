@@ -134,69 +134,122 @@ function church_astify(tokens) {
 	return ast;
     }
 
-    function dsgr_let(ast) {
-  var let_varieties = ["let", "let*","letrec"];
+  function dsgr_let(ast) {
+    var let_varieties = ["let", "let*","letrec"];
 
-	if (let_varieties.indexOf(ast.children[0].text)!=-1) {
+	  if (let_varieties.indexOf(ast.children[0].text)!=-1) {
 	    if (ast.children.length < 3) {
-		throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has no body");
+		    throw util.make_church_error("SyntaxError", ast.start, ast.end, ast.children[0].text + " has no body");
 	    }
-	    var bindings = ast.children[1];
+      var isNamedLet = (ast.children.length == 4);
+
+      var bindings = isNamedLet ? ast.children[2] : ast.children[1];
+
+      // named let
+      if (isNamedLet) {
+        // TODO: check that name is valid
+      }
+
 	    var valid_bindings = true;
 	    if (util.is_leaf(bindings)) {
-		valid_bindings = false;
+		    valid_bindings = false;
 	    } else {
-		for (var i = 0; i < bindings.children.length; i++) {
-		    if (util.is_leaf(bindings.children[i]) || bindings.children[i].children.length != 2) {
-			valid_bindings = false;
-			break;
+		    for (var i = 0; i < bindings.children.length; i++) {
+		      if (util.is_leaf(bindings.children[i]) || bindings.children[i].children.length != 2) {
+			      valid_bindings = false;
+			      break;
+		      }
 		    }
-		}
 	    }
 	    if (!valid_bindings) {
-		throw util.make_church_error_range("SyntaxError", bindings.start, bindings.end, ast.children[0].text + " has invalid bindings");
+		    throw util.make_church_error_range("SyntaxError", bindings.start, bindings.end, ast.children[0].text + " has invalid bindings");
 	    }
+
+      if (isNamedLet) {
+        // example input:
+        // (let
+        //     loop ((arr '(3 -2 1 6 -5)))
+        //     (if (null? arr)
+        //         0
+        //         (+ 1 (loop (cdr arr)))))
+
+        // example output:
+        // ((lambda ()
+        //    (define loop (lambda (arr) (if (null? arr) 0 (+ 1 (loop (cdr arr))))))
+        //    (loop (quote (3 -2 1 6 -5)))))
+
+        // note that this is not iterative because we are doing this as a church desugaring
+        // rather than a js compilation
+        // i'm not sure that js compilation is feasible work, as the named let procedure might do randomness
+        // and the loop counter for addressing is probably not enough to identify different addresses
+        // (e.g., we could have the same loop counter for different procedure arguments, which would be bad)
+
+        var loopName = ast.children[1].text;
+        var argList = {children: bindings.children.map(function(x) {return x.children[0]})};
+        var initialArgValues = bindings.children.map(function(x) {return x.children[1]});
+        var body = ast.children[3];
+        return {
+          children: [
+            {
+              children: [
+                {text: "lambda"},
+                {children: []},
+                {children: [
+				          {text: "define"},
+				          {text: loopName},
+			            {children: [
+				            {text: "lambda"},
+				            argList,
+				            body
+			            ]}
+			          ]},
+                {children: [{text: loopName}].concat(initialArgValues)}
+              ]
+            }
+          ]
+        }
+      }
 
 	    switch (ast.children[0].text) {
 	    case "let":
-		return {
-		    children: [
-			{
-			    children: [
-				{text: "lambda"},
-				{children: bindings.children.map(function(x) {return x.children[0]})},
-				ast.children[2]
-			    ]
-			}
-		    ].concat(bindings.children.map(function(x) {return x.children[1]}))
-		};
+		    return {
+		      children: [
+			      {
+			        children: [
+				        {text: "lambda"},
+				        {children: bindings.children.map(function(x) {return x.children[0]})},
+				        ast.children[2]
+			        ]
+			      }
+		      ].concat(bindings.children.map(function(x) {return x.children[1]}))
+		    };
 	    case "let*":
-		var new_ast = {
-		    children: [
-			{
-			    children: [
-				{text: "lambda"},
-				{children: []},
-				ast.children[2]
-			    ]
-			}
-		    ]
-		}
-		for (var i = bindings.children.length-1; i >= 0; i--) {
-		    // console.log(JSON.stringify(bindings.children[i].children[0],undefined,2))
-		    new_ast = {
-			children: [
-			    {
-				children: [
-				    {text: "lambda"},
-				    {children: [bindings.children[i].children[0]]},
-				    new_ast
-				]
-			    },
-			    bindings.children[i].children[1]
-			]
+		    var new_ast = {
+		      children: [
+			      {
+			        children: [
+				        {text: "lambda"},
+				        {children: []},
+				        ast.children[2]
+			        ]
+			      }
+		      ]
 		    }
-		}
+		    for (var i = bindings.children.length-1; i >= 0; i--) {
+		      // console.log(JSON.stringify(bindings.children[i].children[0],undefined,2))
+		      new_ast = {
+			      children: [
+			        {
+				        children: [
+				          {text: "lambda"},
+				          {children: [bindings.children[i].children[0]]},
+				          new_ast
+				        ]
+			        },
+			        bindings.children[i].children[1]
+			      ]
+		      }
+		    }
 		    return new_ast;
       case "letrec":
         // example input:
@@ -233,10 +286,10 @@ function church_astify(tokens) {
         return new_ast;
 	    }
 
-	} else {
+	  } else {
 	    return ast;
-	}
-    }
+	  }
+  }
 
     function dsgr_quote(ast) {
         var last = ast.children[ast.children.length-1];
