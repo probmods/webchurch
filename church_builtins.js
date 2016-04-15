@@ -1699,10 +1699,19 @@ var wrapped_gaussian = $b({
              {name: "[conditionedValue]", type: "", desc: "", noexport: true}
             ],
     erp: true,
-    fn: function(mu, sigma, conditionedValue) {
-        mu = mu || 0;
-        sigma = sigma || 1;
-	return gaussian(mu, sigma, undefined, conditionedValue);
+  fn: function(mu, sigma, conditionedValue) {
+    if (mu === undefined) {
+      mu = 0;
+    }
+    if (sigma === undefined) {
+      sigma = 1
+    }
+
+    if (sigma === 0) {
+      return mu
+    } else {
+	    return gaussian(mu, sigma, undefined, conditionedValue);
+    }
     }
 });
 
