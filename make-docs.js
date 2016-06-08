@@ -1,7 +1,14 @@
 /* global require */
 
 var builtins = require('./church_builtins.js');
-var annotations = require('./church_builtins.js').__annotations__;
+var annotations = builtins.__annotations__;
+
+annotations.eval = {
+  name: 'eval',
+  desc: 'Evaluate a list representing a Church s-expression, e.g., <code>(eval (list + 1 2))</code> returns 3',
+  params: [{name: 'lst'}]
+}
+
 var _ = require('underscore');
 
 _.templateSettings = {
@@ -66,9 +73,9 @@ function renderFunction(functionName, props) {
                                    aliases: aliases,
                                    argList: _(args).pluck('name').join(' '),
                                    description: description,
-                                   table: argsTable}); 
+                                   table: argsTable});
 
-    return {name: functionName, 
+    return {name: functionName,
             string: tableString};
 }
 
