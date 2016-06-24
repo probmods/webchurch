@@ -2062,7 +2062,7 @@ var console_log = $b({
 
 var display = $b({
     name: 'display',
-    alias: 'pn',
+    alias: ['print', 'pn'],
     desc: '',
     params: [{name: "[s ...]", type: "", desc: ""}],
     fn: function() {
