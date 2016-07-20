@@ -28,7 +28,7 @@ function tokenize(s) {
 	if (s[begin].match(whitespace_re)) {
 	    begin++;
 	} else if (s[begin] == ";") {
-	    for (; begin < s.length && s[begin] != "\n"; begin++) {}
+	    for (; begin < s.length && s[begin] != "\n" && s[begin] != "\r"; begin++) {}
 	} else {
 	    if (s[begin] == "\"") {
 		for (end = begin + 1; ; end++) {
