@@ -82,3 +82,18 @@ Available options:
 - `-d, --desugar-only`: Apply Church desugaring without execution.
 - `-c, --compile-only`: Compile to Javascript without execution.
 - `-e, --disable-church-errors`: Disable special Church error checking and show Javascript errors instead.
+
+### Larger church projects
+
+For larger church projects, there is an option to include other church files using a pre-processor.
+
+This is done using `#include {filename}` where filename is a string pointing to a church file. However, this functionality is experimental and can make error messages harder to interpret. 
+
+To run a church file using the include macro, use the `./church-interpret` script:  
+```
+./church-interpret main.church
+```
+This script requires base python 3.x
+
+To add this script in the same style as the base church script, issue:  
+`ln -s path/to/webchurch/church-interpret ~/bin/`
