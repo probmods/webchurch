@@ -1,0 +1,52 @@
+#!/usr/bin/env python3
+import sys, os, subprocess
+
+from pprint import pprint
+
+cacheDir = '__church_cache__/'
+
+def get_pp_filename(filename):
+    dirname  = os.path.dirname(filename)
+    basename = os.path.basename(filename)
+    basename += '.processed.church'
+    return os.path.join(cacheDir,
+            os.path.join(dirname.replace('/', '_'), basename))
+
+def main(args):
+    assert len(args) > 0, 'Pre-processor requires at least one argument'
+    filename = args[0]
+    os.makedirs(cacheDir, exist_ok=True)
+    process(filename)
+    subprocess.call(['church', get_pp_filename(filename)])
+
+def process(filename, seen=None):
+    if seen is None:
+        seen = set()
+    if filename in seen:
+        print('Files processed in pre-order:')
+        pprint(seen)
+        raise ValueError('Circular import: {}'.format(filename))
+    seen.add(filename)
+    with open(get_pp_filename(filename), 'w') as outfile:
+        with open(filename, 'r') as infile:
+            for i, line in enumerate(infile):
+                if '#include' in line:
+                    try:
+                        included = line.replace('#include', '').strip()
+                    except:
+                        print('Could not process line {} of {}'.format(i, 
+                                                                filename))
+                    if not os.path.isfile(included):
+                        raise FileNotFoundError('Could not find ' +
+                                '{} (included on line {} of {})'.format(
+                                    included,
+                                    i,
+                                    filename))
+                    process(included, seen=seen)
+                    with open(get_pp_filename(included), 'r') as includeFile:
+                        outfile.write(includeFile.read() + '\n')
+                else:
+                    outfile.write(line + '\n')
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv[1:]))

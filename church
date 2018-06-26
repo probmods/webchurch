@@ -88,6 +88,6 @@ try {
     var result = format_result(evaluate(code, opts));
     console.log(result);
 } catch (e) {
-    console.log(e.message)
-    throw e
+    console.log(e.message);
+    throw e;
 }
