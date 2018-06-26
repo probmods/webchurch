@@ -1,5 +1,7 @@
 # webchurch [![Build Status](https://travis-ci.org/probmods/webchurch.svg?branch=master)](https://travis-ci.org/probmods/webchurch)
 
+**Note: webchurch is deprecated in favor of [webppl](http://github.com/probmods/webppl)**
+
 ## Install
 
 ### Dependencies
